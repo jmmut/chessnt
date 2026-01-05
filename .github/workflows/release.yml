@@ -9,7 +9,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  PROJECT_NAME: MY_CRATE_NAME
+  PROJECT_NAME: chessnt
 
 jobs:
   deploy-wasm-linux-windows:

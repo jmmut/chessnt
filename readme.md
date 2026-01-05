@@ -1,4 +1,4 @@
-# MY_CRATE_NAME
+# chessnt
 
 The first thing to do after cloning this template repo is `./rename_crate.sh new-name`, where new-name
 is the name you want for this project. For `new-name`, I recommend to used kebab-case rather than snake_case, because

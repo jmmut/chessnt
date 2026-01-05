@@ -15,7 +15,7 @@ pub fn coord_to_pixel(coord: Coord, rect: Rect) -> Vec2 {
     vec2(cell_width * coord.column as f32, cell_height*coord.row as f32)
 }
 
-#[macroquad::main("MY_CRATE_NAME")]
+#[macroquad::main("chessnt")]
 async fn main() {
     loop {
         clear_background(LIGHTGRAY);
