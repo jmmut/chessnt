@@ -12,7 +12,7 @@ pub struct Coord {
 pub fn coord_to_pixel(coord: Coord, rect: Rect) -> Vec2 {
     let cell_width = rect.w / COLUMNS as f32;
     let cell_height = rect.h / ROWS as f32;
-    vec2(cell_width * coord.column as f32, cell_height*coord.row as f32)
+    rect.point() + vec2(cell_width * coord.column as f32, cell_height*coord.row as f32)
 }
 
 #[macroquad::main("chessnt")]
@@ -24,17 +24,17 @@ async fn main() {
             return;
         }
         let screen = Vec2::new(screen_width(), screen_height());
-        let rect = add_contour(Rect::new(0.0, 0.0, screen.x, screen.y), -screen * 0.5);
+        let rect = add_contour(Rect::new(0.0, 0.0, screen.x, screen.y), -screen * 0.25);
         for column in 0..=COLUMNS {
             let start = coord_to_pixel(Coord{column, row: 0}, rect);
             let end = coord_to_pixel(Coord{column, row: ROWS}, rect);
             draw_segment(start, end, 2.0, DARKGRAY);
         }
-        // for column in 0..=COLUMNS {
-        //     let start = coord_to_pixel(Coord{column, row: 0}, rect);
-        //     let end = coord_to_pixel(Coord{column, row: ROWS}, rect);
-        //     draw_segment(start, end, 2.0, DARKGRAY);
-        // }
+        for row in 0..=ROWS {
+            let start = coord_to_pixel(Coord{column: 0, row}, rect);
+            let end = coord_to_pixel(Coord{column: COLUMNS, row}, rect);
+            draw_segment(start, end, 2.0, DARKGRAY);
+        }
         
         next_frame().await
     }
