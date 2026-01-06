@@ -114,4 +114,3 @@ impl SubAssign<Coord> for Coord {
         self.row -= other.row;
     }
 }
-
