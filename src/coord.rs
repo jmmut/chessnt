@@ -1,6 +1,6 @@
 use crate::{COLUMNS, ROWS};
 use macroquad::math::{f32, vec2, vec3, IVec2, Rect, Vec2, Vec3};
-use std::ops::{Add, Sub};
+use std::ops::{Add, AddAssign, Sub, SubAssign};
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Coord {
@@ -42,6 +42,13 @@ impl Coord {
             column: self.column.floor(),
         }
     }
+    pub fn to_vec3(&self, y: f32) -> Vec3 {
+        vec3(
+            self.column - COLUMNS as f32 * 0.5,
+            y,
+            self.row - ROWS as f32 * 0.5,
+        )
+    }
     pub fn into<T: From<Coord>>(self) -> T {
         Into::<T>::into(self)
     }
@@ -77,38 +84,34 @@ impl From<Vec3> for Coord {
 }
 impl From<Coord> for Vec3 {
     fn from(value: Coord) -> Self {
-        vec3(
-            value.column - COLUMNS as f32 * 0.5,
-            0.0,
-            value.row - ROWS as f32 * 0.5,
-        )
+        value.to_vec3(0.0)
     }
 }
 impl Add<Coord> for Coord {
     type Output = Coord;
-    fn add(self, other: Coord) -> Self::Output {
-        Coord {
-            row: self.row + other.row,
-            column: self.column + other.column,
-        }
+    fn add(mut self, other: Coord) -> Self::Output {
+        self += other;
+        self
+    }
+}
+impl AddAssign<Coord> for Coord {
+    fn add_assign(&mut self, other: Coord) {
+        self.column += other.column;
+        self.row += other.row;
     }
 }
 impl Sub<Coord> for Coord {
     type Output = Coord;
-    fn sub(self, other: Coord) -> Self::Output {
-        Coord {
-            row: self.row - other.row,
-            column: self.column - other.column,
-        }
+    fn sub(mut self, other: Coord) -> Self::Output {
+        self -= other;
+        self
     }
 }
 
-pub fn coord_to_pixel(coord: Coord, rect: Rect) -> Vec2 {
-    let cell_width = rect.w / COLUMNS as f32;
-    let cell_height = rect.h / ROWS as f32;
-    rect.point()
-        + vec2(
-            cell_width * coord.column as f32,
-            cell_height * coord.row as f32,
-        )
+impl SubAssign<Coord> for Coord {
+    fn sub_assign(&mut self, other: Coord) {
+        self.column -= other.column;
+        self.row -= other.row;
+    }
 }
+
