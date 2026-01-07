@@ -9,10 +9,10 @@ pub struct Coord {
 }
 
 impl Coord {
-    pub fn new_f(column: f32, row: f32) -> Self {
+    pub const fn new_f(column: f32, row: f32) -> Self {
         Coord { column, row }
     }
-    pub fn new_i(column: i32, row: i32) -> Self {
+    pub const fn new_i(column: i32, row: i32) -> Self {
         Coord {
             column: column as f32,
             row: row as f32,
@@ -40,6 +40,12 @@ impl Coord {
         Coord {
             row: self.row.floor(),
             column: self.column.floor(),
+        }
+    }
+    pub fn round(self) -> Coord {
+        Coord {
+            row: self.row.round(),
+            column: self.column.round(),
         }
     }
     pub fn to_vec3(&self, y: f32) -> Vec3 {

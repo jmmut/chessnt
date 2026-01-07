@@ -1,14 +1,14 @@
 use chessnt::board::Board;
 use chessnt::coord::Coord;
 use chessnt::theme::Theme;
-use chessnt::ui::{below_left, render_text};
+use chessnt::ui::{below_left, render_text, SCALE};
 use chessnt::{
     AnyResult, COLUMNS, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_TITLE, DEFAULT_WINDOW_WIDTH,
     FPS_AVERAGE_FRAMES, ROWS,
 };
 use juquad::widgets::anchor::Anchor;
-use macroquad::camera::{set_camera, Camera3D};
-use macroquad::input::{is_key_pressed, KeyCode};
+use macroquad::camera::{set_camera, set_default_camera, Camera3D};
+use macroquad::input::{is_key_down, is_key_pressed, KeyCode};
 use macroquad::math::{vec2, vec3};
 use macroquad::miniquad::date::now;
 use macroquad::prelude::load_ttf_font_from_bytes;
@@ -39,9 +39,9 @@ async fn fallible_main() -> AnyResult<()> {
         theme.update_screen_size(screen);
 
         set_camera(&Camera3D {
-            position: vec3(0.0, 7., 7.0),
-            up: vec3(0., 1., 0.),
-            target: vec3(0., 0., 0.),
+            position: vec3(0.0, 7.0, 7.0),
+            up: vec3(0.0, 1.0, 0.0),
+            target: vec3(0.0, 0.0, 0.0),
             ..Default::default()
         });
 
@@ -52,27 +52,31 @@ async fn fallible_main() -> AnyResult<()> {
             dev_ui = !dev_ui;
         }
 
-        if is_key_pressed(KeyCode::Right) {
-            board.move_cursor_rel(Coord::new_i(1, 0));
-        }
-        if is_key_pressed(KeyCode::Left) {
-            board.move_cursor_rel(Coord::new_i(-1, 0));
-        }
-        if is_key_pressed(KeyCode::Up) {
-            board.move_cursor_rel(Coord::new_i(0, -1));
-        }
-        if is_key_pressed(KeyCode::Down) {
-            board.move_cursor_rel(Coord::new_i(0, 1));
-        }
-        if is_key_pressed(KeyCode::Space) {
-            board.select();
-        }
-        
+        move_cursor_or_piece(&mut board);
 
+        if is_key_pressed(KeyCode::Space) {
+            if board.selected() {
+                board.deselect();
+            } else {
+                board.select();
+            }
+        }
+
+        if is_key_pressed(KeyCode::KpAdd) {
+            unsafe {
+                SCALE *= 1.3;
+            }
+        }
+        if is_key_pressed(KeyCode::KpSubtract) {
+            unsafe {
+                SCALE /= 1.3;
+            }
+        }
         clear_background(LIGHTGRAY);
 
         board.draw(theme);
 
+        set_default_camera();
         if dev_ui {
             frame_count = (frame_count + 1) % (1000 * FPS_AVERAGE_FRAMES);
             if frame_count % FPS_AVERAGE_FRAMES == 0 {
@@ -85,10 +89,45 @@ async fn fallible_main() -> AnyResult<()> {
             let rect = render_text(text, below_left(rect), theme);
             let rect = render_text("Toggle dev UI with '/'", below_left(rect), theme);
             let text = format!("FPS: {:.1}", measured_fps);
-            render_text(&text, below_left(rect), theme);
+            let rect = render_text(&text, below_left(rect), theme);
+            let rect = render_text(
+                &format!("scale: {}", unsafe { SCALE }),
+                below_left(rect),
+                theme,
+            );
         }
 
         next_frame().await
+    }
+}
+
+fn move_cursor_or_piece(board: &mut Board) {
+    if board.selected() {
+        if is_key_down(KeyCode::Right) {
+            board.move_cursor_rel(Coord::new_f(0.1, 0.0));
+        }
+        if is_key_down(KeyCode::Left) {
+            board.move_cursor_rel(Coord::new_f(-0.1, 0.0));
+        }
+        if is_key_down(KeyCode::Up) {
+            board.move_cursor_rel(Coord::new_f(0.0, -0.1));
+        }
+        if is_key_down(KeyCode::Down) {
+            board.move_cursor_rel(Coord::new_f(0.0, 0.1));
+        }
+    } else {
+        if is_key_pressed(KeyCode::Right) {
+            board.move_cursor_rel(Coord::new_i(1, 0));
+        }
+        if is_key_pressed(KeyCode::Left) {
+            board.move_cursor_rel(Coord::new_i(-1, 0));
+        }
+        if is_key_pressed(KeyCode::Up) {
+            board.move_cursor_rel(Coord::new_i(0, -1));
+        }
+        if is_key_pressed(KeyCode::Down) {
+            board.move_cursor_rel(Coord::new_i(0, 1));
+        }
     }
 }
 

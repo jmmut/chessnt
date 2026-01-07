@@ -3,6 +3,7 @@ use crate::coord::Coord;
 use macroquad::color::{Color, PINK};
 use macroquad::math::{vec2, vec3, Vec3};
 use macroquad::models::{draw_mesh, Mesh, Vertex};
+use macroquad::prelude::Texture2D;
 
 pub fn mesh_coord(coord: Coord, color: Color) -> Mesh {
     mesh_coord_h(coord, color, 0.0)
@@ -32,11 +33,19 @@ pub fn mesh_cursor(coord: Coord, color: Color, height: f32) -> Vec<Mesh> {
 }
 
 pub fn mesh_figure(piece: &Piece, color: Color) -> Mesh {
-    let coord_00: Vec3 = (piece.pos + Coord::new_f(0.0, 0.5)).to_vec3(0.0);
+    let coord_00 = (piece.pos + Coord::new_f(0.0, 0.5)).to_vec3(0.0);
+    mesh_vertical_texture(coord_00, 2.0, color, None)
+}
+pub fn mesh_vertical_texture(
+    coord_00: Vec3,
+    height: f32,
+    color: Color,
+    texture: Option<Texture2D>,
+) -> Mesh {
     let coord_10 = coord_00 + vec3(1.0, 0.0, 0.0);
-    let coord_01 = coord_00 + vec3(0.0, 2.0, 0.0);
-    let coord_11 = coord_00 + vec3(1.0, 2.0, 0.0);
-    let mesh = to_mesh([coord_00, coord_10, coord_01, coord_11], color);
+    let coord_01 = coord_00 + vec3(0.0, height, 0.0);
+    let coord_11 = coord_00 + vec3(1.0, height, 0.0);
+    let mesh = to_mesh_texture([coord_00, coord_10, coord_01, coord_11], color, texture);
     mesh
 }
 pub fn to_mesh(corners: [Vec3; 4], color: Color) -> Mesh {
@@ -54,5 +63,29 @@ pub fn to_mesh(corners: [Vec3; 4], color: Color) -> Mesh {
         vertices,
         indices: vec![0, 1, 2, 2, 1, 3],
         texture: None,
+    }
+}
+pub fn to_mesh_texture(corners: [Vec3; 4], color: Color, texture: Option<Texture2D>) -> Mesh {
+    let coords = corners.to_vec();
+    let mut vertices = Vec::new();
+
+    let uvs = vec![
+        vec2(0.0, 1.0),
+        vec2(1.0, 1.0),
+        vec2(0.0, 0.0),
+        vec2(1.0, 0.0),
+    ];
+    for (position, uv) in coords.into_iter().zip(uvs) {
+        let vertex = Vertex {
+            position,
+            uv,
+            color,
+        };
+        vertices.push(vertex);
+    }
+    Mesh {
+        vertices,
+        indices: vec![0, 1, 2, 2, 1, 3],
+        texture,
     }
 }
