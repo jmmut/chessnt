@@ -64,6 +64,10 @@ async fn fallible_main() -> AnyResult<()> {
         if is_key_pressed(KeyCode::Down) {
             board.move_cursor_rel(Coord::new_i(0, 1));
         }
+        if is_key_pressed(KeyCode::Space) {
+            board.select();
+        }
+        
 
         clear_background(LIGHTGRAY);
 
