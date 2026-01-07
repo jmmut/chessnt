@@ -1,5 +1,5 @@
+use crate::board::Board;
 use chessnt::coord::Coord;
-use chessnt::render::{draw_coord, draw_coord_h};
 use chessnt::theme::Theme;
 use chessnt::ui::{below_left, render_text};
 use chessnt::{
@@ -8,14 +8,15 @@ use chessnt::{
 };
 use juquad::widgets::anchor::Anchor;
 use macroquad::camera::{set_camera, Camera3D};
-use macroquad::color::DARKGREEN;
 use macroquad::input::{is_key_pressed, KeyCode};
 use macroquad::math::{vec2, vec3};
 use macroquad::miniquad::date::now;
+use macroquad::prelude::load_ttf_font_from_bytes;
 use macroquad::prelude::{
     clear_background, next_frame, screen_height, screen_width, Conf, LIGHTGRAY,
 };
-use macroquad::prelude::{load_ttf_font_from_bytes, set_default_camera};
+
+mod board;
 
 #[macroquad::main(window_conf)]
 async fn main() {
@@ -30,7 +31,7 @@ async fn fallible_main() -> AnyResult<()> {
     let font =
         load_ttf_font_from_bytes(include_bytes!("../assets/fonts/TitilliumWeb-SemiBold.ttf"))?;
     theme.set_font(font);
-    let mut cursor = Coord::new_i(4, 4);
+    let mut board = Board::new(Coord::new_i(4, 4), Coord::new_i(COLUMNS, ROWS));
     let mut dev_ui = true;
     let mut last_frame = now();
     let mut frame_count = 0;
@@ -54,33 +55,21 @@ async fn fallible_main() -> AnyResult<()> {
         }
 
         if is_key_pressed(KeyCode::Right) {
-            cursor += Coord::new_i(1, 0);
+            board.move_cursor_rel(Coord::new_i(1, 0));
         }
         if is_key_pressed(KeyCode::Left) {
-            cursor += Coord::new_i(-1, 0);
+            board.move_cursor_rel(Coord::new_i(-1, 0));
         }
         if is_key_pressed(KeyCode::Up) {
-            cursor += Coord::new_i(0, -1);
+            board.move_cursor_rel(Coord::new_i(0, -1));
         }
         if is_key_pressed(KeyCode::Down) {
-            cursor += Coord::new_i(0, 1);
+            board.move_cursor_rel(Coord::new_i(0, 1));
         }
 
         clear_background(LIGHTGRAY);
 
-        for column in 0..COLUMNS {
-            for row in 0..ROWS {
-                let color = if (row + column) % 2 == 0 {
-                    theme.palette.white_cells
-                } else {
-                    theme.palette.black_cells
-                };
-                draw_coord(Coord::new_i(column, row), color);
-            }
-        }
-        draw_coord_h(cursor, DARKGREEN, 0.3);
-
-        set_default_camera();
+        board.draw(theme);
 
         if dev_ui {
             frame_count = (frame_count + 1) % (1000 * FPS_AVERAGE_FRAMES);
