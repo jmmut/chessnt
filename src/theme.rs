@@ -4,7 +4,7 @@ use crate::{
 };
 use macroquad::color::Color;
 use macroquad::color_u8;
-use macroquad::prelude::{Font, Vec2};
+use macroquad::prelude::{Font, Texture2D, Vec2};
 
 use juquad::widgets::Style as Coloring;
 
@@ -14,9 +14,24 @@ pub struct Theme {
     font_size: f32,
     font: Font,
     coloring: Coloring,
+    pub textures: Textures,
 }
 
 impl Theme {
+    pub fn new(textures: Textures) -> Self {
+        Self {
+            palette: Palette::default(),
+            base_font_size: DEFAULT_FONT_SIZE,
+            font_size: choose_scale(
+                DEFAULT_WINDOW_WIDTH as f32,
+                DEFAULT_WINDOW_HEIGHT as f32,
+                DEFAULT_FONT_SIZE,
+            ),
+            font: Font::default(),
+            coloring: Coloring::default(),
+            textures,
+        }
+    }
     pub fn update_screen_size(&mut self, screen: Vec2) {
         self.font_size = choose_scale(screen.x, screen.y, self.base_font_size);
     }
@@ -34,26 +49,15 @@ impl Theme {
     }
 }
 
+pub struct Textures {
+    pub placeholder: Texture2D,
+}
+
 pub struct Palette {
     pub white_cells: Color,
     pub black_cells: Color,
 }
 
-impl Default for Theme {
-    fn default() -> Self {
-        Self {
-            palette: Palette::default(),
-            base_font_size: DEFAULT_FONT_SIZE,
-            font_size: choose_scale(
-                DEFAULT_WINDOW_WIDTH as f32,
-                DEFAULT_WINDOW_HEIGHT as f32,
-                DEFAULT_FONT_SIZE,
-            ),
-            font: Font::default(),
-            coloring: Coloring::default(),
-        }
-    }
-}
 impl Default for Palette {
     fn default() -> Self {
         Self {

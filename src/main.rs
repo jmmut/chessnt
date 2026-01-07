@@ -1,6 +1,6 @@
 use chessnt::board::Board;
 use chessnt::coord::Coord;
-use chessnt::theme::Theme;
+use chessnt::theme::{Textures, Theme};
 use chessnt::ui::{below_left, render_text, SCALE};
 use chessnt::{
     AnyResult, COLUMNS, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_TITLE, DEFAULT_WINDOW_WIDTH,
@@ -11,7 +11,7 @@ use macroquad::camera::{set_camera, set_default_camera, Camera3D};
 use macroquad::input::{is_key_down, is_key_pressed, KeyCode};
 use macroquad::math::{vec2, vec3};
 use macroquad::miniquad::date::now;
-use macroquad::prelude::load_ttf_font_from_bytes;
+use macroquad::prelude::{load_texture, load_ttf_font_from_bytes};
 use macroquad::prelude::{
     clear_background, next_frame, screen_height, screen_width, Conf, LIGHTGRAY,
 };
@@ -24,7 +24,8 @@ async fn main() {
 }
 
 async fn fallible_main() -> AnyResult<()> {
-    let mut theme_owned = Theme::default();
+    let character = load_texture("assets/images/ph_chara.png").await?;
+    let mut theme_owned = Theme::new(Textures {placeholder: character});
     let theme = &mut theme_owned;
     let font =
         load_ttf_font_from_bytes(include_bytes!("../assets/fonts/TitilliumWeb-SemiBold.ttf"))?;

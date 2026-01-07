@@ -36,6 +36,10 @@ pub fn mesh_figure(piece: &Piece, color: Color) -> Mesh {
     let coord_00 = (piece.pos + Coord::new_f(0.0, 0.5)).to_vec3(0.0);
     mesh_vertical_texture(coord_00, 2.0, color, None)
 }
+pub fn mesh_figure_texture(piece: &Piece, color: Color, texture: Texture2D) -> Mesh {
+    let coord_00 = (piece.pos + Coord::new_f(0.0, 0.5)).to_vec3(0.0);
+    mesh_vertical_texture(coord_00, 2.0, color, Some(texture))
+}
 pub fn mesh_vertical_texture(
     coord_00: Vec3,
     height: f32,
