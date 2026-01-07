@@ -5,7 +5,7 @@ use crate::{
 use juquad::widgets::from_hexes;
 use macroquad::color::Color;
 use macroquad::color_u8;
-use macroquad::prelude::Vec2;
+use macroquad::prelude::{Font, Vec2};
 
 use juquad::widgets::Style as Coloring;
 
@@ -13,11 +13,19 @@ pub struct Theme {
     pub palette: Palette,
     base_font_size: f32,
     font_size: f32,
-    pub coloring: Coloring,
+    font: Font,
+    coloring: Coloring,
 }
+
 impl Theme {
     pub fn update_screen_size(&mut self, screen: Vec2) {
         self.font_size = choose_scale(screen.x, screen.y, self.base_font_size);
+    }
+    pub fn set_font(&mut self, font: Font) {
+        self.font = font;
+    }
+    pub fn font(&self) -> Font {
+        self.font
     }
     pub fn font_size(&self) -> f32 {
         self.font_size
@@ -42,6 +50,7 @@ impl Default for Theme {
                 DEFAULT_WINDOW_HEIGHT as f32,
                 DEFAULT_FONT_SIZE,
             ),
+            font: Font::default(),
             coloring: Coloring::default(),
         }
     }

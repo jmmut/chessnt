@@ -2,24 +2,28 @@ use chessnt::coord::Coord;
 use chessnt::render::{draw_coord, draw_coord_h};
 use chessnt::theme::Theme;
 use chessnt::ui::render_text;
-use chessnt::{
-    COLUMNS, DEFAULT_ASPECT_RATIO, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_TITLE,
-    DEFAULT_WINDOW_WIDTH, ROWS,
-};
+use chessnt::{AnyResult, COLUMNS, DEFAULT_ASPECT_RATIO, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_TITLE, DEFAULT_WINDOW_WIDTH, ROWS};
 use juquad::lazy::add_contour;
 use macroquad::camera::{set_camera, Camera3D};
 use macroquad::color::DARKGREEN;
 use macroquad::input::{is_key_pressed, KeyCode};
 use macroquad::math::{vec2, vec3, Rect, Vec2};
-use macroquad::prelude::set_default_camera;
+use macroquad::prelude::{load_ttf_font_from_bytes, set_default_camera};
 use macroquad::prelude::{
     clear_background, next_frame, screen_height, screen_width, Conf, LIGHTGRAY,
 };
 
 #[macroquad::main(window_conf)]
 async fn main() {
+    if let Err(e) = fallible_main().await {
+        println!("{} failed with error: {}", DEFAULT_WINDOW_TITLE, e);
+    }
+}
+async fn fallible_main() -> AnyResult<()> {
     let mut theme_owned = Theme::default();
     let theme = &mut theme_owned;
+    let font = load_ttf_font_from_bytes(include_bytes!("../assets/fonts/TitilliumWeb-SemiBold.ttf"))?;
+    theme.set_font(font);
     let mut cursor = Coord::new_i(4, 4);
     loop {
         let screen = vec2(screen_width(), screen_height());
@@ -37,7 +41,7 @@ async fn main() {
         // draw_grid(20, 1., BLACK, GRAY);
 
         if is_key_pressed(KeyCode::Escape) {
-            return;
+            return Ok(());
         }
 
         if is_key_pressed(KeyCode::Right) {

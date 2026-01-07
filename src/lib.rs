@@ -14,6 +14,7 @@ pub const DEFAULT_WINDOW_HEIGHT: i32 = width_to_height_default(DEFAULT_WINDOW_WI
 pub const DEFAULT_WINDOW_TITLE: &str = "Chessn't!";
 
 pub type AnyError = Box<dyn std::error::Error>;
+pub type AnyResult<T> = Result<T, AnyError>;
 
 pub const fn width_to_height_default(width: f32) -> f32 {
     width_to_height(width, DEFAULT_ASPECT_RATIO)

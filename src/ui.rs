@@ -8,6 +8,6 @@ pub fn render_text(text: &str, x: f32, y: f32, theme: &Theme) {
         y + theme.font_size(),
         theme.font_size(),
         &theme.coloring().at_rest,
-        None,
+        Some(theme.font()),
     )
 }
