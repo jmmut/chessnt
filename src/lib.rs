@@ -1,3 +1,5 @@
+use macroquad::color::Color;
+
 pub mod board;
 pub mod coord;
 pub mod render;
@@ -6,6 +8,8 @@ pub mod ui;
 
 pub const COLUMNS: i32 = 8;
 pub const ROWS: i32 = 8;
+
+pub const TRANSPARENT: Color = Color::new(1.0, 1.0, 1.0, 0.0);
 
 pub const DEFAULT_FONT_SIZE: f32 = 16.0;
 

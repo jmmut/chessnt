@@ -4,25 +4,40 @@ use macroquad::color::{Color, PINK};
 use macroquad::math::{vec2, vec3, Vec3};
 use macroquad::models::{draw_mesh, Mesh, Vertex};
 
-pub fn draw_coord(coord: Coord, color: Color) {
-    draw_coord_h(coord, color, 0.0)
+pub fn mesh_coord(coord: Coord, color: Color) -> Mesh {
+    mesh_coord_h(coord, color, 0.0)
 }
-pub fn draw_coord_h(coord: Coord, color: Color, height: f32) {
+pub fn mesh_coord_h(coord: Coord, color: Color, height: f32) -> Mesh {
     let coord_00: Vec3 = coord.to_vec3(height);
     let coord_10 = (coord + Coord::new_i(1, 0)).to_vec3(height);
     let coord_01 = (coord + Coord::new_i(0, 1)).to_vec3(height);
     let coord_11 = (coord + Coord::new_i(1, 1)).to_vec3(height);
     let mesh = to_mesh([coord_00, coord_10, coord_01, coord_11], color);
-    draw_mesh(&mesh);
+    mesh
+}
+pub fn mesh_cursor(coord: Coord, color: Color, height: f32) -> Vec<Mesh> {
+    let mut meshes = Vec::new();
+    let coord_00: Vec3 = coord.to_vec3(height);
+    let coord_10 = coord_00 + vec3(1.0, 0.0, 0.0);
+    let coord_01 = coord_00 + vec3(0.0, 0.0, 0.5);
+    let coord_11 = coord_00 + vec3(1.0, 0.0, 0.5);
+    meshes.push(to_mesh([coord_00, coord_10, coord_01, coord_11], color));
+    // draw_mesh(&mesh);
+    let coord_00: Vec3 = coord_00 + vec3(0.0, 0.0, 0.5);
+    let coord_10 = coord_00 + vec3(1.0, 0.0, 0.0);
+    let coord_01 = coord_00 + vec3(0.0, 0.0, 0.5);
+    let coord_11 = coord_00 + vec3(1.0, 0.0, 0.5);
+    meshes.push(to_mesh([coord_00, coord_10, coord_01, coord_11], color));
+    meshes
 }
 
-pub fn draw_figure(piece: &Piece) {
+pub fn mesh_figure(piece: &Piece, color: Color) -> Mesh {
     let coord_00: Vec3 = (piece.pos + Coord::new_f(0.0, 0.5)).to_vec3(0.0);
     let coord_10 = coord_00 + vec3(1.0, 0.0, 0.0);
     let coord_01 = coord_00 + vec3(0.0, 2.0, 0.0);
     let coord_11 = coord_00 + vec3(1.0, 2.0, 0.0);
-    let mesh = to_mesh([coord_00, coord_10, coord_01, coord_11], PINK);
-    draw_mesh(&mesh);
+    let mesh = to_mesh([coord_00, coord_10, coord_01, coord_11], color);
+    mesh
 }
 pub fn to_mesh(corners: [Vec3; 4], color: Color) -> Mesh {
     let coords = corners.to_vec();

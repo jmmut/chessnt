@@ -77,3 +77,14 @@ const fn choose_scale(width: f32, height: f32, font_size: f32) -> f32 {
 pub const fn from_hex(hex: u32) -> Color {
     color_u8!(hex / 0x10000, hex / 0x100 % 0x100, hex % 0x100, 255)
 }
+pub const fn color_average(color_1: Color, color_2: Color) -> Color {
+    color_average_weight(color_1, color_2, 0.5)
+}
+pub const fn color_average_weight(color_1: Color, color_2: Color, weight: f32) -> Color {
+    Color::new(
+        color_1.r * (1.0 - weight) + color_2.r * weight,
+        color_1.g * (1.0 - weight) + color_2.g * weight,
+        color_1.b * (1.0 - weight) + color_2.b * weight,
+        color_1.a * (1.0 - weight) + color_2.a * weight,
+    )
+}
