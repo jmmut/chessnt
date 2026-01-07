@@ -1,3 +1,4 @@
+pub mod board;
 pub mod coord;
 pub mod render;
 pub mod theme;

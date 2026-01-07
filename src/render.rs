@@ -1,6 +1,7 @@
+use crate::board::Piece;
 use crate::coord::Coord;
-use macroquad::color::Color;
-use macroquad::math::{vec2, Vec3};
+use macroquad::color::{Color, PINK};
+use macroquad::math::{vec2, vec3, Vec3};
 use macroquad::models::{draw_mesh, Mesh, Vertex};
 
 pub fn draw_coord(coord: Coord, color: Color) {
@@ -15,6 +16,14 @@ pub fn draw_coord_h(coord: Coord, color: Color, height: f32) {
     draw_mesh(&mesh);
 }
 
+pub fn draw_figure(piece: &Piece) {
+    let coord_00: Vec3 = (piece.pos + Coord::new_f(0.0, 0.5)).to_vec3(0.0);
+    let coord_10 = coord_00 + vec3(1.0, 0.0, 0.0);
+    let coord_01 = coord_00 + vec3(0.0, 2.0, 0.0);
+    let coord_11 = coord_00 + vec3(1.0, 2.0, 0.0);
+    let mesh = to_mesh([coord_00, coord_10, coord_01, coord_11], PINK);
+    draw_mesh(&mesh);
+}
 pub fn to_mesh(corners: [Vec3; 4], color: Color) -> Mesh {
     let coords = corners.to_vec();
     let mut vertices = Vec::new();

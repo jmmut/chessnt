@@ -1,4 +1,4 @@
-use crate::board::Board;
+use chessnt::board::Board;
 use chessnt::coord::Coord;
 use chessnt::theme::Theme;
 use chessnt::ui::{below_left, render_text};
@@ -16,8 +16,6 @@ use macroquad::prelude::{
     clear_background, next_frame, screen_height, screen_width, Conf, LIGHTGRAY,
 };
 
-mod board;
-
 #[macroquad::main(window_conf)]
 async fn main() {
     if let Err(e) = fallible_main().await {
@@ -31,7 +29,7 @@ async fn fallible_main() -> AnyResult<()> {
     let font =
         load_ttf_font_from_bytes(include_bytes!("../assets/fonts/TitilliumWeb-SemiBold.ttf"))?;
     theme.set_font(font);
-    let mut board = Board::new(Coord::new_i(4, 4), Coord::new_i(COLUMNS, ROWS));
+    let mut board = Board::new_chess(Coord::new_i(4, 4), Coord::new_i(COLUMNS, ROWS));
     let mut dev_ui = true;
     let mut last_frame = now();
     let mut frame_count = 0;

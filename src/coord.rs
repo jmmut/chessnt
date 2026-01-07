@@ -1,6 +1,6 @@
 use crate::{COLUMNS, ROWS};
 use macroquad::math::{f32, vec2, vec3, IVec2, Vec2, Vec3};
-use std::ops::{Add, AddAssign, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Coord {
@@ -112,5 +112,28 @@ impl SubAssign<Coord> for Coord {
     fn sub_assign(&mut self, other: Coord) {
         self.column -= other.column;
         self.row -= other.row;
+    }
+}
+impl Mul<Coord> for Coord {
+    type Output = Coord;
+
+    fn mul(mut self, other: Coord) -> Self::Output {
+        self *= other;
+        self
+    }
+}
+impl Mul<f32> for Coord {
+    type Output = Coord;
+
+    fn mul(mut self, other: f32) -> Self::Output {
+        self.column *= other;
+        self.row *= other;
+        self
+    }
+}
+impl MulAssign<Coord> for Coord {
+    fn mul_assign(&mut self, other: Coord) {
+        self.column *= other.column;
+        self.row *= other.row;
     }
 }
