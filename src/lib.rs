@@ -13,6 +13,8 @@ pub const DEFAULT_WINDOW_WIDTH: i32 = 992;
 pub const DEFAULT_WINDOW_HEIGHT: i32 = width_to_height_default(DEFAULT_WINDOW_WIDTH as f32) as i32;
 pub const DEFAULT_WINDOW_TITLE: &str = "Chessn't!";
 
+pub const FPS_AVERAGE_FRAMES: i32 = 6;
+
 pub type AnyError = Box<dyn std::error::Error>;
 pub type AnyResult<T> = Result<T, AnyError>;
 
