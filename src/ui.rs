@@ -1,13 +1,23 @@
 use crate::theme::Theme;
-use juquad::widgets::text::draw_text;
+use juquad::draw::draw_rect;
+use juquad::widgets::anchor::{Anchor, Horizontal};
+use juquad::widgets::text::TextRect;
+use juquad::widgets::Widget;
+use macroquad::math::Rect;
 
-pub fn render_text(text: &str, x: f32, y: f32, theme: &Theme) {
-    draw_text(
+pub fn render_text(text: &str, anchor: Anchor, theme: &Theme) -> Rect {
+    let t = TextRect::new_generic(
         text,
-        x,
-        y + theme.font_size(),
+        anchor,
         theme.font_size(),
-        &theme.coloring().at_rest,
         Some(theme.font()),
-    )
+        macroquad::prelude::measure_text,
+    );
+    draw_rect(t.rect(), theme.coloring().at_rest.bg_color);
+    t.render_default(&theme.coloring().at_rest);
+    t.rect()
+}
+
+pub fn below_left(rect: Rect) -> Anchor {
+    Anchor::below(rect, Horizontal::Left, 0.0)
 }

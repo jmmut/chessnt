@@ -1,5 +1,5 @@
 use crate::{COLUMNS, ROWS};
-use macroquad::math::{f32, vec2, vec3, IVec2, Rect, Vec2, Vec3};
+use macroquad::math::{f32, vec2, vec3, IVec2, Vec2, Vec3};
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 
 #[derive(Copy, Clone, Debug, PartialEq)]

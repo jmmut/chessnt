@@ -2,7 +2,6 @@ use crate::{
     height_to_width, DEFAULT_ASPECT_RATIO, DEFAULT_FONT_SIZE, DEFAULT_WINDOW_HEIGHT,
     DEFAULT_WINDOW_WIDTH,
 };
-use juquad::widgets::from_hexes;
 use macroquad::color::Color;
 use macroquad::color_u8;
 use macroquad::prelude::{Font, Vec2};
