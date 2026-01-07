@@ -143,3 +143,10 @@ impl MulAssign<Coord> for Coord {
         self.row *= other.row;
     }
 }
+impl MulAssign<f32> for Coord {
+    fn mul_assign(&mut self, other: f32) {
+        self.column *= other;
+        self.row *= other;
+    }
+}
+

@@ -9,7 +9,7 @@ use chessnt::{
 use juquad::widgets::anchor::Anchor;
 use macroquad::camera::{set_camera, set_default_camera, Camera3D};
 use macroquad::input::{is_key_down, is_key_pressed, KeyCode};
-use macroquad::math::{vec2, vec3};
+use macroquad::math::{vec2, vec3, Vec2};
 use macroquad::miniquad::date::now;
 use macroquad::prelude::{load_texture, load_ttf_font_from_bytes};
 use macroquad::prelude::{
@@ -40,7 +40,7 @@ async fn fallible_main() -> AnyResult<()> {
         theme.update_screen_size(screen);
 
         set_camera(&Camera3D {
-            position: vec3(0.0, 7.0, 7.0),
+            position: vec3(0.0, 6.0, 8.0),
             up: vec3(0.0, 1.0, 0.0),
             target: vec3(0.0, 0.0, 0.0),
             ..Default::default()
@@ -104,17 +104,24 @@ async fn fallible_main() -> AnyResult<()> {
 
 fn move_cursor_or_piece(board: &mut Board) {
     if board.selected() {
+        let mut delta = Coord::new_f(0.0, 0.0);
+        let max = 0.1;
         if is_key_down(KeyCode::Right) {
-            board.move_cursor_rel(Coord::new_f(0.1, 0.0));
+            delta += Coord::new_f(0.1, 0.0);
         }
         if is_key_down(KeyCode::Left) {
-            board.move_cursor_rel(Coord::new_f(-0.1, 0.0));
+            delta += Coord::new_f(-0.1, 0.0);
         }
         if is_key_down(KeyCode::Up) {
-            board.move_cursor_rel(Coord::new_f(0.0, -0.1));
+            delta += Coord::new_f(0.0, -0.1);
         }
         if is_key_down(KeyCode::Down) {
-            board.move_cursor_rel(Coord::new_f(0.0, 0.1));
+            delta += Coord::new_f(0.0, 0.1);
+        }
+        if delta != Coord::new_i(0,0) {
+            delta = delta.into::<Vec2>().normalize().into();
+            delta *= max;
+            board.move_cursor_rel(delta);
         }
     } else {
         if is_key_pressed(KeyCode::Right) {
