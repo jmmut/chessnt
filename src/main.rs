@@ -1,6 +1,6 @@
 use chessnt::board::Board;
 use chessnt::coord::Coord;
-use chessnt::theme::{Textures, Theme};
+use chessnt::theme::{Fonts, Textures, Theme};
 use chessnt::ui::{below_left, render_text, SCALE};
 use chessnt::{
     AnyResult, COLUMNS, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_TITLE, DEFAULT_WINDOW_WIDTH,
@@ -11,7 +11,7 @@ use macroquad::camera::{set_camera, set_default_camera, Camera3D};
 use macroquad::input::{is_key_down, is_key_pressed, KeyCode};
 use macroquad::math::{vec2, vec3, Vec2};
 use macroquad::miniquad::date::now;
-use macroquad::prelude::{load_texture, load_ttf_font_from_bytes};
+use macroquad::prelude::{load_texture, load_ttf_font, load_ttf_font_from_bytes};
 use macroquad::prelude::{
     clear_background, next_frame, screen_height, screen_width, Conf, LIGHTGRAY,
 };
@@ -24,12 +24,13 @@ async fn main() {
 }
 
 async fn fallible_main() -> AnyResult<()> {
-    let character = load_texture("assets/images/ph_chara.png").await?;
-    let mut theme_owned = Theme::new(Textures {placeholder: character});
+    let textures = Textures { placeholder: load_texture("assets/images/ph_chara.png").await? };
+    let fonts = Fonts {
+        titles: load_ttf_font("assets/fonts/LilitaOne-Regular.ttf").await?,
+        text: load_ttf_font("assets/fonts/TitilliumWeb-SemiBold.ttf").await?,
+    };
+    let mut theme_owned = Theme::new(textures, fonts);
     let theme = &mut theme_owned;
-    let font =
-        load_ttf_font_from_bytes(include_bytes!("../assets/fonts/TitilliumWeb-SemiBold.ttf"))?;
-    theme.set_font(font);
     let mut board = Board::new_chess(Coord::new_i(4, 4), Coord::new_i(COLUMNS, ROWS));
     let mut dev_ui = true;
     let mut last_frame = now();
@@ -105,7 +106,7 @@ async fn fallible_main() -> AnyResult<()> {
 fn move_cursor_or_piece(board: &mut Board) {
     if board.selected() {
         let mut delta = Coord::new_f(0.0, 0.0);
-        let max = 0.1;
+        let max = 0.05;
         if is_key_down(KeyCode::Right) {
             delta += Coord::new_f(0.1, 0.0);
         }

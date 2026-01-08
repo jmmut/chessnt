@@ -12,13 +12,13 @@ pub struct Theme {
     pub palette: Palette,
     base_font_size: f32,
     font_size: f32,
-    font: Font,
+    fonts: Fonts,
     coloring: Coloring,
     pub textures: Textures,
 }
 
 impl Theme {
-    pub fn new(textures: Textures) -> Self {
+    pub fn new(textures: Textures, fonts: Fonts) -> Self {
         Self {
             palette: Palette::default(),
             base_font_size: DEFAULT_FONT_SIZE,
@@ -27,7 +27,7 @@ impl Theme {
                 DEFAULT_WINDOW_HEIGHT as f32,
                 DEFAULT_FONT_SIZE,
             ),
-            font: Font::default(),
+            fonts,
             coloring: Coloring::default(),
             textures,
         }
@@ -35,14 +35,17 @@ impl Theme {
     pub fn update_screen_size(&mut self, screen: Vec2) {
         self.font_size = choose_scale(screen.x, screen.y, self.base_font_size);
     }
-    pub fn set_font(&mut self, font: Font) {
-        self.font = font;
-    }
     pub fn font(&self) -> Font {
-        self.font
+        self.fonts.text
+    }
+    pub fn font_title(&self) -> Font {
+        self.fonts.titles
     }
     pub fn font_size(&self) -> f32 {
         self.font_size
+    }
+    pub fn font_size_title(&self) -> f32 {
+        self.font_size * 1.5
     }
     pub fn coloring(&self) -> Coloring {
         self.coloring
@@ -77,7 +80,15 @@ const fn choose_scale(width: f32, height: f32, font_size: f32) -> f32 {
             2.0
         }
 }
-
+pub struct Fonts {
+    pub titles: Font,
+    pub text: Font,
+}
+impl Fonts {
+    pub fn new(titles: Font, text: Font) -> Self {
+        Self { titles, text }
+    }
+}
 pub const fn from_hex(hex: u32) -> Color {
     color_u8!(hex / 0x10000, hex / 0x100 % 0x100, hex % 0x100, 255)
 }
