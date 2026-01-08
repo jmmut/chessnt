@@ -6,6 +6,7 @@ use crate::{set_3d_camera, TRANSPARENT};
 use juquad::widgets::anchor::Anchor;
 use macroquad::camera::set_default_camera;
 use macroquad::color::{Color, DARKBLUE, DARKGREEN, WHITE};
+use macroquad::math::{vec2, Vec2};
 use macroquad::models::{draw_mesh, Mesh};
 
 const SELECTION: Color = color_average(DARKBLUE, TRANSPARENT);
@@ -47,6 +48,7 @@ pub struct Board {
     selected: Option<(usize, Coord)>,
     size: Coord,
     pieces: Vec<Piece>,
+    pub piece_size: Vec2,
 }
 
 impl Board {
@@ -56,6 +58,7 @@ impl Board {
             selected: None,
             size,
             pieces,
+            piece_size: vec2(0.3, 1.0),
         }
     }
     pub fn new_chess(cursor: Coord, size: Coord) -> Self {
@@ -164,6 +167,7 @@ impl Board {
                 piece,
                 WHITE,
                 theme.textures.placeholder,
+                self.piece_size,
             ));
             // meshes.push(render_text_3d(
             //     &moves_to_string(&piece.moveset),
@@ -183,7 +187,7 @@ impl Board {
                     theme,
                     theme.font_title(),
                 );
-                set_3d_camera();
+                set_3d_camera(theme);
             }
         }
 

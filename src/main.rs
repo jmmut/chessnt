@@ -1,12 +1,14 @@
+use juquad::lazy::{Interactable, Renderable, Style, WidgetTrait};
 use chessnt::board::Board;
 use chessnt::coord::Coord;
 use chessnt::theme::{Fonts, Textures, Theme};
-use chessnt::ui::{below_left, render_text, SCALE};
+use chessnt::ui::{below_left, render_text, rightwards, SCALE};
 use chessnt::{
     set_3d_camera, AnyResult, COLUMNS, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_TITLE,
     DEFAULT_WINDOW_WIDTH, FPS_AVERAGE_FRAMES, ROWS,
 };
 use juquad::widgets::anchor::Anchor;
+use juquad::widgets::Interaction;
 use macroquad::camera::set_default_camera;
 use macroquad::input::{is_key_down, is_key_pressed, KeyCode};
 use macroquad::math::{vec2, Vec2};
@@ -34,7 +36,7 @@ async fn fallible_main() -> AnyResult<()> {
     let mut theme_owned = Theme::new(textures, fonts);
     let theme = &mut theme_owned;
     let mut board = Board::new_chess(Coord::new_i(4, 4), Coord::new_i(COLUMNS, ROWS));
-    let mut dev_ui = false;
+    let mut dev_ui = true;
     let mut last_frame = now();
     let mut frame_count = 0;
     let mut measured_fps = 0.0;
@@ -42,7 +44,7 @@ async fn fallible_main() -> AnyResult<()> {
         let screen = vec2(screen_width(), screen_height());
         theme.update_screen_size(screen);
 
-        set_3d_camera();
+        set_3d_camera(theme);
 
         if is_key_pressed(KeyCode::Escape) {
             return Ok(());
@@ -77,7 +79,7 @@ async fn fallible_main() -> AnyResult<()> {
 
         set_default_camera();
         if dev_ui {
-            draw_dev_ui(theme, &mut last_frame, &mut frame_count, &mut measured_fps);
+            draw_dev_ui(theme, &mut last_frame, &mut frame_count, &mut measured_fps, &mut board);
         }
 
         next_frame().await
@@ -89,6 +91,7 @@ fn draw_dev_ui(
     last_frame: &mut f64,
     frame_count: &mut i32,
     measured_fps: &mut f64,
+    board: &mut Board,
 ) {
     *frame_count = (*frame_count + 1) % (1000 * FPS_AVERAGE_FRAMES);
     if *frame_count % FPS_AVERAGE_FRAMES == 0 {
@@ -96,14 +99,28 @@ fn draw_dev_ui(
         *measured_fps = 1.0 / (current_frame - *last_frame) * FPS_AVERAGE_FRAMES as f64;
         *last_frame = current_frame;
     }
-    let rect = render_text("DEV UI", Anchor::top_left(0.0, 0.0), theme);
-    let text = "You can move the green cursor with your keyboard arrows";
-    let rect = render_text(text, below_left(rect), theme);
-    let rect = render_text("Toggle dev UI with '/'", below_left(rect), theme);
-    let text = format!("FPS: {:.1}", measured_fps);
-    let _rect = render_text(&text, below_left(rect), theme);
+    let _rect = render_text("DEV UI", Anchor::top_left(0.0, 0.0), theme);
+    // let text = "You can move the green cursor with your keyboard arrows";
+    // let rect = render_text(text, below_left(rect), theme);
+    // let rect = render_text("Toggle dev UI with '/'", below_left(rect), theme);
+    // let text = format!("FPS: {:.1}", measured_fps);
+    // let _rect = render_text(&text, below_left(rect), theme);
     // let text = format!("scale: {}", unsafe { SCALE });
     // let _rect = render_text(&text, below_left(_rect), theme);
+    
+    let _rect = render_text(&format!("Texture size X: {:.2}", board.piece_size.x), below_left(_rect), theme);
+    let mut slider = juquad::lazy::slider::Slider::new(Style::default(), 0.1, 2.0, board.piece_size.x);
+    slider.set_pos(rightwards(_rect).get_top_left_pixel(slider.size()));
+    board.piece_size.x = *(slider.interact().into_iter().next().unwrap().downcast::<f32>().unwrap());
+    slider.render_interactive(Interaction::None);
+    
+    let _rect = render_text(&format!("Texture size Y: {:.2}", board.piece_size.y), below_left(_rect), theme);
+    let mut slider = juquad::lazy::slider::Slider::new(Style::default(), 0.1, 2.0, board.piece_size.y);
+    slider.set_pos(rightwards(_rect).get_top_left_pixel(slider.size()));
+    board.piece_size.y = *(slider.interact().into_iter().next().unwrap().downcast::<f32>().unwrap());
+    slider.render_interactive(Interaction::None);
+    
+    
 }
 
 fn move_cursor_or_piece(board: &mut Board) {

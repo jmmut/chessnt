@@ -1,7 +1,7 @@
 use crate::board::Piece;
 use crate::coord::Coord;
 use macroquad::color::Color;
-use macroquad::math::{vec2, vec3, Vec3};
+use macroquad::math::{vec2, vec3, Vec2, Vec3};
 use macroquad::models::{Mesh, Vertex};
 use macroquad::prelude::Texture2D;
 
@@ -36,20 +36,20 @@ pub fn mesh_cursor(coord: Coord, color: Color, height: f32) -> Vec<Mesh> {
 //     let coord_00 = (piece.pos + Coord::new_f(0.0, 0.5)).to_vec3(0.0);
 //     mesh_vertical_texture(coord_00, 2.0, color, None)
 // }
-pub fn mesh_figure_texture(piece: &Piece, color: Color, texture: Texture2D) -> Mesh {
-    let coord_00 = (piece.pos + Coord::new_f(0.0, 0.5)).to_vec3(0.0);
-    mesh_vertical_texture(coord_00, 2.0, color, Some(texture), piece.white)
+pub fn mesh_figure_texture(piece: &Piece, color: Color, texture: Texture2D, size: Vec2) -> Mesh {
+    let coord_00 = (piece.pos + Coord::new_f(0.5 - size.x*0.5, 0.5)).to_vec3(0.0);
+    mesh_vertical_texture(coord_00, color, Some(texture), piece.white, size)
 }
 pub fn mesh_vertical_texture(
     coord_00: Vec3,
-    height: f32,
     color: Color,
     texture: Option<Texture2D>,
     flip_horiz: bool,
+    size: Vec2,
 ) -> Mesh {
-    let coord_10 = coord_00 + vec3(1.0, 0.0, 0.0);
-    let coord_01 = coord_00 + vec3(0.0, height, 0.0);
-    let coord_11 = coord_00 + vec3(1.0, height, 0.0);
+    let coord_10 = coord_00 + vec3(size.x, 0.0, 0.0);
+    let coord_01 = coord_00 + vec3(0.0, size.y, 0.0);
+    let coord_11 = coord_00 + vec3(size.x, size.y, 0.0);
     let mesh = to_mesh_texture(
         [coord_00, coord_10, coord_01, coord_11],
         color,

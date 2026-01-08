@@ -1,6 +1,6 @@
 use crate::theme::Theme;
 use juquad::draw::draw_rect;
-use juquad::widgets::anchor::{Anchor, Horizontal};
+use juquad::widgets::anchor::{Anchor, Horizontal, Vertical};
 use juquad::widgets::text::TextRect;
 use juquad::widgets::{StateStyle, Widget};
 use macroquad::math::Rect;
@@ -76,6 +76,9 @@ pub fn render_text_3d(text: &str, anchor: Anchor, z: f32, theme: &Theme) -> Mesh
 */
 pub fn below_left(rect: Rect) -> Anchor {
     Anchor::below(rect, Horizontal::Left, 0.0)
+}
+pub fn rightwards(rect: Rect) -> Anchor {
+    Anchor::rightwards(rect, Vertical::Center, 0.0)
 }
 pub fn draw_text(
     text: &str,
