@@ -1,8 +1,8 @@
 use crate::board::Piece;
 use crate::coord::Coord;
-use macroquad::color::{Color, PINK};
+use macroquad::color::Color;
 use macroquad::math::{vec2, vec3, Vec3};
-use macroquad::models::{draw_mesh, Mesh, Vertex};
+use macroquad::models::{Mesh, Vertex};
 use macroquad::prelude::Texture2D;
 
 pub fn mesh_coord(coord: Coord, color: Color) -> Mesh {

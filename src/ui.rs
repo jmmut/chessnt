@@ -5,13 +5,10 @@ use juquad::draw::draw_rect;
 use juquad::widgets::anchor::{Anchor, Horizontal};
 use juquad::widgets::text::TextRect;
 use juquad::widgets::{StateStyle, Widget};
-use macroquad::camera::{
-    pop_camera_state, push_camera_state, set_camera, set_default_camera, Camera2D,
-};
+use macroquad::camera::{pop_camera_state, push_camera_state, set_camera, Camera2D};
 use macroquad::color::{BLACK, GRAY, WHITE};
-use macroquad::input::{is_key_pressed, KeyCode};
-use macroquad::math::{vec2, vec3, Rect, Vec2};
-use macroquad::models::{draw_mesh, Mesh};
+use macroquad::math::{vec2, Rect};
+use macroquad::models::Mesh;
 use macroquad::prelude::{clear_background, measure_text, Font, TextParams};
 
 pub fn render_text(text: &str, anchor: Anchor, theme: &Theme) -> Rect {

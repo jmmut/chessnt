@@ -149,4 +149,3 @@ impl MulAssign<f32> for Coord {
         self.row *= other;
     }
 }
-

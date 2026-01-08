@@ -1,10 +1,7 @@
 use crate::coord::Coord;
-use crate::render::{mesh_coord, mesh_coord_h, mesh_cursor, mesh_figure, mesh_figure_texture};
+use crate::render::{mesh_coord, mesh_cursor, mesh_figure_texture};
 use crate::theme::{color_average, Theme};
-use crate::ui::{render_text, render_text_3d};
 use crate::TRANSPARENT;
-use juquad::widgets::anchor::Anchor;
-use macroquad::camera::set_default_camera;
 use macroquad::color::{Color, DARKBLUE, DARKGREEN, PINK, WHITE};
 use macroquad::models::{draw_mesh, Mesh};
 
@@ -124,7 +121,11 @@ impl Board {
         }
 
         for piece in &self.pieces {
-            meshes.push(mesh_figure_texture(piece, WHITE, theme.textures.placeholder));
+            meshes.push(mesh_figure_texture(
+                piece,
+                WHITE,
+                theme.textures.placeholder,
+            ));
             // meshes.push(render_text_3d(
             //     &moves_to_string(&piece.moveset),
             //     Anchor::bottom_left(piece.pos.column, 2.0),

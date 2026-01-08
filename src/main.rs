@@ -11,10 +11,10 @@ use macroquad::camera::{set_camera, set_default_camera, Camera3D};
 use macroquad::input::{is_key_down, is_key_pressed, KeyCode};
 use macroquad::math::{vec2, vec3, Vec2};
 use macroquad::miniquad::date::now;
-use macroquad::prelude::{load_texture, load_ttf_font, load_ttf_font_from_bytes};
 use macroquad::prelude::{
     clear_background, next_frame, screen_height, screen_width, Conf, LIGHTGRAY,
 };
+use macroquad::prelude::{load_texture, load_ttf_font};
 
 #[macroquad::main(window_conf)]
 async fn main() {
@@ -24,7 +24,9 @@ async fn main() {
 }
 
 async fn fallible_main() -> AnyResult<()> {
-    let textures = Textures { placeholder: load_texture("assets/images/ph_chara.png").await? };
+    let textures = Textures {
+        placeholder: load_texture("assets/images/ph_chara.png").await?,
+    };
     let fonts = Fonts {
         titles: load_ttf_font("assets/fonts/LilitaOne-Regular.ttf").await?,
         text: load_ttf_font("assets/fonts/TitilliumWeb-SemiBold.ttf").await?,
@@ -80,27 +82,33 @@ async fn fallible_main() -> AnyResult<()> {
 
         set_default_camera();
         if dev_ui {
-            frame_count = (frame_count + 1) % (1000 * FPS_AVERAGE_FRAMES);
-            if frame_count % FPS_AVERAGE_FRAMES == 0 {
-                let current_frame = now();
-                measured_fps = 1.0 / (current_frame - last_frame) * FPS_AVERAGE_FRAMES as f64;
-                last_frame = current_frame;
-            }
-            let rect = render_text("DEV UI", Anchor::top_left(0.0, 0.0), theme);
-            let text = "You can move the green cursor with your keyboard arrows";
-            let rect = render_text(text, below_left(rect), theme);
-            let rect = render_text("Toggle dev UI with '/'", below_left(rect), theme);
-            let text = format!("FPS: {:.1}", measured_fps);
-            let rect = render_text(&text, below_left(rect), theme);
-            let rect = render_text(
-                &format!("scale: {}", unsafe { SCALE }),
-                below_left(rect),
-                theme,
-            );
+            draw_dev_ui(theme, &mut last_frame, &mut frame_count, &mut measured_fps);
         }
 
         next_frame().await
     }
+}
+
+fn draw_dev_ui(
+    theme: &mut Theme,
+    last_frame: &mut f64,
+    frame_count: &mut i32,
+    measured_fps: &mut f64,
+) {
+    *frame_count = (*frame_count + 1) % (1000 * FPS_AVERAGE_FRAMES);
+    if *frame_count % FPS_AVERAGE_FRAMES == 0 {
+        let current_frame = now();
+        *measured_fps = 1.0 / (current_frame - *last_frame) * FPS_AVERAGE_FRAMES as f64;
+        *last_frame = current_frame;
+    }
+    let rect = render_text("DEV UI", Anchor::top_left(0.0, 0.0), theme);
+    let text = "You can move the green cursor with your keyboard arrows";
+    let rect = render_text(text, below_left(rect), theme);
+    let rect = render_text("Toggle dev UI with '/'", below_left(rect), theme);
+    let text = format!("FPS: {:.1}", measured_fps);
+    let _rect = render_text(&text, below_left(rect), theme);
+    // let text = format!("scale: {}", unsafe { SCALE });
+    // let _rect = render_text(&text, below_left(_rect), theme);
 }
 
 fn move_cursor_or_piece(board: &mut Board) {
@@ -119,7 +127,7 @@ fn move_cursor_or_piece(board: &mut Board) {
         if is_key_down(KeyCode::Down) {
             delta += Coord::new_f(0.0, 0.1);
         }
-        if delta != Coord::new_i(0,0) {
+        if delta != Coord::new_i(0, 0) {
             delta = delta.into::<Vec2>().normalize().into();
             delta *= max;
             board.move_cursor_rel(delta);
