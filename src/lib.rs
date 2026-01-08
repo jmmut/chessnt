@@ -1,7 +1,7 @@
+use crate::theme::Theme;
 use macroquad::camera::{set_camera, Camera3D};
 use macroquad::color::Color;
 use macroquad::math::vec3;
-use crate::theme::Theme;
 
 pub mod board;
 pub mod coord;
@@ -41,9 +41,10 @@ pub const fn height_to_width(height: f32, aspect_ratio: f32) -> f32 {
 
 pub fn set_3d_camera(theme: &Theme) {
     set_camera(&Camera3D {
-        position: vec3(0.0, 6.0, 8.0),
+        position: vec3(0.0, theme.camera.y, theme.camera.z),
         up: vec3(0.0, 1.0, 0.0),
         target: vec3(0.0, 0.0, 0.0),
+        fovy: theme.camera.fovy,
         ..Default::default()
     });
 }

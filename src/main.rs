@@ -1,4 +1,3 @@
-use juquad::lazy::{Interactable, Renderable, Style, WidgetTrait};
 use chessnt::board::Board;
 use chessnt::coord::Coord;
 use chessnt::theme::{Fonts, Textures, Theme};
@@ -7,11 +6,12 @@ use chessnt::{
     set_3d_camera, AnyResult, COLUMNS, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_TITLE,
     DEFAULT_WINDOW_WIDTH, FPS_AVERAGE_FRAMES, ROWS,
 };
+use juquad::lazy::{Interactable, Renderable, Style, WidgetTrait};
 use juquad::widgets::anchor::Anchor;
 use juquad::widgets::Interaction;
 use macroquad::camera::set_default_camera;
 use macroquad::input::{is_key_down, is_key_pressed, KeyCode};
-use macroquad::math::{vec2, Vec2};
+use macroquad::math::{vec2, Rect, Vec2};
 use macroquad::miniquad::date::now;
 use macroquad::prelude::{
     clear_background, next_frame, screen_height, screen_width, Conf, LIGHTGRAY,
@@ -79,7 +79,13 @@ async fn fallible_main() -> AnyResult<()> {
 
         set_default_camera();
         if dev_ui {
-            draw_dev_ui(theme, &mut last_frame, &mut frame_count, &mut measured_fps, &mut board);
+            draw_dev_ui(
+                theme,
+                &mut last_frame,
+                &mut frame_count,
+                &mut measured_fps,
+                &mut board,
+            );
         }
 
         next_frame().await
@@ -107,20 +113,65 @@ fn draw_dev_ui(
     // let _rect = render_text(&text, below_left(rect), theme);
     // let text = format!("scale: {}", unsafe { SCALE });
     // let _rect = render_text(&text, below_left(_rect), theme);
-    
-    let _rect = render_text(&format!("Texture size X: {:.2}", board.piece_size.x), below_left(_rect), theme);
-    let mut slider = juquad::lazy::slider::Slider::new(Style::default(), 0.1, 2.0, board.piece_size.x);
-    slider.set_pos(rightwards(_rect).get_top_left_pixel(slider.size()));
-    board.piece_size.x = *(slider.interact().into_iter().next().unwrap().downcast::<f32>().unwrap());
+
+    let _rect = render_slider(
+        "Texture size X",
+        _rect,
+        theme,
+        &mut board.piece_size.x,
+        0.1,
+        2.0,
+    );
+    let _rect = render_slider(
+        "Texture size Y",
+        _rect,
+        theme,
+        &mut board.piece_size.y,
+        0.1,
+        2.0,
+    );
+    let mut value = theme.camera.y;
+    let _rect = render_slider("Camera Y", _rect, theme, &mut value, 0.0, 100.0);
+    theme.camera.y = value;
+    let mut value = theme.camera.z;
+    let _rect = render_slider("Camera Z", _rect, theme, &mut value, 0.0, 100.0);
+    theme.camera.z = value;
+    let mut value = theme.camera.fovy;
+    let _rect = render_slider(
+        "Camera Width (degrees)",
+        _rect,
+        theme,
+        &mut value,
+        40.0,
+        50.0,
+    );
+    theme.camera.fovy = value;
+}
+
+fn render_slider(
+    text: &str,
+    rect: Rect,
+    theme: &Theme,
+    value: &mut f32,
+    min: f32,
+    max: f32,
+) -> Rect {
+    let new_rect = render_text(
+        &format!("{}: {:0>5.2}", text, value),
+        below_left(rect),
+        theme,
+    );
+    let mut slider = juquad::lazy::slider::Slider::new(Style::default(), min, max, *value);
+    slider.set_pos(rightwards(new_rect).get_top_left_pixel(slider.size()));
+    *value = *(slider
+        .interact()
+        .into_iter()
+        .next()
+        .unwrap()
+        .downcast::<f32>()
+        .unwrap());
     slider.render_interactive(Interaction::None);
-    
-    let _rect = render_text(&format!("Texture size Y: {:.2}", board.piece_size.y), below_left(_rect), theme);
-    let mut slider = juquad::lazy::slider::Slider::new(Style::default(), 0.1, 2.0, board.piece_size.y);
-    slider.set_pos(rightwards(_rect).get_top_left_pixel(slider.size()));
-    board.piece_size.y = *(slider.interact().into_iter().next().unwrap().downcast::<f32>().unwrap());
-    slider.render_interactive(Interaction::None);
-    
-    
+    new_rect
 }
 
 fn move_cursor_or_piece(board: &mut Board) {
