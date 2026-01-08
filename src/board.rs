@@ -11,6 +11,7 @@ const FIGURE: Color = color_average(PINK, TRANSPARENT);
 const SELECTION_HEIGHT: f32 = 0.2;
 const CURSOR_HEIGHT: f32 = 0.3;
 
+#[derive(Clone)]
 pub struct Piece {
     pub pos: Coord,
     pub moveset: Moveset,
@@ -40,7 +41,7 @@ pub enum Move {
 
 pub struct Board {
     cursor: Coord,
-    selected: Option<Coord>,
+    selected: Option<(usize, Coord)>,
     size: Coord,
     pieces: Vec<Piece>,
 }
@@ -63,31 +64,55 @@ impl Board {
         ];
         Self::new(cursor, size, pieces)
     }
-
+    fn get_selected_piece(&self) -> Option<&Piece> {
+        if let Some((index, _)) = self.selected {
+            self.pieces.get(index)
+        } else {
+            None
+        }
+    }
+    fn get_selected_piece_and_pos(&self) -> Option<(&Piece, Coord)> {
+        if let Some((index, initial_pos)) = self.selected {
+            Some((self.pieces.get(index).unwrap(), initial_pos))
+        } else {
+            None
+        }
+    }
+    fn get_selected_piece_mut(&mut self) -> Option<&mut Piece> {
+        if let Some((index, _)) = self.selected {
+            self.pieces.get_mut(index)
+        } else {
+            None
+        }
+    }
     pub fn move_cursor_rel(&mut self, delta: Coord) {
-        if self.selected.is_some() {
-            for piece in &mut self.pieces {
-                if piece.pos == self.cursor {
-                    piece.pos += delta;
-                }
-            }
+        if let Some(piece) = self.get_selected_piece_mut() {
+            piece.pos += delta;
         }
         self.cursor += delta;
     }
     pub fn select(&mut self) {
-        let rounded_cursor = self.cursor.round();
-        let new_selection = rounded_cursor;
-        if let Some(old_selection) = self.selected {
-            for piece in &mut self.pieces {
-                if piece.pos == old_selection {
-                    piece.pos = new_selection;
-                    self.selected = None;
+        let new_selection = self.cursor.round();
+        if let Some((_index, _initial)) = self.selected {
+            panic!("can't select if there's something already selected");
+            // TODO: swap pieces?
+            // let 
+            // 
+            // for piece in &mut self.pieces {
+            //     if piece.pos == old_selection {
+            //         piece.pos = new_selection;
+            //         self.selected = None;
+            //         return;
+            //     }
+            // }
+            // self.selected = Some(new_selection)
+        } else {
+            for (i, piece) in self.pieces.iter().enumerate() {
+                if piece.pos == new_selection {
+                    self.selected = Some((i, piece.pos));
                     return;
                 }
             }
-            self.selected = Some(rounded_cursor)
-        } else {
-            self.selected = Some(rounded_cursor)
         }
     }
     pub fn deselect(&mut self) {
@@ -114,8 +139,8 @@ impl Board {
                 draw_mesh(&mesh_coord(Coord::new_i(column, row), color));
             }
         }
-        if let Some(selected) = self.selected {
-            meshes.extend(mesh_cursor(selected, SELECTION, SELECTION_HEIGHT));
+        if let Some(selected) = self.get_selected_piece() {
+            // meshes.extend(mesh_cursor(selected.pos, SELECTION, SELECTION_HEIGHT));
         } else {
             meshes.extend(mesh_cursor(self.cursor, CURSOR, CURSOR_HEIGHT));
         }
@@ -132,12 +157,13 @@ impl Board {
             //     piece.pos.row,
             //     theme,
             // ));
-            if let Some(selected) = self.selected {
-                if selected == piece.pos {
-                    for movement in possible_moves(self.size, piece) {
-                        meshes.extend(mesh_cursor(movement, SELECTION, SELECTION_HEIGHT))
-                    }
-                }
+        }
+
+        if let Some((piece, initial_pos)) = self.get_selected_piece_and_pos() {
+            let mut ghost = piece.clone();
+            ghost.pos = initial_pos;
+            for movement in possible_moves(self.size, &ghost) {
+                meshes.extend(mesh_cursor(movement, SELECTION, SELECTION_HEIGHT))
             }
         }
         meshes.sort_by(|a, b| depth(a).total_cmp(&depth(b)));

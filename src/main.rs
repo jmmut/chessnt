@@ -34,7 +34,7 @@ async fn fallible_main() -> AnyResult<()> {
     let mut theme_owned = Theme::new(textures, fonts);
     let theme = &mut theme_owned;
     let mut board = Board::new_chess(Coord::new_i(4, 4), Coord::new_i(COLUMNS, ROWS));
-    let mut dev_ui = true;
+    let mut dev_ui = false;
     let mut last_frame = now();
     let mut frame_count = 0;
     let mut measured_fps = 0.0;
