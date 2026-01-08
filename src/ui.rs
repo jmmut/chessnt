@@ -7,11 +7,14 @@ use macroquad::math::Rect;
 use macroquad::prelude::{Font, TextParams};
 
 pub fn render_text(text: &str, anchor: Anchor, theme: &Theme) -> Rect {
+    render_text_font(text, anchor, theme, theme.font())
+}
+pub fn render_text_font(text: &str, anchor: Anchor, theme: &Theme, font: Font) -> Rect {
     let t = TextRect::new_generic(
         text,
         anchor,
         theme.font_size(),
-        Some(theme.font()),
+        Some(font),
         macroquad::prelude::measure_text,
     );
     draw_rect(t.rect(), theme.coloring().at_rest.bg_color);

@@ -1,7 +1,7 @@
 use crate::coord::Coord;
 use crate::render::{mesh_coord, mesh_cursor, mesh_figure_texture};
 use crate::theme::{color_average, Theme};
-use crate::ui::render_text;
+use crate::ui::render_text_font;
 use crate::{set_3d_camera, TRANSPARENT};
 use juquad::widgets::anchor::Anchor;
 use macroquad::camera::set_default_camera;
@@ -61,13 +61,13 @@ impl Board {
     pub fn new_chess(cursor: Coord, size: Coord) -> Self {
         let back_column = vec![
             (0, Move::Rook),
-        (1, Move::Knight),
-        (2, Move::Bishop),
-        (3, Move::Queen),
-        (4, Move::King),
-        (5, Move::Bishop),
-        (6, Move::Knight),
-        (7, Move::Rook),
+            (1, Move::Knight),
+            (2, Move::Bishop),
+            (3, Move::Queen),
+            (4, Move::King),
+            (5, Move::Bishop),
+            (6, Move::Knight),
+            (7, Move::Rook),
         ];
         let mut pieces = Vec::new();
         for (row, movement) in &back_column {
@@ -76,7 +76,7 @@ impl Board {
             pieces.push(Piece::new(Coord::new_i(6, *row), Move::Pawn, true));
             pieces.push(Piece::new(Coord::new_i(1, *row), Move::Pawn, false));
         }
-        
+
         Self::new(cursor, size, pieces)
     }
     fn get_selected_piece(&self) -> Option<&Piece> {
@@ -173,10 +173,15 @@ impl Board {
             // ));
             if piece.pos.round() == self.cursor.round() {
                 set_default_camera();
-                render_text(
-                    &format!("{} {}", if piece.white {"White"} else {"Black"}, moves_to_string(&piece.moveset)),
-                    Anchor::top_right(theme.screen.x, 0.0),
+                render_text_font(
+                    &format!(
+                        "{} {}",
+                        if piece.white { "WHITE" } else { "BLACK" },
+                        moves_to_string(&piece.moveset).to_uppercase()
+                    ),
+                    Anchor::top_left(0.0, 0.0),
                     theme,
+                    theme.font_title(),
                 );
                 set_3d_camera();
             }

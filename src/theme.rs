@@ -6,7 +6,7 @@ use macroquad::color::Color;
 use macroquad::color_u8;
 use macroquad::prelude::{Font, Texture2D, Vec2};
 
-use juquad::widgets::Style as Coloring;
+use juquad::widgets::{StateStyle, Style as Coloring};
 use macroquad::math::vec2;
 
 pub struct Theme {
@@ -31,7 +31,14 @@ impl Theme {
                 DEFAULT_FONT_SIZE,
             ),
             fonts,
-            coloring: Coloring::default(),
+            coloring: Coloring {
+                at_rest: StateStyle {
+                    bg_color: from_hex(0x190e34),
+                    text_color: from_hex(0xfafbf9),
+                    border_color: from_hex(0xfafbf9),
+                },
+                ..Default::default()
+            },
             textures,
         }
     }

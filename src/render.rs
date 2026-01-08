@@ -50,7 +50,12 @@ pub fn mesh_vertical_texture(
     let coord_10 = coord_00 + vec3(1.0, 0.0, 0.0);
     let coord_01 = coord_00 + vec3(0.0, height, 0.0);
     let coord_11 = coord_00 + vec3(1.0, height, 0.0);
-    let mesh = to_mesh_texture([coord_00, coord_10, coord_01, coord_11], color, texture, flip_horiz);
+    let mesh = to_mesh_texture(
+        [coord_00, coord_10, coord_01, coord_11],
+        color,
+        texture,
+        flip_horiz,
+    );
     mesh
 }
 pub fn to_mesh(corners: [Vec3; 4], color: Color) -> Mesh {
@@ -70,12 +75,16 @@ pub fn to_mesh(corners: [Vec3; 4], color: Color) -> Mesh {
         texture: None,
     }
 }
-pub fn to_mesh_texture(corners: [Vec3; 4], color: Color, texture: Option<Texture2D>, flip_horiz: bool) -> Mesh {
+pub fn to_mesh_texture(
+    corners: [Vec3; 4],
+    color: Color,
+    texture: Option<Texture2D>,
+    flip_horiz: bool,
+) -> Mesh {
     let coords = corners.to_vec();
     let mut vertices = Vec::new();
 
     let uvs = if flip_horiz {
-        
         vec![
             vec2(1.0, 1.0),
             vec2(0.0, 1.0),
