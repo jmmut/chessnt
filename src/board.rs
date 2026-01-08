@@ -5,12 +5,12 @@ use crate::ui::render_text;
 use crate::{set_3d_camera, TRANSPARENT};
 use juquad::widgets::anchor::Anchor;
 use macroquad::camera::set_default_camera;
-use macroquad::color::{Color, DARKBLUE, DARKGREEN, PINK, WHITE};
+use macroquad::color::{Color, DARKBLUE, DARKGREEN, WHITE};
 use macroquad::models::{draw_mesh, Mesh};
 
 const SELECTION: Color = color_average(DARKBLUE, TRANSPARENT);
 const CURSOR: Color = color_average(DARKGREEN, TRANSPARENT);
-const FIGURE: Color = color_average(PINK, TRANSPARENT);
+// const FIGURE: Color = color_average(PINK, TRANSPARENT);
 const SELECTION_HEIGHT: f32 = 0.2;
 const CURSOR_HEIGHT: f32 = 0.3;
 
@@ -21,11 +21,11 @@ pub struct Piece {
     pub white: bool,
 }
 impl Piece {
-    pub fn new(pos: Coord, movement: Move) -> Self {
+    pub fn new(pos: Coord, movement: Move, white: bool) -> Self {
         Self {
             pos,
             moveset: vec![movement],
-            white: true,
+            white,
         }
     }
 }
@@ -59,12 +59,24 @@ impl Board {
         }
     }
     pub fn new_chess(cursor: Coord, size: Coord) -> Self {
-        let pieces = vec![
-            Piece::new(Coord::new_i(0, 0), Move::Rook),
-            Piece::new(size * 0.5, Move::Knight),
-            Piece::new(Coord::new_i(5, 2), Move::Pawn),
-            Piece::new(size * 0.75, Move::Queen),
+        let back_column = vec![
+            (0, Move::Rook),
+        (1, Move::Knight),
+        (2, Move::Bishop),
+        (3, Move::Queen),
+        (4, Move::King),
+        (5, Move::Bishop),
+        (6, Move::Knight),
+        (7, Move::Rook),
         ];
+        let mut pieces = Vec::new();
+        for (row, movement) in &back_column {
+            pieces.push(Piece::new(Coord::new_i(7, *row), *movement, true));
+            pieces.push(Piece::new(Coord::new_i(0, *row), *movement, false));
+            pieces.push(Piece::new(Coord::new_i(6, *row), Move::Pawn, true));
+            pieces.push(Piece::new(Coord::new_i(1, *row), Move::Pawn, false));
+        }
+        
         Self::new(cursor, size, pieces)
     }
     fn get_selected_piece(&self) -> Option<&Piece> {
@@ -135,15 +147,15 @@ impl Board {
         for column in 0..self.size.column() {
             for row in 0..self.size.row() {
                 let color = if (row + column) % 2 == 0 {
-                    theme.palette.white_cells
-                } else {
                     theme.palette.black_cells
+                } else {
+                    theme.palette.white_cells
                 };
                 draw_mesh(&mesh_coord(Coord::new_i(column, row), color));
             }
         }
-        if let Some(selected) = self.get_selected_piece() {
-            // meshes.extend(mesh_cursor(selected.pos, SELECTION, SELECTION_HEIGHT));
+        if let Some(_selected) = self.get_selected_piece() {
+            // meshes.extend(mesh_cursor(_selected.pos, SELECTION, SELECTION_HEIGHT));
         } else {
             meshes.extend(mesh_cursor(self.cursor, CURSOR, CURSOR_HEIGHT));
         }
@@ -162,7 +174,7 @@ impl Board {
             if piece.pos.round() == self.cursor.round() {
                 set_default_camera();
                 render_text(
-                    &format!("Piece: {}", moves_to_string(&piece.moveset)),
+                    &format!("{} {}", if piece.white {"White"} else {"Black"}, moves_to_string(&piece.moveset)),
                     Anchor::top_right(theme.screen.x, 0.0),
                     theme,
                 );

@@ -32,24 +32,25 @@ pub fn mesh_cursor(coord: Coord, color: Color, height: f32) -> Vec<Mesh> {
     meshes
 }
 
-pub fn mesh_figure(piece: &Piece, color: Color) -> Mesh {
-    let coord_00 = (piece.pos + Coord::new_f(0.0, 0.5)).to_vec3(0.0);
-    mesh_vertical_texture(coord_00, 2.0, color, None)
-}
+// pub fn mesh_figure(piece: &Piece, color: Color) -> Mesh {
+//     let coord_00 = (piece.pos + Coord::new_f(0.0, 0.5)).to_vec3(0.0);
+//     mesh_vertical_texture(coord_00, 2.0, color, None)
+// }
 pub fn mesh_figure_texture(piece: &Piece, color: Color, texture: Texture2D) -> Mesh {
     let coord_00 = (piece.pos + Coord::new_f(0.0, 0.5)).to_vec3(0.0);
-    mesh_vertical_texture(coord_00, 2.0, color, Some(texture))
+    mesh_vertical_texture(coord_00, 2.0, color, Some(texture), piece.white)
 }
 pub fn mesh_vertical_texture(
     coord_00: Vec3,
     height: f32,
     color: Color,
     texture: Option<Texture2D>,
+    flip_horiz: bool,
 ) -> Mesh {
     let coord_10 = coord_00 + vec3(1.0, 0.0, 0.0);
     let coord_01 = coord_00 + vec3(0.0, height, 0.0);
     let coord_11 = coord_00 + vec3(1.0, height, 0.0);
-    let mesh = to_mesh_texture([coord_00, coord_10, coord_01, coord_11], color, texture);
+    let mesh = to_mesh_texture([coord_00, coord_10, coord_01, coord_11], color, texture, flip_horiz);
     mesh
 }
 pub fn to_mesh(corners: [Vec3; 4], color: Color) -> Mesh {
@@ -69,16 +70,26 @@ pub fn to_mesh(corners: [Vec3; 4], color: Color) -> Mesh {
         texture: None,
     }
 }
-pub fn to_mesh_texture(corners: [Vec3; 4], color: Color, texture: Option<Texture2D>) -> Mesh {
+pub fn to_mesh_texture(corners: [Vec3; 4], color: Color, texture: Option<Texture2D>, flip_horiz: bool) -> Mesh {
     let coords = corners.to_vec();
     let mut vertices = Vec::new();
 
-    let uvs = vec![
-        vec2(0.0, 1.0),
-        vec2(1.0, 1.0),
-        vec2(0.0, 0.0),
-        vec2(1.0, 0.0),
-    ];
+    let uvs = if flip_horiz {
+        
+        vec![
+            vec2(1.0, 1.0),
+            vec2(0.0, 1.0),
+            vec2(1.0, 0.0),
+            vec2(0.0, 0.0),
+        ]
+    } else {
+        vec![
+            vec2(0.0, 1.0),
+            vec2(1.0, 1.0),
+            vec2(0.0, 0.0),
+            vec2(1.0, 0.0),
+        ]
+    };
     for (position, uv) in coords.into_iter().zip(uvs) {
         let vertex = Vertex {
             position,

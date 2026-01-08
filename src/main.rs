@@ -7,9 +7,9 @@ use chessnt::{
     DEFAULT_WINDOW_WIDTH, FPS_AVERAGE_FRAMES, ROWS,
 };
 use juquad::widgets::anchor::Anchor;
-use macroquad::camera::{set_camera, set_default_camera, Camera3D};
+use macroquad::camera::set_default_camera;
 use macroquad::input::{is_key_down, is_key_pressed, KeyCode};
-use macroquad::math::{vec2, vec3, Vec2};
+use macroquad::math::{vec2, Vec2};
 use macroquad::miniquad::date::now;
 use macroquad::prelude::{
     clear_background, next_frame, screen_height, screen_width, Conf, LIGHTGRAY,

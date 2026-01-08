@@ -1,15 +1,10 @@
-use crate::coord::Coord;
-use crate::render::mesh_vertical_texture;
 use crate::theme::Theme;
 use juquad::draw::draw_rect;
 use juquad::widgets::anchor::{Anchor, Horizontal};
 use juquad::widgets::text::TextRect;
 use juquad::widgets::{StateStyle, Widget};
-use macroquad::camera::{pop_camera_state, push_camera_state, set_camera, Camera2D};
-use macroquad::color::{BLACK, GRAY, WHITE};
-use macroquad::math::{vec2, Rect};
-use macroquad::models::Mesh;
-use macroquad::prelude::{clear_background, measure_text, Font, TextParams};
+use macroquad::math::Rect;
+use macroquad::prelude::{Font, TextParams};
 
 pub fn render_text(text: &str, anchor: Anchor, theme: &Theme) -> Rect {
     let t = TextRect::new_generic(
@@ -24,6 +19,7 @@ pub fn render_text(text: &str, anchor: Anchor, theme: &Theme) -> Rect {
     t.rect()
 }
 pub static mut SCALE: f32 = 13.78;
+/*
 pub fn render_text_3d(text: &str, anchor: Anchor, z: f32, theme: &Theme) -> Mesh {
     panic!("doesn't work! this creates a memory leak");
     push_camera_state();
@@ -71,10 +67,10 @@ pub fn render_text_3d(text: &str, anchor: Anchor, z: f32, theme: &Theme) -> Mesh
 
     let rect = anchor.get_rect(t.rect().size());
     let pos = Coord::new_f(rect.x, z + 0.5).to_vec3(rect.bottom());
-    mesh_vertical_texture(pos, 0.5, WHITE, Some(render_target.texture))
+    mesh_vertical_texture(pos, 0.5, WHITE, Some(render_target.texture), false)
     // mesh_vertical_texture(pos, 0.5, WHITE, None)
 }
-
+*/
 pub fn below_left(rect: Rect) -> Anchor {
     Anchor::below(rect, Horizontal::Left, 0.0)
 }
