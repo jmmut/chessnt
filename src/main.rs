@@ -3,8 +3,8 @@ use chessnt::coord::Coord;
 use chessnt::theme::{Fonts, Textures, Theme};
 use chessnt::ui::{below_left, render_text, SCALE};
 use chessnt::{
-    AnyResult, COLUMNS, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_TITLE, DEFAULT_WINDOW_WIDTH,
-    FPS_AVERAGE_FRAMES, ROWS,
+    set_3d_camera, AnyResult, COLUMNS, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_TITLE,
+    DEFAULT_WINDOW_WIDTH, FPS_AVERAGE_FRAMES, ROWS,
 };
 use juquad::widgets::anchor::Anchor;
 use macroquad::camera::{set_camera, set_default_camera, Camera3D};
@@ -42,12 +42,7 @@ async fn fallible_main() -> AnyResult<()> {
         let screen = vec2(screen_width(), screen_height());
         theme.update_screen_size(screen);
 
-        set_camera(&Camera3D {
-            position: vec3(0.0, 6.0, 8.0),
-            up: vec3(0.0, 1.0, 0.0),
-            target: vec3(0.0, 0.0, 0.0),
-            ..Default::default()
-        });
+        set_3d_camera();
 
         if is_key_pressed(KeyCode::Escape) {
             return Ok(());

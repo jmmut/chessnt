@@ -7,8 +7,10 @@ use macroquad::color_u8;
 use macroquad::prelude::{Font, Texture2D, Vec2};
 
 use juquad::widgets::Style as Coloring;
+use macroquad::math::vec2;
 
 pub struct Theme {
+    pub screen: Vec2,
     pub palette: Palette,
     base_font_size: f32,
     font_size: f32,
@@ -20,6 +22,7 @@ pub struct Theme {
 impl Theme {
     pub fn new(textures: Textures, fonts: Fonts) -> Self {
         Self {
+            screen: vec2(1.0, 1.0),
             palette: Palette::default(),
             base_font_size: DEFAULT_FONT_SIZE,
             font_size: choose_scale(
@@ -33,6 +36,7 @@ impl Theme {
         }
     }
     pub fn update_screen_size(&mut self, screen: Vec2) {
+        self.screen = screen;
         self.font_size = choose_scale(screen.x, screen.y, self.base_font_size);
     }
     pub fn font(&self) -> Font {

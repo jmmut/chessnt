@@ -1,7 +1,10 @@
 use crate::coord::Coord;
 use crate::render::{mesh_coord, mesh_cursor, mesh_figure_texture};
 use crate::theme::{color_average, Theme};
-use crate::TRANSPARENT;
+use crate::ui::render_text;
+use crate::{set_3d_camera, TRANSPARENT};
+use juquad::widgets::anchor::Anchor;
+use macroquad::camera::set_default_camera;
 use macroquad::color::{Color, DARKBLUE, DARKGREEN, PINK, WHITE};
 use macroquad::models::{draw_mesh, Mesh};
 
@@ -96,8 +99,8 @@ impl Board {
         if let Some((_index, _initial)) = self.selected {
             panic!("can't select if there's something already selected");
             // TODO: swap pieces?
-            // let 
-            // 
+            // let
+            //
             // for piece in &mut self.pieces {
             //     if piece.pos == old_selection {
             //         piece.pos = new_selection;
@@ -144,7 +147,6 @@ impl Board {
         } else {
             meshes.extend(mesh_cursor(self.cursor, CURSOR, CURSOR_HEIGHT));
         }
-
         for piece in &self.pieces {
             meshes.push(mesh_figure_texture(
                 piece,
@@ -157,6 +159,15 @@ impl Board {
             //     piece.pos.row,
             //     theme,
             // ));
+            if piece.pos.round() == self.cursor.round() {
+                set_default_camera();
+                render_text(
+                    &format!("Piece: {}", moves_to_string(&piece.moveset)),
+                    Anchor::top_right(theme.screen.x, 0.0),
+                    theme,
+                );
+                set_3d_camera();
+            }
         }
 
         if let Some((piece, initial_pos)) = self.get_selected_piece_and_pos() {
