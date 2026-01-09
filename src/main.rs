@@ -105,7 +105,7 @@ fn draw_dev_ui(
         *measured_fps = 1.0 / (current_frame - *last_frame) * FPS_AVERAGE_FRAMES as f64;
         *last_frame = current_frame;
     }
-    let _rect = render_text("DEV UI", Anchor::top_left(0.0, 0.0), theme);
+    let _rect = render_text("DEV UI (toggle with '/')", Anchor::top_left(0.0, 0.0), theme);
     // let text = "You can move the green cursor with your keyboard arrows";
     // let rect = render_text(text, below_left(rect), theme);
     // let rect = render_text("Toggle dev UI with '/'", below_left(rect), theme);
