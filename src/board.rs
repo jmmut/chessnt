@@ -12,8 +12,8 @@ use macroquad::models::{draw_mesh, Mesh};
 const SELECTION: Color = color_average(DARKBLUE, TRANSPARENT);
 const CURSOR: Color = color_average(DARKGREEN, TRANSPARENT);
 // const FIGURE: Color = color_average(PINK, TRANSPARENT);
-const SELECTION_HEIGHT: f32 = 0.2;
-const CURSOR_HEIGHT: f32 = 0.3;
+const SELECTION_HEIGHT: f32 = 0.05;
+const CURSOR_HEIGHT: f32 = 0.1;
 
 #[derive(Clone)]
 pub struct Piece {

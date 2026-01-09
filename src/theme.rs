@@ -42,9 +42,9 @@ impl Theme {
             },
             textures,
             camera: CameraPos {
-                y: 6.0,
-                z: 8.0,
-                fovy: 45.0,
+                y: 12.69, //6.0,
+                z: 29.12, // 8.0,
+                fovy: 44.19, // 45.0,
             },
         }
     }

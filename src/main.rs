@@ -142,8 +142,8 @@ fn draw_dev_ui(
         _rect,
         theme,
         &mut value,
-        40.0,
-        50.0,
+        43.5,
+        47.5,
     );
     theme.camera.fovy = value;
 }
