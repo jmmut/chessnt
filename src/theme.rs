@@ -43,9 +43,9 @@ impl Theme {
             textures,
             camera: CameraPos {
                 y: 12.69, //6.0,
-                z: 29.12, // 8.0,
-                fovy: 44.19, // 45.0,
-                target_y: 0.9, // 0.0,
+                z: 17.57, // 8.0,
+                fovy: 44.33, // 45.0,
+                target_y: 0.5, // 0.0,
             },
         }
     }
