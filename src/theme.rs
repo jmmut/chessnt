@@ -45,6 +45,7 @@ impl Theme {
                 y: 12.69, //6.0,
                 z: 29.12, // 8.0,
                 fovy: 44.19, // 45.0,
+                target_y: 0.9, // 0.0,
             },
         }
     }
@@ -72,6 +73,7 @@ pub struct CameraPos {
     pub y: f32,
     pub z: f32,
     pub fovy: f32,
+    pub target_y: f32,
 }
 pub struct Textures {
     pub placeholder: Texture2D,

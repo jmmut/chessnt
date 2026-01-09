@@ -43,7 +43,7 @@ pub fn set_3d_camera(theme: &Theme) {
     set_camera(&Camera3D {
         position: vec3(0.0, theme.camera.y, theme.camera.z),
         up: vec3(0.0, 1.0, 0.0),
-        target: vec3(0.0, 0.0, 0.0),
+        target: vec3(0.0, theme.camera.target_y, 0.0),
         fovy: theme.camera.fovy,
         ..Default::default()
     });

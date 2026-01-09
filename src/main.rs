@@ -146,6 +146,9 @@ fn draw_dev_ui(
         47.5,
     );
     theme.camera.fovy = value;
+    let mut value = theme.camera.target_y;
+    let _rect = render_slider("Camera target Y", _rect, theme, &mut value, -5.0, 10.0);
+    theme.camera.target_y = value;
 }
 
 fn render_slider(
