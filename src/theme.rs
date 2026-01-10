@@ -17,7 +17,6 @@ pub struct Theme {
     fonts: Fonts,
     coloring: Coloring,
     pub textures: Textures,
-    pub camera: CameraPos,
 }
 
 impl Theme {
@@ -41,12 +40,6 @@ impl Theme {
                 ..Default::default()
             },
             textures,
-            camera: CameraPos {
-                y: 12.69, //6.0,
-                z: 17.57, // 8.0,
-                fovy: 44.33, // 45.0,
-                target_y: 0.5, // 0.0,
-            },
         }
     }
     pub fn update_screen_size(&mut self, screen: Vec2) {

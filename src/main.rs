@@ -1,6 +1,7 @@
 use chessnt::board::Board;
 use chessnt::coord::Coord;
-use chessnt::theme::{Fonts, Textures, Theme};
+use chessnt::referee::Referee;
+use chessnt::theme::{CameraPos, Fonts, Textures, Theme};
 use chessnt::ui::{below_left, render_text, rightwards, SCALE};
 use chessnt::{
     set_3d_camera, AnyResult, COLUMNS, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_TITLE,
@@ -35,16 +36,22 @@ async fn fallible_main() -> AnyResult<()> {
     };
     let mut theme_owned = Theme::new(textures, fonts);
     let theme = &mut theme_owned;
+    let mut camera = CameraPos {
+        y: 12.69,      //6.0,
+        z: 17.57,      // 8.0,
+        fovy: 44.33,   // 45.0,
+        target_y: 0.5, // 0.0,
+    };
     let mut board = Board::new_chess(Coord::new_i(4, 4), Coord::new_i(COLUMNS, ROWS));
+    let mut referee = Referee::new();
     let mut dev_ui = true;
-    let mut last_frame = now();
-    let mut frame_count = 0;
-    let mut measured_fps = 0.0;
+    let mut time = Time::new();
     loop {
+        time.tick();
         let screen = vec2(screen_width(), screen_height());
         theme.update_screen_size(screen);
 
-        set_3d_camera(theme);
+        set_3d_camera(&camera);
 
         if is_key_pressed(KeyCode::Escape) {
             return Ok(());
@@ -75,42 +82,62 @@ async fn fallible_main() -> AnyResult<()> {
         }
         clear_background(LIGHTGRAY);
 
-        board.draw(theme);
+        board.draw(&camera, theme);
 
         set_default_camera();
         if dev_ui {
-            draw_dev_ui(
-                theme,
-                &mut last_frame,
-                &mut frame_count,
-                &mut measured_fps,
-                &mut board,
-            );
+            draw_dev_ui(&time, theme, &mut board, &mut camera);
         }
 
         next_frame().await
     }
 }
 
-fn draw_dev_ui(
-    theme: &mut Theme,
-    last_frame: &mut f64,
-    frame_count: &mut i32,
-    measured_fps: &mut f64,
-    board: &mut Board,
-) {
-    *frame_count = (*frame_count + 1) % (1000 * FPS_AVERAGE_FRAMES);
-    if *frame_count % FPS_AVERAGE_FRAMES == 0 {
-        let current_frame = now();
-        *measured_fps = 1.0 / (current_frame - *last_frame) * FPS_AVERAGE_FRAMES as f64;
-        *last_frame = current_frame;
+pub struct Time {
+    pub current_s: f64,
+    pub last_s: f64,
+    pub frame_count: i32,
+    pub rolling_frame_time: f64,
+    pub cached_fps: f64,
+}
+
+impl Time {
+    pub fn new() -> Self {
+        let now = now();
+        Self {
+            current_s: now - 1.0 / 60.0,
+            last_s: now - 1.0 / 60.0,
+            frame_count: 0,
+            rolling_frame_time: 0.0,
+            cached_fps: 0.0,
+        }
     }
-    let _rect = render_text("DEV UI (toggle with '/')", Anchor::top_left(0.0, 0.0), theme);
+    pub fn tick(&mut self) {
+        self.frame_count = (self.frame_count + 1) % (1000 * FPS_AVERAGE_FRAMES);
+        self.last_s = self.current_s;
+        self.current_s = now();
+        self.rolling_frame_time += self.current_s - self.last_s;
+        if self.frame_count % FPS_AVERAGE_FRAMES == 0 {
+            self.cached_fps = 1.0 / (self.rolling_frame_time / FPS_AVERAGE_FRAMES as f64);
+            self.rolling_frame_time = 0.0;
+        }
+    }
+    pub fn fps(&self) -> f64 {
+        self.cached_fps
+    }
+}
+
+fn draw_dev_ui(time: &Time, theme: &mut Theme, board: &mut Board, camera: &mut CameraPos) {
+    let _rect = render_text(
+        "DEV UI (toggle with '/')",
+        Anchor::top_left(0.0, 0.0),
+        theme,
+    );
     // let text = "You can move the green cursor with your keyboard arrows";
     // let rect = render_text(text, below_left(rect), theme);
     // let rect = render_text("Toggle dev UI with '/'", below_left(rect), theme);
-    // let text = format!("FPS: {:.1}", measured_fps);
-    // let _rect = render_text(&text, below_left(rect), theme);
+    // let text = format!("FPS: {:.1}", time.fps());
+    // let _rect = render_text(&text, below_left(_rect), theme);
     // let text = format!("scale: {}", unsafe { SCALE });
     // let _rect = render_text(&text, below_left(_rect), theme);
 
@@ -130,25 +157,17 @@ fn draw_dev_ui(
         0.1,
         2.0,
     );
-    let mut value = theme.camera.y;
-    let _rect = render_slider("Camera Y", _rect, theme, &mut value, 0.0, 100.0);
-    theme.camera.y = value;
-    let mut value = theme.camera.z;
-    let _rect = render_slider("Camera Z", _rect, theme, &mut value, 0.0, 100.0);
-    theme.camera.z = value;
-    let mut value = theme.camera.fovy;
+    let _rect = render_slider("Camera Y", _rect, theme, &mut camera.y, 0.0, 100.0);
+    let _rect = render_slider("Camera Z", _rect, theme, &mut camera.z, 0.0, 100.0);
+    let _rect = render_slider("Camera Width", _rect, theme, &mut camera.fovy, 43.5, 47.5);
     let _rect = render_slider(
-        "Camera Width (degrees)",
+        "Camera target Y",
         _rect,
         theme,
-        &mut value,
-        43.5,
-        47.5,
+        &mut camera.target_y,
+        -5.0,
+        10.0,
     );
-    theme.camera.fovy = value;
-    let mut value = theme.camera.target_y;
-    let _rect = render_slider("Camera target Y", _rect, theme, &mut value, -5.0, 10.0);
-    theme.camera.target_y = value;
 }
 
 fn render_slider(

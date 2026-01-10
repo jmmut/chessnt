@@ -1,6 +1,7 @@
 use crate::coord::Coord;
+use crate::referee::Referee;
 use crate::render::{mesh_coord, mesh_cursor, mesh_figure_texture};
-use crate::theme::{color_average, Theme};
+use crate::theme::{color_average, CameraPos, Theme};
 use crate::ui::render_text_font;
 use crate::{set_3d_camera, TRANSPARENT};
 use juquad::widgets::anchor::Anchor;
@@ -48,6 +49,7 @@ pub struct Board {
     selected: Option<(usize, Coord)>,
     size: Coord,
     pieces: Vec<Piece>,
+    referee: Referee,
     pub piece_size: Vec2,
 }
 
@@ -59,6 +61,7 @@ impl Board {
             size,
             pieces,
             piece_size: vec2(0.3, 1.0),
+            referee: Referee::new(),
         }
     }
     pub fn new_chess(cursor: Coord, size: Coord) -> Self {
@@ -145,23 +148,51 @@ impl Board {
     pub fn selected(&self) -> bool {
         self.selected.is_some()
     }
-    pub fn draw(&self, theme: &mut Theme) {
+    pub fn draw(&self, camera: &CameraPos, theme: &mut Theme) {
         let mut meshes = Vec::new();
-        for column in 0..self.size.column() {
-            for row in 0..self.size.row() {
-                let color = if (row + column) % 2 == 0 {
-                    theme.palette.black_cells
-                } else {
-                    theme.palette.white_cells
-                };
-                draw_mesh(&mesh_coord(Coord::new_i(column, row), color));
+        self.draw_floor(theme);
+
+        meshes.extend(self.selection_meshes());
+        meshes.extend(self.piece_meshes(theme));
+        meshes.extend(self.possible_moves_meshes());
+
+        meshes.sort_by(|a, b| depth(a).total_cmp(&depth(b)));
+        for mesh in meshes {
+            draw_mesh(&mesh); // can't render cursor and figures online because of intersecting quads with transparencies
+        }
+        self.draw_piece_info(camera, theme);
+    }
+
+    fn draw_piece_info(&self, camera: &CameraPos, theme: &mut Theme) {
+        for piece in &self.pieces {
+            if piece.pos.round() == self.cursor.round() {
+                set_default_camera();
+                render_text_font(
+                    &format!(
+                        "{} {}",
+                        if piece.white { "WHITE" } else { "BLACK" },
+                        moves_to_string(&piece.moveset).to_uppercase()
+                    ),
+                    Anchor::top_left(0.0, 0.0),
+                    theme,
+                    theme.font_title(),
+                );
+                set_3d_camera(camera);
             }
         }
+    }
+
+    fn selection_meshes(&self) -> Vec<Mesh> {
         if let Some(_selected) = self.get_selected_piece() {
             // meshes.extend(mesh_cursor(_selected.pos, SELECTION, SELECTION_HEIGHT));
+            vec![]
         } else {
-            meshes.extend(mesh_cursor(self.cursor, CURSOR, CURSOR_HEIGHT));
+            mesh_cursor(self.cursor, CURSOR, CURSOR_HEIGHT)
         }
+    }
+
+    fn piece_meshes(&self, theme: &mut Theme) -> Vec<Mesh> {
+        let mut meshes = Vec::new();
         for piece in &self.pieces {
             meshes.push(mesh_figure_texture(
                 piece,
@@ -175,22 +206,12 @@ impl Board {
             //     piece.pos.row,
             //     theme,
             // ));
-            if piece.pos.round() == self.cursor.round() {
-                set_default_camera();
-                render_text_font(
-                    &format!(
-                        "{} {}",
-                        if piece.white { "WHITE" } else { "BLACK" },
-                        moves_to_string(&piece.moveset).to_uppercase()
-                    ),
-                    Anchor::top_left(0.0, 0.0),
-                    theme,
-                    theme.font_title(),
-                );
-                set_3d_camera(theme);
-            }
         }
+        meshes
+    }
 
+    fn possible_moves_meshes(&self) -> Vec<Mesh> {
+        let mut meshes = Vec::new();
         if let Some((piece, initial_pos)) = self.get_selected_piece_and_pos() {
             let mut ghost = piece.clone();
             ghost.pos = initial_pos;
@@ -198,9 +219,19 @@ impl Board {
                 meshes.extend(mesh_cursor(movement, SELECTION, SELECTION_HEIGHT))
             }
         }
-        meshes.sort_by(|a, b| depth(a).total_cmp(&depth(b)));
-        for mesh in meshes {
-            draw_mesh(&mesh); // can't render cursor and figures online because of intersecting quads with transparencies
+        meshes
+    }
+
+    fn draw_floor(&self, theme: &mut Theme) {
+        for column in 0..self.size.column() {
+            for row in 0..self.size.row() {
+                let color = if (row + column) % 2 == 0 {
+                    theme.palette.black_cells
+                } else {
+                    theme.palette.white_cells
+                };
+                draw_mesh(&mesh_coord(Coord::new_i(column, row), color));
+            }
         }
     }
 }
