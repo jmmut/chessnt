@@ -1,16 +1,17 @@
 use crate::coord::Coord;
 use crate::referee::Referee;
-use crate::render::{mesh_coord, mesh_cursor, mesh_figure_texture};
+use crate::render::{mesh_coord, mesh_cursor, mesh_figure_texture, mesh_vertical_texture};
 use crate::theme::{color_average, CameraPos, Theme};
 use crate::ui::render_text_font;
 use crate::{set_3d_camera, TRANSPARENT};
 use juquad::widgets::anchor::Anchor;
 use macroquad::camera::set_default_camera;
-use macroquad::color::{Color, DARKBLUE, DARKGREEN, WHITE};
+use macroquad::color::{Color, DARKBLUE, DARKGREEN, DARKPURPLE, WHITE};
 use macroquad::math::{vec2, Vec2};
 use macroquad::models::{draw_mesh, Mesh};
 
 const SELECTION: Color = color_average(DARKBLUE, TRANSPARENT);
+const GHOST: Color = color_average(DARKPURPLE, TRANSPARENT);
 const CURSOR: Color = color_average(DARKGREEN, TRANSPARENT);
 // const FIGURE: Color = color_average(PINK, TRANSPARENT);
 const SELECTION_HEIGHT: f32 = 0.05;
@@ -85,6 +86,9 @@ impl Board {
 
         Self::new(cursor, size, pieces)
     }
+    pub fn tick(&mut self, time_s: f64) {
+        self.referee.tick(time_s)
+    }
     fn get_selected_piece(&self) -> Option<&Piece> {
         if let Some((index, _)) = self.selected {
             self.pieces.get(index)
@@ -154,6 +158,7 @@ impl Board {
 
         meshes.extend(self.selection_meshes());
         meshes.extend(self.piece_meshes(theme));
+        meshes.extend(self.referee_meshes(theme));
         meshes.extend(self.possible_moves_meshes());
 
         meshes.sort_by(|a, b| depth(a).total_cmp(&depth(b)));
@@ -210,10 +215,25 @@ impl Board {
         meshes
     }
 
+    fn referee_meshes(&self, theme: &mut Theme) -> Vec<Mesh> {
+        let coord_00 =
+            (self.referee.pos_c() + Coord::new_f(0.5 - self.piece_size.x * 0.5, 0.5)).to_vec3(0.0);
+        let looking_leftwards = self.referee.side();
+        let mesh = mesh_vertical_texture(
+            coord_00,
+            WHITE,
+            Some(theme.textures.placeholder),
+            looking_leftwards,
+            self.piece_size,
+        );
+        vec![mesh]
+    }
+
     fn possible_moves_meshes(&self) -> Vec<Mesh> {
         let mut meshes = Vec::new();
         if let Some((piece, initial_pos)) = self.get_selected_piece_and_pos() {
             let mut ghost = piece.clone();
+            meshes.extend(mesh_cursor(initial_pos, GHOST, SELECTION_HEIGHT));
             ghost.pos = initial_pos;
             for movement in possible_moves(self.size, &ghost) {
                 meshes.extend(mesh_cursor(movement, SELECTION, SELECTION_HEIGHT))

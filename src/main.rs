@@ -43,7 +43,6 @@ async fn fallible_main() -> AnyResult<()> {
         target_y: 0.5, // 0.0,
     };
     let mut board = Board::new_chess(Coord::new_i(4, 4), Coord::new_i(COLUMNS, ROWS));
-    let mut referee = Referee::new();
     let mut dev_ui = true;
     let mut time = Time::new();
     loop {
@@ -51,35 +50,13 @@ async fn fallible_main() -> AnyResult<()> {
         let screen = vec2(screen_width(), screen_height());
         theme.update_screen_size(screen);
 
-        set_3d_camera(&camera);
-
-        if is_key_pressed(KeyCode::Escape) {
+        if handle_inputs_shoud_exit(&mut board, &mut dev_ui) {
             return Ok(());
         }
-        if is_key_pressed(KeyCode::Slash) || is_key_pressed(KeyCode::KpDivide) {
-            dev_ui = !dev_ui;
-        }
+        board.tick(time.current_s);
 
-        move_cursor_or_piece(&mut board);
+        set_3d_camera(&camera);
 
-        if is_key_pressed(KeyCode::Space) {
-            if board.selected() {
-                board.deselect();
-            } else {
-                board.select();
-            }
-        }
-
-        if is_key_pressed(KeyCode::KpAdd) {
-            unsafe {
-                SCALE *= 1.3;
-            }
-        }
-        if is_key_pressed(KeyCode::KpSubtract) {
-            unsafe {
-                SCALE /= 1.3;
-            }
-        }
         clear_background(LIGHTGRAY);
 
         board.draw(&camera, theme);
@@ -91,6 +68,34 @@ async fn fallible_main() -> AnyResult<()> {
 
         next_frame().await
     }
+}
+
+fn handle_inputs_shoud_exit(board: &mut Board, dev_ui: &mut bool) -> bool {
+    if is_key_pressed(KeyCode::Slash) || is_key_pressed(KeyCode::KpDivide) {
+        *dev_ui = !*dev_ui;
+    }
+
+    move_cursor_or_piece(board);
+
+    if is_key_pressed(KeyCode::Space) {
+        if board.selected() {
+            board.deselect();
+        } else {
+            board.select();
+        }
+    }
+
+    if is_key_pressed(KeyCode::KpAdd) {
+        unsafe {
+            SCALE *= 1.3;
+        }
+    }
+    if is_key_pressed(KeyCode::KpSubtract) {
+        unsafe {
+            SCALE /= 1.3;
+        }
+    }
+    is_key_pressed(KeyCode::Escape)
 }
 
 pub struct Time {
@@ -127,7 +132,7 @@ impl Time {
     }
 }
 
-fn draw_dev_ui(time: &Time, theme: &mut Theme, board: &mut Board, camera: &mut CameraPos) {
+fn draw_dev_ui(_time: &Time, theme: &mut Theme, board: &mut Board, camera: &mut CameraPos) {
     let _rect = render_text(
         "DEV UI (toggle with '/')",
         Anchor::top_left(0.0, 0.0),
@@ -136,7 +141,7 @@ fn draw_dev_ui(time: &Time, theme: &mut Theme, board: &mut Board, camera: &mut C
     // let text = "You can move the green cursor with your keyboard arrows";
     // let rect = render_text(text, below_left(rect), theme);
     // let rect = render_text("Toggle dev UI with '/'", below_left(rect), theme);
-    // let text = format!("FPS: {:.1}", time.fps());
+    // let text = format!("FPS: {:.1}", _time.fps());
     // let _rect = render_text(&text, below_left(_rect), theme);
     // let text = format!("scale: {}", unsafe { SCALE });
     // let _rect = render_text(&text, below_left(_rect), theme);
