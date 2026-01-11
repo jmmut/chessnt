@@ -50,7 +50,7 @@ pub fn mesh_vertical_texture(
     let coord_10 = coord_00 + vec3(size.x, 0.0, 0.0);
     let coord_01 = coord_00 + vec3(0.0, size.y, 0.0);
     let coord_11 = coord_00 + vec3(size.x, size.y, 0.0);
-    let mesh = to_mesh_texture(
+    let mesh = to_mesh_texture_quad(
         [coord_00, coord_10, coord_01, coord_11],
         color,
         texture,
@@ -75,7 +75,7 @@ pub fn to_mesh(corners: [Vec3; 4], color: Color) -> Mesh {
         texture: None,
     }
 }
-pub fn to_mesh_texture(
+pub fn to_mesh_texture_quad(
     corners: [Vec3; 4],
     color: Color,
     texture: Option<Texture2D>,
@@ -111,5 +111,22 @@ pub fn to_mesh_texture(
         vertices,
         indices: vec![0, 1, 2, 2, 1, 3],
         texture,
+    }
+}
+
+pub fn to_mesh_triangle(corners: [Vec3; 3], color: Color) -> Mesh {
+    let mut vertices = Vec::new();
+    for corner in corners {
+        vertices.push(Vertex {
+            position: corner,
+            uv: Default::default(),
+            color,
+        });
+    }
+
+    Mesh {
+        vertices,
+        indices: vec![0, 1, 2],
+        texture: None,
     }
 }

@@ -1,16 +1,19 @@
 use crate::coord::Coord;
-use crate::referee::Referee;
-use crate::render::{mesh_coord, mesh_cursor, mesh_figure_texture, mesh_vertical_texture};
+use crate::referee::{rotate_y, rotate_y_90, Referee};
+use crate::render::{
+    mesh_coord, mesh_cursor, mesh_figure_texture, mesh_vertical_texture, to_mesh_triangle,
+};
 use crate::theme::{color_average, CameraPos, Theme};
 use crate::ui::render_text_font;
 use crate::{set_3d_camera, TRANSPARENT};
 use juquad::widgets::anchor::Anchor;
 use macroquad::camera::set_default_camera;
-use macroquad::color::{Color, DARKBLUE, DARKGREEN, DARKPURPLE, WHITE};
-use macroquad::math::{vec2, Vec2};
+use macroquad::color::{Color, DARKBLUE, DARKGREEN, DARKPURPLE, LIGHTGRAY, RED, WHITE};
+use macroquad::math::{vec2, vec3, Vec2, Vec3};
 use macroquad::models::{draw_mesh, Mesh};
 
 const SELECTION: Color = color_average(DARKBLUE, TRANSPARENT);
+const RADAR: Color = color_average(RED, LIGHTGRAY);
 const GHOST: Color = color_average(DARKPURPLE, TRANSPARENT);
 const CURSOR: Color = color_average(DARKGREEN, TRANSPARENT);
 // const FIGURE: Color = color_average(PINK, TRANSPARENT);
@@ -226,7 +229,14 @@ impl Board {
             looking_leftwards,
             self.piece_size,
         );
-        vec![mesh]
+        let radar_base =
+            self.referee.pos_c().into::<Vec3>() + vec3(0.5, SELECTION_HEIGHT * 0.9, 0.5);
+        let dir = self.referee.dir_v3();
+        let left = rotate_y_90(dir) * 0.5;
+        let radar_left = radar_base + dir + left;
+        let radar_right = radar_base + dir - left;
+        let radar = to_mesh_triangle([radar_base, radar_right, radar_left], RADAR);
+        vec![mesh, radar]
     }
 
     fn possible_moves_meshes(&self) -> Vec<Mesh> {
