@@ -53,7 +53,7 @@ pub struct Board {
     selected: Option<(usize, Coord)>,
     size: Coord,
     pieces: Vec<Piece>,
-    referee: Referee,
+    pub referee: Referee,
     pub piece_size: Vec2,
 }
 

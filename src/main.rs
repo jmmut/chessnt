@@ -2,7 +2,8 @@ use chessnt::board::Board;
 use chessnt::coord::Coord;
 use chessnt::referee::Referee;
 use chessnt::theme::{CameraPos, Fonts, Textures, Theme};
-use chessnt::ui::{below_left, render_text, rightwards, SCALE};
+use chessnt::time::Time;
+use chessnt::ui::{below_left, render_text, rightwards, DevUi, SCALE};
 use chessnt::{
     set_3d_camera, AnyResult, COLUMNS, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_TITLE,
     DEFAULT_WINDOW_WIDTH, FPS_AVERAGE_FRAMES, ROWS,
@@ -43,7 +44,7 @@ async fn fallible_main() -> AnyResult<()> {
         target_y: 0.5, // 0.0,
     };
     let mut board = Board::new_chess(Coord::new_i(4, 4), Coord::new_i(COLUMNS, ROWS));
-    let mut dev_ui = true;
+    let mut dev_ui = DevUi::new();
     let mut time = Time::new();
     loop {
         time.tick();
@@ -56,23 +57,18 @@ async fn fallible_main() -> AnyResult<()> {
         board.tick(time.current_s);
 
         set_3d_camera(&camera);
-
         clear_background(LIGHTGRAY);
-
         board.draw(&camera, theme);
 
         set_default_camera();
-        if dev_ui {
-            draw_dev_ui(&time, theme, &mut board, &mut camera);
-        }
-
+        dev_ui.draw(&time, theme, &mut board, &mut camera);
         next_frame().await
     }
 }
 
-fn handle_inputs_shoud_exit(board: &mut Board, dev_ui: &mut bool) -> bool {
+fn handle_inputs_shoud_exit(board: &mut Board, dev_ui: &mut DevUi) -> bool {
     if is_key_pressed(KeyCode::Slash) || is_key_pressed(KeyCode::KpDivide) {
-        *dev_ui = !*dev_ui;
+        dev_ui.toggle();
     }
 
     move_cursor_or_piece(board);
@@ -96,109 +92,6 @@ fn handle_inputs_shoud_exit(board: &mut Board, dev_ui: &mut bool) -> bool {
         }
     }
     is_key_pressed(KeyCode::Escape)
-}
-
-pub struct Time {
-    pub current_s: f64,
-    pub last_s: f64,
-    pub frame_count: i32,
-    pub rolling_frame_time: f64,
-    pub cached_fps: f64,
-}
-
-impl Time {
-    pub fn new() -> Self {
-        let now = now();
-        Self {
-            current_s: now - 1.0 / 60.0,
-            last_s: now - 1.0 / 60.0,
-            frame_count: 0,
-            rolling_frame_time: 0.0,
-            cached_fps: 0.0,
-        }
-    }
-    pub fn tick(&mut self) {
-        self.frame_count = (self.frame_count + 1) % (1000 * FPS_AVERAGE_FRAMES);
-        self.last_s = self.current_s;
-        self.current_s = now();
-        self.rolling_frame_time += self.current_s - self.last_s;
-        if self.frame_count % FPS_AVERAGE_FRAMES == 0 {
-            self.cached_fps = 1.0 / (self.rolling_frame_time / FPS_AVERAGE_FRAMES as f64);
-            self.rolling_frame_time = 0.0;
-        }
-    }
-    pub fn fps(&self) -> f64 {
-        self.cached_fps
-    }
-}
-
-fn draw_dev_ui(_time: &Time, theme: &mut Theme, board: &mut Board, camera: &mut CameraPos) {
-    let _rect = render_text(
-        "DEV UI (toggle with '/')",
-        Anchor::top_left(0.0, 0.0),
-        theme,
-    );
-    // let text = "You can move the green cursor with your keyboard arrows";
-    // let rect = render_text(text, below_left(rect), theme);
-    // let rect = render_text("Toggle dev UI with '/'", below_left(rect), theme);
-    // let text = format!("FPS: {:.1}", _time.fps());
-    // let _rect = render_text(&text, below_left(_rect), theme);
-    // let text = format!("scale: {}", unsafe { SCALE });
-    // let _rect = render_text(&text, below_left(_rect), theme);
-
-    let _rect = render_slider(
-        "Texture size X",
-        _rect,
-        theme,
-        &mut board.piece_size.x,
-        0.1,
-        2.0,
-    );
-    let _rect = render_slider(
-        "Texture size Y",
-        _rect,
-        theme,
-        &mut board.piece_size.y,
-        0.1,
-        2.0,
-    );
-    let _rect = render_slider("Camera Y", _rect, theme, &mut camera.y, 0.0, 100.0);
-    let _rect = render_slider("Camera Z", _rect, theme, &mut camera.z, 0.0, 100.0);
-    let _rect = render_slider("Camera Width", _rect, theme, &mut camera.fovy, 43.5, 47.5);
-    let _rect = render_slider(
-        "Camera target Y",
-        _rect,
-        theme,
-        &mut camera.target_y,
-        -5.0,
-        10.0,
-    );
-}
-
-fn render_slider(
-    text: &str,
-    rect: Rect,
-    theme: &Theme,
-    value: &mut f32,
-    min: f32,
-    max: f32,
-) -> Rect {
-    let new_rect = render_text(
-        &format!("{}: {:0>5.2}", text, value),
-        below_left(rect),
-        theme,
-    );
-    let mut slider = juquad::lazy::slider::Slider::new(Style::default(), min, max, *value);
-    slider.set_pos(rightwards(new_rect).get_top_left_pixel(slider.size()));
-    *value = *(slider
-        .interact()
-        .into_iter()
-        .next()
-        .unwrap()
-        .downcast::<f32>()
-        .unwrap());
-    slider.render_interactive(Interaction::None);
-    new_rect
 }
 
 fn move_cursor_or_piece(board: &mut Board) {

@@ -9,6 +9,7 @@ pub struct Referee {
 }
 
 const INITIAL_X: f32 = COLUMNS as f32 * 0.5 - 0.5;
+const DIR_MULTIPLIER: f32 = 5.0;
 
 impl Referee {
     pub fn new() -> Self {
@@ -34,10 +35,12 @@ impl Referee {
         self.position
     }
     pub fn dir_c(&self) -> Coord {
-        self.direction.into()
+        let mut d = self.direction.into();
+        d *= DIR_MULTIPLIER;
+        d
     }
     pub fn dir_v3(&self) -> Vec3 {
-        vec3(self.direction.x + 0.5, 0.0, self.direction.y + 0.5)
+        vec3(self.direction.x, 0.0, self.direction.y) * DIR_MULTIPLIER
     }
 }
 

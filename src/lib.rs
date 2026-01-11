@@ -8,6 +8,7 @@ pub mod coord;
 pub mod referee;
 pub mod render;
 pub mod theme;
+pub mod time;
 pub mod ui;
 
 pub const COLUMNS: i32 = 8;
