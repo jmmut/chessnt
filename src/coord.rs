@@ -102,6 +102,19 @@ impl AddAssign<Coord> for Coord {
         self.row += other.row;
     }
 }
+impl Add<f32> for Coord {
+    type Output = Coord;
+    fn add(mut self, other: f32) -> Self::Output {
+        self += other;
+        self
+    }
+}
+impl AddAssign<f32> for Coord {
+    fn add_assign(&mut self, rhs: f32) {
+        self.column += rhs;
+        self.row += rhs;
+    }
+}
 impl Sub<Coord> for Coord {
     type Output = Coord;
     fn sub(mut self, other: Coord) -> Self::Output {

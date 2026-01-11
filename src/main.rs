@@ -54,7 +54,7 @@ async fn fallible_main() -> AnyResult<()> {
         if handle_inputs_shoud_exit(&mut board, &mut dev_ui) {
             return Ok(());
         }
-        board.tick(time.current_s);
+        board.tick(time.delta());
 
         set_3d_camera(&camera);
         clear_background(LIGHTGRAY);

@@ -2,18 +2,24 @@ use crate::board::Piece;
 use crate::coord::Coord;
 use crate::COLUMNS;
 use macroquad::math::{vec2, vec3, Vec2, Vec3};
+use std::ops::{Add, Mul};
 
-pub struct Interpolation {
-    start: Coord,
-    end: Coord,
+pub struct Interpolation<T> {
+    start: T,
+    end: T,
 }
-impl Interpolation {
-    pub fn new(start: Coord, end: Coord) -> Self {
+impl<T: Mul<f32, Output = T> + Add<f32, Output = T> + Add<T, Output = T> + Copy> Interpolation<T> {
+    pub fn new(start: T, end: T) -> Self {
         Self { start, end }
     }
-    pub fn at_linear(&self, t: f32) -> Coord {
+    pub fn at_linear(&self, t: f32) -> T {
         let t = t.clamp(0.0, 1.0);
-        self.end * t + self.start * (1.0 - t)
+        (self.start * (1.0 - t)) + (self.end * t)
+    }
+    pub fn at_smooth(&self, t: f32) -> T {
+        let t = t.clamp(0.0, 1.0);
+        let t = Interpolation::new(t * t, 1.0 - (1.0 - t) * (1.0 - t)).at_linear(t);
+        self.at_linear(t)
     }
 }
 pub struct Referee {
@@ -23,11 +29,11 @@ pub struct Referee {
     focused: Option<Focus>,
     last_time_s: f64,
     interpolation_s: f64,
-    interpolation: Interpolation,
+    interpolation: Interpolation<Coord>,
 }
 #[derive(Copy, Clone)]
 pub struct Focus {
-    last_movement_time_s: f64,
+    time_still_s: f64,
     piece_index: usize,
 }
 
@@ -50,32 +56,44 @@ impl Referee {
             interpolation: Interpolation::new(initial_c, initial_c + Coord::new_f(1.0, 0.0)),
         }
     }
-    pub fn tick(&mut self, time_s: f64, pieces: &Vec<Piece>) {
-        self.maybe_focus(time_s, pieces);
+    pub fn tick(&mut self, delta_s: f64, pieces: &Vec<Piece>) {
+        self.maybe_focus(delta_s, pieces);
         if let Some(focus) = &self.focused {
-            self.direction = (pieces[focus.piece_index].pos.into::<Vec2>() - self.position).normalize();
+            self.direction =
+                (pieces[focus.piece_index].pos.into::<Vec2>() - self.position).normalize();
         } else {
-            if self.last_time_s != 0.0 {
-                let delta_s = time_s - self.last_time_s;
-                self.interpolation_s += delta_s;
-
-                self.prev_position = self.position;
-                self.position = self.interpolation.at_linear((self.interpolation_s / REFEREE_TRIP_TIME) as f32).into();
-                // self.direction.x = cos as f32;
-            }
-            self.last_time_s = time_s;
+            self.interpolation_s += delta_s;
+            self.prev_position = self.position;
+            self.position = self
+                .interpolation
+                .at_smooth((self.interpolation_s / REFEREE_TRIP_TIME) as f32)
+                .into();
+            // self.direction.x = cos as f32;
+        }
+        if self.interpolation_s >= REFEREE_TRIP_TIME {
+            self.interpolation_s = 0.0;
+            let (initial_c, trip) = if self.position.x > INITIAL_X {
+                (Coord::new_f(INITIAL_X + 1.0, -1.0), Coord::new_f(-2.0, 0.0))
+            } else {
+                (Coord::new_f(INITIAL_X - 1.0, -1.0), Coord::new_f(2.0, 0.0))
+            };
+            self.interpolation = Interpolation::new(initial_c, initial_c + trip);
         }
     }
 
-    fn maybe_focus(&mut self, time_s: f64, pieces: &Vec<Piece>) {
+    fn maybe_focus(&mut self, delta_s: f64, pieces: &Vec<Piece>) {
         for (piece_index, piece) in pieces.iter().enumerate() {
             if piece.moved && triangle_contains(self.radar(), piece.pos) {
-                self.focused = Some(Focus { last_movement_time_s: time_s, piece_index });
+                self.focused = Some(Focus {
+                    time_still_s: 0.0,
+                    piece_index,
+                });
                 return;
             }
         }
-        if let Some(focus) = self.focused {
-            if time_s - focus.last_movement_time_s > VIGILANCE_TIMER {
+        if let Some(focus) = &mut self.focused {
+            focus.time_still_s += delta_s;
+            if focus.time_still_s > VIGILANCE_TIMER {
                 self.focused = None;
             }
         }
@@ -110,8 +128,8 @@ impl Referee {
 
 fn triangle_contains(triangle: [Coord; 3], point: Coord) -> bool {
     counter_clockwise_triangle([triangle[0], triangle[1], point])
-    &&   counter_clockwise_triangle([triangle[1], triangle[2], point])
-    &&   counter_clockwise_triangle([triangle[2], triangle[0], point])
+        && counter_clockwise_triangle([triangle[1], triangle[2], point])
+        && counter_clockwise_triangle([triangle[2], triangle[0], point])
 }
 
 fn counter_clockwise_triangle(triangle: [Coord; 3]) -> bool {

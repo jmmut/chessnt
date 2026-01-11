@@ -30,6 +30,9 @@ impl Time {
             self.rolling_frame_time = 0.0;
         }
     }
+    pub fn delta(&self) -> f64 {
+        self.current_s - self.last_s
+    }
     pub fn fps(&self) -> f64 {
         self.cached_fps
     }

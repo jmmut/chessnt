@@ -92,8 +92,8 @@ impl Board {
 
         Self::new(cursor, size, pieces)
     }
-    pub fn tick(&mut self, time_s: f64) {
-        self.referee.tick(time_s, &self.pieces);
+    pub fn tick(&mut self, delta_s: f64) {
+        self.referee.tick(delta_s, &self.pieces);
         for piece in &mut self.pieces {
             piece.moved = false;
         }
