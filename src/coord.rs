@@ -50,9 +50,9 @@ impl Coord {
     }
     pub fn to_vec3(&self, y: f32) -> Vec3 {
         vec3(
-            self.column - COLUMNS as f32 * 0.5,
+            self.column ,
             y,
-            self.row - ROWS as f32 * 0.5,
+            self.row,
         )
     }
     pub fn into<T: From<Coord>>(self) -> T {
@@ -85,7 +85,7 @@ impl From<Coord> for Vec2 {
 }
 impl From<Vec3> for Coord {
     fn from(value: Vec3) -> Self {
-        Coord::new_f(value.z + COLUMNS as f32 * 0.5, value.x + ROWS as f32 * 0.5)
+        Coord::new_f(value.z, value.x)
     }
 }
 impl From<Coord> for Vec3 {

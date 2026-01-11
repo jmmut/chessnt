@@ -41,6 +41,9 @@ impl Referee {
         d *= DIR_MULTIPLIER;
         d
     }
+    // pub fn radar(&self) -> [Coord; 3] {
+    //     
+    // }
     pub fn dir_v3(&self) -> Vec3 {
         vec3(self.direction.x, 0.0, self.direction.y) * DIR_MULTIPLIER
     }
