@@ -151,13 +151,25 @@ impl Board {
         }
     }
     pub fn deselect(&mut self) {
-        self.selected = None;
-        for piece in &mut self.pieces {
-            if piece.pos == self.cursor {
-                piece.pos = piece.pos.round();
+        if let Some((selected_i, initial)) = self.selected {
+            let selected_rounded = self.pieces[selected_i].pos.round();
+            let mut any_overlap = false;
+            for (i, piece) in &mut self.pieces.iter().enumerate() {
+                if i != selected_i && piece.pos == selected_rounded {
+                    any_overlap = true;
+                    break;
+                }
             }
+            if any_overlap {
+                self.pieces[selected_i].pos = initial;
+            } else {
+                self.pieces[selected_i].pos = self.pieces[selected_i].pos.round();
+            }
+            self.selected = None;
+            self.cursor = self.cursor.round();
+        } else {
+            panic!("logic error: deselecting but there was no selection");
         }
-        self.cursor = self.cursor.round();
     }
     pub fn selected(&self) -> bool {
         self.selected.is_some()
