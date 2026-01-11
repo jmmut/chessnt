@@ -9,7 +9,7 @@ pub struct Referee {
 }
 
 const INITIAL_X: f32 = COLUMNS as f32 * 0.5 - 0.5;
-const DIR_MULTIPLIER: f32 = 5.0;
+const DIR_MULTIPLIER: f32 = 8.0;
 
 impl Referee {
     pub fn new() -> Self {
@@ -21,9 +21,11 @@ impl Referee {
         }
     }
     pub fn tick(&mut self, time_s: f64) {
+        // TODO: use delta to be able to slow down time?
         self.prev_position = self.position;
-        self.direction.x = time_s.sin() as f32;
-        self.position.x = INITIAL_X + self.direction.x;
+        let (sin, cos) = time_s.sin_cos();
+        self.position.x = INITIAL_X + sin as f32;
+        self.direction.x = cos as f32;
     }
     pub fn side(&self) -> bool {
         (self.position.x - self.prev_position.x) < 0.0

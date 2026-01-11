@@ -13,7 +13,8 @@ use macroquad::math::{vec2, vec3, Vec2, Vec3};
 use macroquad::models::{draw_mesh, Mesh};
 
 const SELECTION: Color = color_average(DARKBLUE, TRANSPARENT);
-const RADAR: Color = color_average(RED, LIGHTGRAY);
+// const RADAR: Color = color_average(color_average(RED, LIGHTGRAY), TRANSPARENT);
+const RADAR: Color = color_average(RED, TRANSPARENT);
 const GHOST: Color = color_average(DARKPURPLE, TRANSPARENT);
 const CURSOR: Color = color_average(DARKGREEN, TRANSPARENT);
 // const FIGURE: Color = color_average(PINK, TRANSPARENT);
@@ -232,7 +233,7 @@ impl Board {
         let radar_base =
             self.referee.pos_c().into::<Vec3>() + vec3(0.5, SELECTION_HEIGHT * 0.9, 0.5);
         let dir = self.referee.dir_v3();
-        let left = rotate_y_90(dir) * 0.5;
+        let left = rotate_y_90(dir) * 0.7;
         let radar_left = radar_base + dir + left;
         let radar_right = radar_base + dir - left;
         let radar = to_mesh_triangle([radar_base, radar_right, radar_left], RADAR);
