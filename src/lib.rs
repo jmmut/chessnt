@@ -42,7 +42,7 @@ pub const fn height_to_width(height: f32, aspect_ratio: f32) -> f32 {
 }
 
 pub fn set_3d_camera(camera: &CameraPos) {
-    let board_displacement = vec3(COLUMNS as f32 * 0.5,0.0, ROWS as f32*0.5);
+    let board_displacement = vec3(COLUMNS as f32 * 0.5, 0.0, ROWS as f32 * 0.5);
     set_camera(&Camera3D {
         position: vec3(0.0, camera.y, camera.z) + board_displacement,
         up: vec3(0.0, 1.0, 0.0),

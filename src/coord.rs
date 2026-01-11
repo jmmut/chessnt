@@ -49,11 +49,7 @@ impl Coord {
         }
     }
     pub fn to_vec3(&self, y: f32) -> Vec3 {
-        vec3(
-            self.column ,
-            y,
-            self.row,
-        )
+        vec3(self.column, y, self.row)
     }
     pub fn into<T: From<Coord>>(self) -> T {
         Into::<T>::into(self)

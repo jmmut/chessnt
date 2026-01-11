@@ -26,6 +26,7 @@ pub struct Piece {
     pub pos: Coord,
     pub moveset: Moveset,
     pub white: bool,
+    pub moved: bool,
 }
 impl Piece {
     pub fn new(pos: Coord, movement: Move, white: bool) -> Self {
@@ -33,6 +34,7 @@ impl Piece {
             pos,
             moveset: vec![movement],
             white,
+            moved: false,
         }
     }
 }
@@ -91,7 +93,10 @@ impl Board {
         Self::new(cursor, size, pieces)
     }
     pub fn tick(&mut self, time_s: f64) {
-        self.referee.tick(time_s)
+        self.referee.tick(time_s, &self.pieces);
+        for piece in &mut self.pieces {
+            piece.moved = false;
+        }
     }
     fn get_selected_piece(&self) -> Option<&Piece> {
         if let Some((index, _)) = self.selected {
@@ -117,6 +122,7 @@ impl Board {
     pub fn move_cursor_rel(&mut self, delta: Coord) {
         if let Some(piece) = self.get_selected_piece_mut() {
             piece.pos += delta;
+            piece.moved = true;
         }
         self.cursor += delta;
     }
@@ -230,12 +236,11 @@ impl Board {
             looking_leftwards,
             self.piece_size,
         );
-        let radar_base =
-            self.referee.pos_c().into::<Vec3>() + vec3(0.5, SELECTION_HEIGHT * 0.9, 0.5);
-        let dir = self.referee.dir_v3();
-        let left = rotate_y_90(dir) * 0.7;
-        let radar_left = radar_base + dir + left;
-        let radar_right = radar_base + dir - left;
+        let [radar_base, radar_right, radar_left] = self.referee.radar();
+        let square_offset = vec3(0.5, SELECTION_HEIGHT * 0.9, 0.5);
+        let radar_base = radar_base.into::<Vec3>() + square_offset;
+        let radar_right = radar_right.into::<Vec3>() + square_offset;
+        let radar_left = radar_left.into::<Vec3>() + square_offset;
         let radar = to_mesh_triangle([radar_base, radar_right, radar_left], RADAR);
         vec![mesh, radar]
     }
