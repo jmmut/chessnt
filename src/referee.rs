@@ -3,11 +3,27 @@ use crate::coord::Coord;
 use crate::COLUMNS;
 use macroquad::math::{vec2, vec3, Vec2, Vec3};
 
+pub struct Interpolation {
+    start: Coord,
+    end: Coord,
+}
+impl Interpolation {
+    pub fn new(start: Coord, end: Coord) -> Self {
+        Self { start, end }
+    }
+    pub fn at_linear(&self, t: f32) -> Coord {
+        let t = t.clamp(0.0, 1.0);
+        self.end * t + self.start * (1.0 - t)
+    }
+}
 pub struct Referee {
     position: Vec2,
     prev_position: Vec2,
     direction: Vec2,
     focused: Option<Focus>,
+    last_time_s: f64,
+    interpolation_s: f64,
+    interpolation: Interpolation,
 }
 #[derive(Copy, Clone)]
 pub struct Focus {
@@ -18,15 +34,20 @@ pub struct Focus {
 const INITIAL_X: f32 = COLUMNS as f32 * 0.5 - 0.5;
 const DIR_MULTIPLIER: f32 = 10.0;
 const VIGILANCE_TIMER: f64 = 1.0;
+const REFEREE_TRIP_TIME: f64 = 2.0;
 
 impl Referee {
     pub fn new() -> Self {
-        let initial = Coord::new_f(INITIAL_X, -1.0).into();
+        let initial_c = Coord::new_f(INITIAL_X, -1.0);
+        let initial = initial_c.into();
         Self {
             position: initial,
             prev_position: initial,
             direction: vec2(0.0, 1.0),
             focused: None,
+            last_time_s: 0.0,
+            interpolation_s: 0.0,
+            interpolation: Interpolation::new(initial_c, initial_c + Coord::new_f(1.0, 0.0)),
         }
     }
     pub fn tick(&mut self, time_s: f64, pieces: &Vec<Piece>) {
@@ -34,11 +55,15 @@ impl Referee {
         if let Some(focus) = &self.focused {
             self.direction = (pieces[focus.piece_index].pos.into::<Vec2>() - self.position).normalize();
         } else {
-            // TODO: use delta to be able to slow down time?
-            self.prev_position = self.position;
-            let (sin, cos) = time_s.sin_cos();
-            self.position.x = INITIAL_X + sin as f32;
-            self.direction.x = cos as f32;
+            if self.last_time_s != 0.0 {
+                let delta_s = time_s - self.last_time_s;
+                self.interpolation_s += delta_s;
+
+                self.prev_position = self.position;
+                self.position = self.interpolation.at_linear((self.interpolation_s / REFEREE_TRIP_TIME) as f32).into();
+                // self.direction.x = cos as f32;
+            }
+            self.last_time_s = time_s;
         }
     }
 
