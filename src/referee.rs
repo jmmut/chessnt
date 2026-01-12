@@ -39,6 +39,7 @@ pub struct Referee {
     last_time_s: f64,
     interpolation_s: f64,
     interpolation: Interpolation<Coord>,
+    pub trip_time: f64,
 }
 #[derive(Copy, Clone)]
 pub struct Focus {
@@ -47,14 +48,19 @@ pub struct Focus {
 }
 
 const INITIAL_X: f32 = COLUMNS as f32 * 0.5 - 0.5;
+const INITIAL_RIGHT: Coord = Coord::new_f(INITIAL_X + 1.0, -1.0);
+const INITIAL_LEFT: Coord = Coord::new_f(INITIAL_X - 1.0, -1.0);
 const DIR_MULTIPLIER: f32 = 8.0;
 const VIGILANCE_TIMER: f64 = 1.0;
 const REFEREE_TRIP_TIME: f64 = 4.0;
+const REFEREE_SPEED: f32 = (INITIAL_RIGHT.column - INITIAL_LEFT.column).abs() / REFEREE_TRIP_TIME as f32;
 
 impl Referee {
     pub fn new() -> Self {
         let initial_c = Coord::new_f(INITIAL_X, -1.0);
         let initial = initial_c.into();
+        let trip = Coord::new_f(1.0, 0.0);
+        let interpolation = Interpolation::new(initial_c, initial_c + trip);
         Self {
             position: initial,
             prev_position: initial,
@@ -62,7 +68,8 @@ impl Referee {
             focused: None,
             last_time_s: 0.0,
             interpolation_s: 0.0,
-            interpolation: Interpolation::new(initial_c, initial_c + Coord::new_f(1.0, 0.0)),
+            interpolation,
+            trip_time: (trip.column.abs() / REFEREE_SPEED) as f64, 
         }
     }
     pub fn tick(&mut self, delta_s: f64, pieces: &Vec<Piece>) {
@@ -75,21 +82,31 @@ impl Referee {
             self.prev_position = self.position;
             self.position = self
                 .interpolation
-                .at_smooth((self.interpolation_s / REFEREE_TRIP_TIME) as f32)
+                .at_smooth((self.interpolation_s / self.trip_time) as f32)
                 .into();
+            self.direction.y = 1.0;
             self.direction.x = (self.position.x - self.prev_position.x) / delta_s as f32
-                * REFEREE_TRIP_TIME as f32
+                * self.trip_time as f32
                 * 0.4;
         }
-        if self.interpolation_s >= REFEREE_TRIP_TIME {
-            self.interpolation_s = 0.0;
-            let (initial_c, trip) = if self.position.x > INITIAL_X {
-                (Coord::new_f(INITIAL_X + 1.0, -1.0), Coord::new_f(-2.0, 0.0))
-            } else {
-                (Coord::new_f(INITIAL_X - 1.0, -1.0), Coord::new_f(2.0, 0.0))
-            };
-            self.interpolation = Interpolation::new(initial_c, initial_c + trip);
+        if self.interpolation_s >= self.trip_time {
+            self.reset_referee_movement_interp();
         }
+    }
+
+    fn reset_referee_movement_interp(&mut self) {
+        let (start, end) = if self.position.x > INITIAL_X {
+            (INITIAL_RIGHT, INITIAL_LEFT)
+        } else {
+            (INITIAL_LEFT, INITIAL_RIGHT)
+        };
+        self.reset_referee_movement_interp_from(start, end);
+    }
+
+    fn reset_referee_movement_interp_from(&mut self, initial: Coord, end: Coord) {
+        self.interpolation = Interpolation::new(initial, end);
+        self.interpolation_s = 0.0;
+        self.trip_time = ((end - initial).column.abs() / REFEREE_SPEED) as f64;
     }
 
     fn maybe_focus(&mut self, delta_s: f64, pieces: &Vec<Piece>) {
@@ -106,6 +123,8 @@ impl Referee {
             focus.time_still_s += delta_s;
             if focus.time_still_s > VIGILANCE_TIMER {
                 self.focused = None;
+                let end = if self.direction.x < 0.0 {INITIAL_LEFT} else {INITIAL_RIGHT};
+                self.reset_referee_movement_interp_from(self.pos_c(), end);
             }
         }
     }

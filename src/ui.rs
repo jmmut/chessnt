@@ -260,6 +260,11 @@ impl DevUi {
             below_left(_rect),
             theme,
         );
+        let _rect = render_text(
+            &format!("trip time: {:0>5.2}", board.referee.trip_time),
+            below_left(_rect),
+            theme,
+        );
         self.navigation(theme, _rect, "Back", DevUiMenu::Main);
     }
 }
