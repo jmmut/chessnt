@@ -23,6 +23,7 @@ impl<T: Mul<f32, Output = T> + Add<f32, Output = T> + Add<T, Output = T> + Copy>
     }
 }
 
+#[allow(unused)]
 fn linear_raw(start: Coord, end: Coord, t: f32) -> Coord {
     let t = t.clamp(0.0, 1.0);
     (start * (1.0 - t)) + (end * t)
@@ -36,7 +37,6 @@ pub struct Referee {
     prev_position: Vec2,
     direction: Vec2,
     focused: Option<Focus>,
-    last_time_s: f64,
     interpolation_s: f64,
     interpolation: Interpolation<Coord>,
     pub trip_time: f64,
@@ -53,7 +53,8 @@ const INITIAL_LEFT: Coord = Coord::new_f(INITIAL_X - 1.0, -1.0);
 const DIR_MULTIPLIER: f32 = 8.0;
 const VIGILANCE_TIMER: f64 = 1.0;
 const REFEREE_TRIP_TIME: f64 = 4.0;
-const REFEREE_SPEED: f32 = (INITIAL_RIGHT.column - INITIAL_LEFT.column).abs() / REFEREE_TRIP_TIME as f32;
+const REFEREE_SPEED: f32 =
+    (INITIAL_RIGHT.column - INITIAL_LEFT.column).abs() / REFEREE_TRIP_TIME as f32;
 
 impl Referee {
     pub fn new() -> Self {
@@ -66,10 +67,9 @@ impl Referee {
             prev_position: initial,
             direction: vec2(0.0, 1.0),
             focused: None,
-            last_time_s: 0.0,
             interpolation_s: 0.0,
             interpolation,
-            trip_time: (trip.column.abs() / REFEREE_SPEED) as f64, 
+            trip_time: (trip.column.abs() / REFEREE_SPEED) as f64,
         }
     }
     pub fn tick(&mut self, delta_s: f64, pieces: &Vec<Piece>) {
@@ -123,7 +123,11 @@ impl Referee {
             focus.time_still_s += delta_s;
             if focus.time_still_s > VIGILANCE_TIMER {
                 self.focused = None;
-                let end = if self.direction.x < 0.0 {INITIAL_LEFT} else {INITIAL_RIGHT};
+                let end = if self.direction.x < 0.0 {
+                    INITIAL_LEFT
+                } else {
+                    INITIAL_RIGHT
+                };
                 self.reset_referee_movement_interp_from(self.pos_c(), end);
             }
         }

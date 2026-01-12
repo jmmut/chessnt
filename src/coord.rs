@@ -1,4 +1,3 @@
-use crate::{COLUMNS, ROWS};
 use macroquad::math::{f32, vec2, vec3, IVec2, Vec2, Vec3};
 use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
 

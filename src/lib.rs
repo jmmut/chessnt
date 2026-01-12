@@ -1,4 +1,4 @@
-use crate::theme::{CameraPos, Theme};
+use crate::theme::CameraPos;
 use macroquad::camera::{set_camera, Camera3D};
 use macroquad::color::Color;
 use macroquad::math::vec3;

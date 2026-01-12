@@ -1,20 +1,15 @@
 use chessnt::board::Board;
 use chessnt::coord::Coord;
-use chessnt::referee::Referee;
 use chessnt::theme::{CameraPos, Fonts, Textures, Theme};
 use chessnt::time::Time;
-use chessnt::ui::{below_left, render_text, rightwards, DevUi, SCALE};
+use chessnt::ui::{DevUi, SCALE};
 use chessnt::{
     set_3d_camera, AnyResult, COLUMNS, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_TITLE,
-    DEFAULT_WINDOW_WIDTH, FPS_AVERAGE_FRAMES, ROWS,
+    DEFAULT_WINDOW_WIDTH, ROWS,
 };
-use juquad::lazy::{Interactable, Renderable, Style, WidgetTrait};
-use juquad::widgets::anchor::Anchor;
-use juquad::widgets::Interaction;
 use macroquad::camera::set_default_camera;
 use macroquad::input::{is_key_down, is_key_pressed, KeyCode};
-use macroquad::math::{vec2, Rect, Vec2};
-use macroquad::miniquad::date::now;
+use macroquad::math::{vec2, Vec2};
 use macroquad::prelude::{
     clear_background, next_frame, screen_height, screen_width, Conf, LIGHTGRAY,
 };

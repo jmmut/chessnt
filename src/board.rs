@@ -1,5 +1,5 @@
 use crate::coord::Coord;
-use crate::referee::{rotate_y, rotate_y_90, Referee};
+use crate::referee::Referee;
 use crate::render::{
     mesh_coord, mesh_cursor, mesh_figure_texture, mesh_vertical_texture, to_mesh_triangle,
 };
@@ -8,7 +8,7 @@ use crate::ui::render_text_font;
 use crate::{set_3d_camera, TRANSPARENT};
 use juquad::widgets::anchor::Anchor;
 use macroquad::camera::set_default_camera;
-use macroquad::color::{Color, DARKBLUE, DARKGREEN, DARKPURPLE, LIGHTGRAY, RED, WHITE};
+use macroquad::color::{Color, DARKBLUE, DARKGREEN, DARKPURPLE, RED, WHITE};
 use macroquad::math::{vec2, vec3, Vec2, Vec3};
 use macroquad::models::{draw_mesh, Mesh};
 

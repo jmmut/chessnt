@@ -161,9 +161,9 @@ impl DevUi {
     ) {
         match self.menu {
             DevUiMenu::Hidden => {}
-            DevUiMenu::Main => self.draw_main(time, theme, board, camera),
+            DevUiMenu::Main => self.draw_main(theme),
             DevUiMenu::Camera => self.draw_camera(time, theme, board, camera),
-            DevUiMenu::Referee => self.draw_referee(time, theme, board, camera),
+            DevUiMenu::Referee => self.draw_referee(theme, board),
         }
     }
     fn dev_ui_title(theme: &mut Theme) -> Rect {
@@ -185,10 +185,7 @@ impl DevUi {
 
     fn draw_main(
         &mut self,
-        time: &Time,
         theme: &mut Theme,
-        board: &mut Board,
-        camera: &mut CameraPos,
     ) {
         let _rect = Self::dev_ui_title(theme);
         let _rect = self.navigation(theme, _rect, "Camera controls", DevUiMenu::Camera);
@@ -244,10 +241,8 @@ impl DevUi {
 
     fn draw_referee(
         &mut self,
-        time: &Time,
         theme: &mut Theme,
         board: &mut Board,
-        camera: &mut CameraPos,
     ) {
         let _rect = render_text(
             "DEV UI (toggle with '/')",
