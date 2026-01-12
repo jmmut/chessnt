@@ -18,10 +18,19 @@ impl<T: Mul<f32, Output = T> + Add<f32, Output = T> + Add<T, Output = T> + Copy>
     }
     pub fn at_smooth(&self, t: f32) -> T {
         let t = t.clamp(0.0, 1.0);
-        let t = Interpolation::new(t * t, 1.0 - (1.0 - t) * (1.0 - t)).at_linear(t);
+        let t = smooth(t);
         self.at_linear(t)
     }
 }
+
+fn linear_raw(start: Coord, end: Coord, t: f32) -> Coord {
+    let t = t.clamp(0.0, 1.0);
+    (start * (1.0 - t)) + (end * t)
+}
+fn smooth(t: f32) -> f32 {
+    Interpolation::new(t * t, 1.0 - (1.0 - t) * (1.0 - t)).at_linear(t)
+}
+
 pub struct Referee {
     position: Vec2,
     prev_position: Vec2,
@@ -38,9 +47,9 @@ pub struct Focus {
 }
 
 const INITIAL_X: f32 = COLUMNS as f32 * 0.5 - 0.5;
-const DIR_MULTIPLIER: f32 = 10.0;
+const DIR_MULTIPLIER: f32 = 8.0;
 const VIGILANCE_TIMER: f64 = 1.0;
-const REFEREE_TRIP_TIME: f64 = 2.0;
+const REFEREE_TRIP_TIME: f64 = 4.0;
 
 impl Referee {
     pub fn new() -> Self {
@@ -68,7 +77,9 @@ impl Referee {
                 .interpolation
                 .at_smooth((self.interpolation_s / REFEREE_TRIP_TIME) as f32)
                 .into();
-            // self.direction.x = cos as f32;
+            self.direction.x = (self.position.x - self.prev_position.x) / delta_s as f32
+                * REFEREE_TRIP_TIME as f32
+                * 0.4;
         }
         if self.interpolation_s >= REFEREE_TRIP_TIME {
             self.interpolation_s = 0.0;

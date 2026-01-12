@@ -207,8 +207,8 @@ impl DevUi {
         // let text = "You can move the green cursor with your keyboard arrows";
         // let rect = render_text(text, below_left(rect), theme);
         // let rect = render_text("Toggle dev UI with '/'", below_left(rect), theme);
-        // let text = format!("FPS: {:.1}", _time.fps());
-        // let _rect = render_text(&text, below_left(_rect), theme);
+        let text = format!("FPS: {:.1}", time.fps());
+        let _rect = render_text(&text, below_left(_rect), theme);
         // let text = format!("scale: {}", unsafe { SCALE });
         // let _rect = render_text(&text, below_left(_rect), theme);
 
