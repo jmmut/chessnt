@@ -1,4 +1,4 @@
-use chessnt::board::Board;
+use chessnt::board::{Board, Move};
 use chessnt::coord::Coord;
 use chessnt::theme::{CameraPos, Fonts, Textures, Theme};
 use chessnt::time::Time;
@@ -14,6 +14,7 @@ use macroquad::prelude::{
     clear_background, next_frame, screen_height, screen_width, Conf, LIGHTGRAY,
 };
 use macroquad::prelude::{load_texture, load_ttf_font};
+use std::collections::HashMap;
 
 #[macroquad::main(window_conf)]
 async fn main() {
@@ -23,8 +24,17 @@ async fn main() {
 }
 
 async fn fallible_main() -> AnyResult<()> {
+    #[rustfmt::skip]
     let textures = Textures {
         placeholder: load_texture("assets/images/ph_chara.png").await?,
+        pieces: HashMap::from([
+            (Move::Pawn, load_texture("assets/images/pieces/icon-peon.png").await?),
+            (Move::Rook, load_texture("assets/images/pieces/icon-torre.png").await?),
+            (Move::Knight, load_texture("assets/images/pieces/icon-caballo.png").await?),
+            (Move::Bishop, load_texture("assets/images/pieces/icon-alfil.png").await?),
+            (Move::Queen, load_texture("assets/images/pieces/icon-reina.png").await?),
+            (Move::King, load_texture("assets/images/pieces/icon-rey.png").await?),
+        ]),
     };
     let fonts = Fonts {
         titles: load_ttf_font("assets/fonts/LilitaOne-Regular.ttf").await?,
@@ -33,7 +43,7 @@ async fn fallible_main() -> AnyResult<()> {
     let mut theme_owned = Theme::new(textures, fonts);
     let theme = &mut theme_owned;
     let mut camera = CameraPos {
-        y: 12.69,      //6.0,
+        y: 12.69,      // 6.0,
         z: 17.57,      // 8.0,
         fovy: 44.33,   // 45.0,
         target_y: 0.5, // 0.0,

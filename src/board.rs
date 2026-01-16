@@ -1,14 +1,15 @@
 use crate::coord::Coord;
 use crate::referee::Referee;
 use crate::render::{
-    mesh_coord, mesh_cursor, mesh_figure_texture, mesh_vertical_texture, to_mesh_triangle,
+    floor_corners, mesh_coord, mesh_cursor, mesh_figure_texture, mesh_vertical_texture,
+    to_mesh_texture_quad, to_mesh_triangle,
 };
 use crate::theme::{color_average, CameraPos, Theme};
 use crate::ui::render_text_font;
 use crate::{set_3d_camera, TRANSPARENT};
 use juquad::widgets::anchor::Anchor;
 use macroquad::camera::set_default_camera;
-use macroquad::color::{Color, DARKBLUE, DARKGREEN, DARKPURPLE, RED, WHITE};
+use macroquad::color::{Color, BLACK, DARKBLUE, DARKGREEN, DARKPURPLE, RED, WHITE};
 use macroquad::math::{vec2, vec3, Vec2, Vec3};
 use macroquad::models::{draw_mesh, Mesh};
 
@@ -18,8 +19,10 @@ const RADAR: Color = color_average(RED, TRANSPARENT);
 const GHOST: Color = color_average(DARKPURPLE, TRANSPARENT);
 const CURSOR: Color = color_average(DARKGREEN, TRANSPARENT);
 // const FIGURE: Color = color_average(PINK, TRANSPARENT);
-const SELECTION_HEIGHT: f32 = 0.05;
 const CURSOR_HEIGHT: f32 = 0.1;
+const SELECTION_HEIGHT: f32 = CURSOR_HEIGHT * 0.5;
+const RADAR_HEIGHT: f32 = SELECTION_HEIGHT * 0.9;
+const FLOOR_PIECE_HEIGHT: f32 = RADAR_HEIGHT * 0.8;
 
 #[derive(Clone)]
 pub struct Piece {
@@ -41,7 +44,7 @@ impl Piece {
 
 pub type Moveset = Vec<Move>;
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Move {
     Pawn,
     Bishop,
@@ -227,6 +230,14 @@ impl Board {
                 theme.textures.placeholder,
                 self.piece_size,
             ));
+            meshes.push(to_mesh_texture_quad(
+                floor_corners(piece.pos, FLOOR_PIECE_HEIGHT),
+                BLACK,
+                Some(theme.textures.pieces[&piece.moveset[0]]),
+                false,
+                true,
+            ));
+
             // meshes.push(render_text_3d(
             //     &moves_to_string(&piece.moveset),
             //     Anchor::bottom_left(piece.pos.column, 2.0),
@@ -249,7 +260,7 @@ impl Board {
             self.piece_size,
         );
         let [radar_base, radar_right, radar_left] = self.referee.radar();
-        let square_offset = vec3(0.5, SELECTION_HEIGHT * 0.9, 0.5);
+        let square_offset = vec3(0.5, RADAR_HEIGHT, 0.5);
         let radar_base = radar_base.into::<Vec3>() + square_offset;
         let radar_right = radar_right.into::<Vec3>() + square_offset;
         let radar_left = radar_left.into::<Vec3>() + square_offset;

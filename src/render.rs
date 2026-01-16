@@ -9,13 +9,20 @@ pub fn mesh_coord(coord: Coord, color: Color) -> Mesh {
     mesh_coord_h(coord, color, 0.0)
 }
 pub fn mesh_coord_h(coord: Coord, color: Color, height: f32) -> Mesh {
+    let corners = floor_corners(coord, height);
+    let mesh = to_mesh(corners, color);
+    mesh
+}
+
+pub fn floor_corners(coord: Coord, height: f32) -> [Vec3; 4] {
     let coord_00: Vec3 = coord.to_vec3(height);
     let coord_10 = (coord + Coord::new_i(1, 0)).to_vec3(height);
     let coord_01 = (coord + Coord::new_i(0, 1)).to_vec3(height);
     let coord_11 = (coord + Coord::new_i(1, 1)).to_vec3(height);
-    let mesh = to_mesh([coord_00, coord_10, coord_01, coord_11], color);
-    mesh
+    let corners = [coord_00, coord_10, coord_01, coord_11];
+    corners
 }
+
 pub fn mesh_cursor(coord: Coord, color: Color, height: f32) -> Vec<Mesh> {
     let mut meshes = Vec::new();
     let coord_00: Vec3 = coord.to_vec3(height);
@@ -55,6 +62,7 @@ pub fn mesh_vertical_texture(
         color,
         texture,
         flip_horiz,
+        false,
     );
     mesh
 }
@@ -80,25 +88,20 @@ pub fn to_mesh_texture_quad(
     color: Color,
     texture: Option<Texture2D>,
     flip_horiz: bool,
+    flip_vert: bool,
 ) -> Mesh {
     let coords = corners.to_vec();
     let mut vertices = Vec::new();
-
-    let uvs = if flip_horiz {
-        vec![
-            vec2(1.0, 1.0),
-            vec2(0.0, 1.0),
-            vec2(1.0, 0.0),
-            vec2(0.0, 0.0),
-        ]
-    } else {
-        vec![
-            vec2(0.0, 1.0),
-            vec2(1.0, 1.0),
-            vec2(0.0, 0.0),
-            vec2(1.0, 0.0),
-        ]
-    };
+    let yes_horiz_flip = flip_horiz as i32 as f32;
+    let not_horiz_flip = !flip_horiz as i32 as f32;
+    let yes_vert_flip = flip_vert as i32 as f32;
+    let not_vert_flip = !flip_vert as i32 as f32;
+    let uvs = vec![
+        vec2(yes_horiz_flip, not_vert_flip),
+        vec2(not_horiz_flip, not_vert_flip),
+        vec2(yes_horiz_flip, yes_vert_flip),
+        vec2(not_horiz_flip, yes_vert_flip),
+    ];
     for (position, uv) in coords.into_iter().zip(uvs) {
         let vertex = Vertex {
             position,

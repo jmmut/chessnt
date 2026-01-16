@@ -183,10 +183,7 @@ impl DevUi {
         rect
     }
 
-    fn draw_main(
-        &mut self,
-        theme: &mut Theme,
-    ) {
+    fn draw_main(&mut self, theme: &mut Theme) {
         let _rect = Self::dev_ui_title(theme);
         let _rect = self.navigation(theme, _rect, "Camera controls", DevUiMenu::Camera);
         let _rect = self.navigation(theme, _rect, "Inspect referee", DevUiMenu::Referee);
@@ -239,11 +236,7 @@ impl DevUi {
         self.navigation(theme, _rect, "Back", DevUiMenu::Main);
     }
 
-    fn draw_referee(
-        &mut self,
-        theme: &mut Theme,
-        board: &mut Board,
-    ) {
+    fn draw_referee(&mut self, theme: &mut Theme, board: &mut Board) {
         let _rect = render_text(
             "DEV UI (toggle with '/')",
             Anchor::top_left(0.0, 0.0),

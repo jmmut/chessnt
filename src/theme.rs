@@ -5,7 +5,9 @@ use crate::{
 use macroquad::color::Color;
 use macroquad::color_u8;
 use macroquad::prelude::{Font, Texture2D, Vec2};
+use std::collections::HashMap;
 
+use crate::board::Move;
 use juquad::widgets::{StateStyle, Style as Coloring};
 use macroquad::math::vec2;
 
@@ -70,6 +72,7 @@ pub struct CameraPos {
 }
 pub struct Textures {
     pub placeholder: Texture2D,
+    pub pieces: HashMap<Move, Texture2D>,
 }
 
 pub struct Palette {
