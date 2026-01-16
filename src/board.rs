@@ -429,6 +429,6 @@ fn inside(pos: Coord, board_size: Coord) -> bool {
 
 /// assumes meshes are just quads, with vertices in zig-zag order. (top left, top right, bottom left, bottom right).
 fn depth(mesh: &Mesh) -> f32 {
-    (mesh.vertices[0].position.z + mesh.vertices[2].position.z) * 0.5
-        + (mesh.vertices[0].position.y + mesh.vertices[2].position.y) * 0.005
+    (mesh.vertices[0].position.z + mesh.vertices[2].position.z) * 0.5 * 0.001
+        + (mesh.vertices[0].position.y + mesh.vertices[2].position.y) * 0.5 * 10.0
 }
