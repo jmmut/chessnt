@@ -24,19 +24,30 @@ const SELECTION_HEIGHT: f32 = CURSOR_HEIGHT * 0.5;
 const RADAR_HEIGHT: f32 = SELECTION_HEIGHT * 0.9;
 const FLOOR_PIECE_HEIGHT: f32 = RADAR_HEIGHT * 0.8;
 
+#[derive(Clone, Copy, PartialEq)]
+pub enum Team {
+    White,
+    Black,
+}
+impl Team {
+    pub fn is_white(&self) -> bool {
+        *self == Team::White
+    }
+}
+
 #[derive(Clone)]
 pub struct Piece {
     pub pos: Coord,
     pub moveset: Moveset,
-    pub white: bool,
+    pub team: Team,
     pub moved: bool,
 }
 impl Piece {
-    pub fn new(pos: Coord, movement: Move, white: bool) -> Self {
+    pub fn new(pos: Coord, movement: Move, team: Team) -> Self {
         Self {
             pos,
             moveset: vec![movement],
-            white,
+            team,
             moved: false,
         }
     }
@@ -87,10 +98,10 @@ impl Board {
         ];
         let mut pieces = Vec::new();
         for (row, movement) in &back_column {
-            pieces.push(Piece::new(Coord::new_i(7, *row), *movement, true));
-            pieces.push(Piece::new(Coord::new_i(0, *row), *movement, false));
-            pieces.push(Piece::new(Coord::new_i(6, *row), Move::Pawn, true));
-            pieces.push(Piece::new(Coord::new_i(1, *row), Move::Pawn, false));
+            pieces.push(Piece::new(Coord::new_i(7, *row), *movement, Team::White));
+            pieces.push(Piece::new(Coord::new_i(0, *row), *movement, Team::Black));
+            pieces.push(Piece::new(Coord::new_i(6, *row), Move::Pawn, Team::White));
+            pieces.push(Piece::new(Coord::new_i(1, *row), Move::Pawn, Team::Black));
         }
 
         Self::new(cursor, size, pieces)
@@ -200,7 +211,7 @@ impl Board {
                 render_text_font(
                     &format!(
                         "{} {}",
-                        if piece.white { "WHITE" } else { "BLACK" },
+                        if piece.team.is_white() { "WHITE" } else { "BLACK" },
                         moves_to_string(&piece.moveset).to_uppercase()
                     ),
                     Anchor::top_left(0.0, 0.0),
@@ -324,7 +335,7 @@ fn move_to_string(movement: Move) -> String {
 fn possible_moves(size: Coord, piece: &Piece) -> Vec<Coord> {
     let mut valid_moves = Vec::new();
     for movement in &piece.moveset {
-        valid_moves.extend(piece_moves(movement, piece.pos, piece.white, size));
+        valid_moves.extend(piece_moves(movement, piece.pos, piece.team, size));
     }
     valid_moves
         .into_iter()
@@ -335,7 +346,7 @@ fn possible_moves(size: Coord, piece: &Piece) -> Vec<Coord> {
 fn piece_moves(
     movement: &Move,
     piece_pos: Coord,
-    piece_is_white: bool,
+    team: Team,
     board_size: Coord,
 ) -> Vec<Coord> {
     const PAWN: &[Coord] = &[Coord::new_i(-1, 0)];
@@ -363,7 +374,7 @@ fn piece_moves(
         Move::Pawn => PAWN
             .iter()
             .map(|movement| {
-                if piece_is_white {
+                if team.is_white() {
                     *movement
                 } else {
                     *movement * -1.0

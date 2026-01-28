@@ -45,7 +45,7 @@ pub fn mesh_cursor(coord: Coord, color: Color, height: f32) -> Vec<Mesh> {
 // }
 pub fn mesh_figure_texture(piece: &Piece, color: Color, texture: Texture2D, size: Vec2) -> Mesh {
     let coord_00 = (piece.pos + Coord::new_f(0.5 - size.x * 0.5, 0.5)).to_vec3(0.0);
-    mesh_vertical_texture(coord_00, color, Some(texture), piece.white, size)
+    mesh_vertical_texture(coord_00, color, Some(texture), false, size)
 }
 pub fn mesh_vertical_texture(
     coord_00: Vec3,
