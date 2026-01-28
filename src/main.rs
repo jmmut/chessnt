@@ -1,4 +1,4 @@
-use chessnt::board::{Board, Move};
+use chessnt::board::{Board, Move, Team};
 use chessnt::coord::Coord;
 use chessnt::theme::{CameraPos, Fonts, Textures, Theme};
 use chessnt::time::Time;
@@ -28,12 +28,18 @@ async fn fallible_main() -> AnyResult<()> {
     let textures = Textures {
         placeholder: load_texture("assets/images/ph_chara.png").await?,
         pieces: HashMap::from([
-            (Move::Pawn, load_texture("assets/images/pieces/icon-peon.png").await?),
-            (Move::Rook, load_texture("assets/images/pieces/icon-torre.png").await?),
-            (Move::Knight, load_texture("assets/images/pieces/icon-caballo.png").await?),
-            (Move::Bishop, load_texture("assets/images/pieces/icon-alfil.png").await?),
-            (Move::Queen, load_texture("assets/images/pieces/icon-reina.png").await?),
-            (Move::King, load_texture("assets/images/pieces/icon-rey.png").await?),
+            ((Team::White, Move::Pawn), load_texture("assets/images/pieces/icon-w-peon.png").await?),
+            ((Team::White, Move::Rook), load_texture("assets/images/pieces/icon-w-torre.png").await?),
+            ((Team::White, Move::Knight), load_texture("assets/images/pieces/icon-w-caballo.png").await?),
+            ((Team::White, Move::Bishop), load_texture("assets/images/pieces/icon-w-alfil.png").await?),
+            ((Team::White, Move::Queen), load_texture("assets/images/pieces/icon-w-reina.png").await?),
+            ((Team::White, Move::King), load_texture("assets/images/pieces/icon-w-rey.png").await?),
+            ((Team::Black, Move::Pawn), load_texture("assets/images/pieces/icon-b-peon.png").await?),
+            ((Team::Black, Move::Rook), load_texture("assets/images/pieces/icon-b-torre.png").await?),
+            ((Team::Black, Move::Knight), load_texture("assets/images/pieces/icon-b-caballo.png").await?),
+            ((Team::Black, Move::Bishop), load_texture("assets/images/pieces/icon-b-alfil.png").await?),
+            ((Team::Black, Move::Queen), load_texture("assets/images/pieces/icon-b-reina.png").await?),
+            ((Team::Black, Move::King), load_texture("assets/images/pieces/icon-b-rey.png").await?),
         ]),
     };
     let fonts = Fonts {

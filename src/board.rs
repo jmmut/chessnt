@@ -24,7 +24,7 @@ const SELECTION_HEIGHT: f32 = CURSOR_HEIGHT * 0.5;
 const RADAR_HEIGHT: f32 = SELECTION_HEIGHT * 0.9;
 const FLOOR_PIECE_HEIGHT: f32 = RADAR_HEIGHT * 0.8;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Team {
     White,
     Black,
@@ -243,8 +243,8 @@ impl Board {
             ));
             meshes.push(to_mesh_texture_quad(
                 floor_corners(piece.pos, FLOOR_PIECE_HEIGHT),
-                BLACK,
-                Some(theme.textures.pieces[&piece.moveset[0]]),
+                WHITE,
+                Some(theme.textures.pieces[&(piece.team, piece.moveset[0])]),
                 false,
                 true,
             ));
