@@ -1,5 +1,7 @@
 # Chessn't
 
+Early prototype of a game where you play chess and can cheat.
+
 ## Play
 
 You can play the web version at https://jmmut.itch.io/chessnt or download native executables for Linux, Mac and Windows.
