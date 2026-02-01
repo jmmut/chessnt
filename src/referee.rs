@@ -133,7 +133,7 @@ impl Referee {
             focus.time_still_s += delta_s;
             if focus.time_still_s > VIGILANCE_TIMER {
                 self.focused = None;
-                let end = if self.direction.x < 0.0 {
+                let end = if self.position.x > INITIAL_X {
                     INITIAL_LEFT
                 } else {
                     INITIAL_RIGHT
