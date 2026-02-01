@@ -145,8 +145,8 @@ impl Referee {
         }
     }
 
-    pub fn side(&self) -> bool {
-        (self.position.x - self.prev_position.x) < 0.0
+    pub fn looking_leftwards(&self) -> bool {
+        self.direction.x < 0.0
     }
     pub fn pos_c(&self) -> Coord {
         self.position.into()

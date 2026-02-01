@@ -266,7 +266,7 @@ impl Board {
     fn referee_meshes(&self, theme: &mut Theme) -> Vec<Mesh> {
         let coord_00 =
             (self.referee.pos_c() + Coord::new_f(0.5 - self.piece_size.x * 0.5, 0.5)).to_vec3(0.0);
-        let looking_leftwards = self.referee.side();
+        let looking_leftwards = self.referee.looking_leftwards();
         let mesh = mesh_vertical_texture(
             coord_00,
             WHITE,
