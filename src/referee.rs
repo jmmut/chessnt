@@ -12,13 +12,11 @@ impl<T: Mul<f32, Output = T> + Add<f32, Output = T> + Add<T, Output = T> + Copy>
     pub fn new(start: T, end: T) -> Self {
         Self { start, end }
     }
-    pub fn at_linear(&self, t: f32) -> T {
+    /// Note that you can compound interpolation transformations like:
+    /// `interp.at(smooth(quadratic(t)))`
+    pub fn at(&self, t: f32) -> T {
         let t = t.clamp(0.0, 1.0);
         (self.start * (1.0 - t)) + (self.end * t)
-    }
-    pub fn at_smooth(&self, t: f32) -> T {
-        let t = smooth(t);
-        self.at_linear(t)
     }
 }
 
@@ -28,7 +26,10 @@ fn linear_raw(start: Coord, end: Coord, t: f32) -> Coord {
     (start * (1.0 - t)) + (end * t)
 }
 fn smooth(t: f32) -> f32 {
-    Interpolation::new(t * t, 1.0 - (1.0 - t) * (1.0 - t)).at_linear(t)
+    Interpolation::new(t * t, 1.0 - (1.0 - t) * (1.0 - t)).at(t)
+}
+fn quadratic(t: f32) -> f32 {
+    Interpolation::new(0.0, t * t).at(t)
 }
 
 pub struct Referee {
@@ -83,7 +84,7 @@ impl Referee {
             self.prev_position = self.position;
             self.position = self
                 .interpolation
-                .at_smooth((self.interpolation_s / self.trip_time) as f32)
+                .at(smooth((self.interpolation_s / self.trip_time) as f32))
                 .into();
             let y = 1.0;
             let x = (self.position.x - self.prev_position.x) / delta_s as f32
@@ -91,8 +92,8 @@ impl Referee {
                 * 0.4;
             let dir_end = vec2(x, y);
             if let Some(radar_start) = self.radar_start {
-                self.direction =
-                    Interpolation::new(radar_start, dir_end).at_smooth((self.interpolation_s / self.trip_time) as f32);
+                self.direction = Interpolation::new(radar_start, dir_end)
+                    .at(smooth((self.interpolation_s / self.trip_time) as f32));
             } else {
                 self.direction = dir_end;
             }
