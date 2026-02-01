@@ -47,6 +47,10 @@ impl Coord {
             column: self.column.round(),
         }
     }
+    pub fn normalize(self) -> Coord {
+        let v: Vec2 = self.into();
+        v.normalize().into()
+    }
     pub fn to_vec3(&self, y: f32) -> Vec3 {
         vec3(self.column, y, self.row)
     }

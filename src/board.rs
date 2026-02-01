@@ -211,7 +211,11 @@ impl Board {
                 render_text_font(
                     &format!(
                         "{} {}",
-                        if piece.team.is_white() { "WHITE" } else { "BLACK" },
+                        if piece.team.is_white() {
+                            "WHITE"
+                        } else {
+                            "BLACK"
+                        },
                         moves_to_string(&piece.moveset).to_uppercase()
                     ),
                     Anchor::top_left(0.0, 0.0),
@@ -343,12 +347,7 @@ fn possible_moves(size: Coord, piece: &Piece) -> Vec<Coord> {
         .collect()
 }
 
-fn piece_moves(
-    movement: &Move,
-    piece_pos: Coord,
-    team: Team,
-    board_size: Coord,
-) -> Vec<Coord> {
+fn piece_moves(movement: &Move, piece_pos: Coord, team: Team, board_size: Coord) -> Vec<Coord> {
     const PAWN: &[Coord] = &[Coord::new_i(-1, 0)];
     const KING: &[Coord] = &[
         Coord::new_i(-1, 0),

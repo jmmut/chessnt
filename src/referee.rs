@@ -50,7 +50,7 @@ pub struct Focus {
 const INITIAL_X: f32 = COLUMNS as f32 * 0.5 - 0.5;
 const INITIAL_RIGHT: Coord = Coord::new_f(INITIAL_X + 1.0, -1.0);
 const INITIAL_LEFT: Coord = Coord::new_f(INITIAL_X - 1.0, -1.0);
-const DIR_MULTIPLIER: f32 = 8.0;
+const DIR_MULTIPLIER: f32 = 9.0;
 const VIGILANCE_TIMER: f64 = 1.0;
 const REFEREE_TRIP_TIME: f64 = 4.0;
 const REFEREE_SPEED: f32 =
@@ -143,7 +143,8 @@ impl Referee {
         self.position
     }
     pub fn dir_c(&self) -> Coord {
-        let mut d = self.direction.into();
+        let mut d: Coord = self.direction.into();
+        d = d.normalize();
         d *= DIR_MULTIPLIER;
         d
     }
