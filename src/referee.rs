@@ -39,6 +39,7 @@ pub struct Referee {
     focused: Option<Focus>,
     interpolation_s: f64,
     interpolation: Interpolation<Coord>,
+    radar_start: Option<Vec2>,
     pub trip_time: f64,
 }
 #[derive(Copy, Clone)]
@@ -69,6 +70,7 @@ impl Referee {
             focused: None,
             interpolation_s: 0.0,
             interpolation,
+            radar_start: None,
             trip_time: (trip.column.abs() / REFEREE_SPEED) as f64,
         }
     }
@@ -84,10 +86,17 @@ impl Referee {
                 .interpolation
                 .at_smooth((self.interpolation_s / self.trip_time) as f32)
                 .into();
-            self.direction.y = 1.0;
-            self.direction.x = (self.position.x - self.prev_position.x) / delta_s as f32
+            let y = 1.0;
+            let x = (self.position.x - self.prev_position.x) / delta_s as f32
                 * self.trip_time as f32
                 * 0.4;
+            let dir_end = vec2(x, y);
+            if let Some(radar_start) = self.radar_start {
+                self.direction =
+                    Interpolation::new(radar_start, dir_end).at_smooth((self.interpolation_s / self.trip_time) as f32);
+            } else {
+                self.direction = dir_end;
+            }
         }
         if self.interpolation_s >= self.trip_time {
             self.reset_referee_movement_interp();
@@ -107,6 +116,7 @@ impl Referee {
         self.interpolation = Interpolation::new(initial, end);
         self.interpolation_s = 0.0;
         self.trip_time = ((end - initial).column.abs() / REFEREE_SPEED) as f64;
+        self.radar_start = None;
     }
 
     fn maybe_focus(&mut self, delta_s: f64, pieces: &Vec<Piece>) {
@@ -128,7 +138,9 @@ impl Referee {
                 } else {
                     INITIAL_RIGHT
                 };
+                let radar_start = self.direction;
                 self.reset_referee_movement_interp_from(self.pos_c(), end);
+                self.radar_start = Some(radar_start);
             }
         }
     }
