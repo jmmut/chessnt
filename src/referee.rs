@@ -17,7 +17,6 @@ impl<T: Mul<f32, Output = T> + Add<f32, Output = T> + Add<T, Output = T> + Copy>
         (self.start * (1.0 - t)) + (self.end * t)
     }
     pub fn at_smooth(&self, t: f32) -> T {
-        let t = t.clamp(0.0, 1.0);
         let t = smooth(t);
         self.at_linear(t)
     }
