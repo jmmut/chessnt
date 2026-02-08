@@ -9,7 +9,7 @@ use crate::ui::render_text_font;
 use crate::{set_3d_camera, TRANSPARENT};
 use juquad::widgets::anchor::Anchor;
 use macroquad::camera::set_default_camera;
-use macroquad::color::{Color, BLACK, DARKBLUE, DARKGREEN, DARKPURPLE, RED, WHITE};
+use macroquad::color::{Color, DARKBLUE, DARKGREEN, DARKPURPLE, RED, WHITE};
 use macroquad::math::{vec2, vec3, Vec2, Vec3};
 use macroquad::models::{draw_mesh, Mesh};
 
@@ -188,6 +188,29 @@ impl Board {
     pub fn selected(&self) -> bool {
         self.selected.is_some()
     }
+    pub fn swap_pieces(&mut self) {
+        if let Some((selected_i, initial)) = self.selected {
+            let selected_rounded = self.pieces[selected_i].pos.round();
+            let mut any_overlap_i = None;
+            for (i, piece) in &mut self.pieces.iter().enumerate() {
+                if i != selected_i && piece.pos == selected_rounded {
+                    any_overlap_i = Some(i);
+                    break;
+                }
+            }
+            if let Some(overlap_i) = any_overlap_i {
+                self.pieces[overlap_i].pos = initial;
+                self.pieces[selected_i].pos = self.pieces[selected_i].pos.round();
+            }
+            self.selected = None;
+            self.cursor = self.cursor.round();
+        } else {
+            panic!("logic error: swapping pieces but there was no selection");
+        }
+    }
+}
+
+impl Board {
     pub fn draw(&self, camera: &CameraPos, theme: &mut Theme) {
         let mut meshes = Vec::new();
         self.draw_floor(theme);

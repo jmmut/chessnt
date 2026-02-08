@@ -91,6 +91,9 @@ fn handle_inputs_shoud_exit(board: &mut Board, dev_ui: &mut DevUi) -> bool {
             board.select();
         }
     }
+    if is_key_pressed(KeyCode::E) {
+        board.swap_pieces();
+    }
 
     if is_key_pressed(KeyCode::KpAdd) {
         unsafe {
@@ -109,16 +112,16 @@ fn move_cursor_or_piece(board: &mut Board) {
     if board.selected() {
         let mut delta = Coord::new_f(0.0, 0.0);
         let max = 0.05;
-        if is_key_down(KeyCode::Right) {
+        if is_key_down(KeyCode::Right) || is_key_down(KeyCode::D) {
             delta += Coord::new_f(0.1, 0.0);
         }
-        if is_key_down(KeyCode::Left) {
+        if is_key_down(KeyCode::Left) || is_key_down(KeyCode::A) {
             delta += Coord::new_f(-0.1, 0.0);
         }
-        if is_key_down(KeyCode::Up) {
+        if is_key_down(KeyCode::Up) || is_key_down(KeyCode::W) {
             delta += Coord::new_f(0.0, -0.1);
         }
-        if is_key_down(KeyCode::Down) {
+        if is_key_down(KeyCode::Down) || is_key_down(KeyCode::S) {
             delta += Coord::new_f(0.0, 0.1);
         }
         if delta != Coord::new_i(0, 0) {
@@ -127,16 +130,16 @@ fn move_cursor_or_piece(board: &mut Board) {
             board.move_cursor_rel(delta);
         }
     } else {
-        if is_key_pressed(KeyCode::Right) {
+        if is_key_pressed(KeyCode::Right) || is_key_pressed(KeyCode::D) {
             board.move_cursor_rel(Coord::new_i(1, 0));
         }
-        if is_key_pressed(KeyCode::Left) {
+        if is_key_pressed(KeyCode::Left) || is_key_pressed(KeyCode::A) {
             board.move_cursor_rel(Coord::new_i(-1, 0));
         }
-        if is_key_pressed(KeyCode::Up) {
+        if is_key_pressed(KeyCode::Up) || is_key_pressed(KeyCode::W) {
             board.move_cursor_rel(Coord::new_i(0, -1));
         }
-        if is_key_pressed(KeyCode::Down) {
+        if is_key_pressed(KeyCode::Down) || is_key_pressed(KeyCode::S) {
             board.move_cursor_rel(Coord::new_i(0, 1));
         }
     }

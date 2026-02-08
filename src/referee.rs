@@ -28,6 +28,8 @@ fn linear_raw(start: Coord, end: Coord, t: f32) -> Coord {
 fn smooth(t: f32) -> f32 {
     Interpolation::new(t * t, 1.0 - (1.0 - t) * (1.0 - t)).at(t)
 }
+
+#[allow(unused)]
 fn quadratic(t: f32) -> f32 {
     Interpolation::new(0.0, t * t).at(t)
 }
