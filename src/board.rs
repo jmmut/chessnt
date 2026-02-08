@@ -180,8 +180,16 @@ impl Board {
                 self.pieces[selected_i].pos = initial;
                 // TODO: maybe no need for an different key press for swapping?
             } else {
-                self.pieces[selected_i].pos = self.pieces[selected_i].pos.round();
-                self.pieces[selected_i].initial_pos = self.pieces[selected_i].pos;
+                let rounded_pos = self.pieces[selected_i].pos.round();
+                let mut moves = possible_moves(self.size, &self.pieces, selected_i);
+                moves.push(self.pieces[selected_i].initial_pos);
+                if !moves.contains(&rounded_pos)
+                    && self.referee.saw_any_piece(&self.pieces, vec![selected_i])
+                {
+                    self.kill(selected_i);
+                } else {
+                    self.pieces[selected_i].set_pos(rounded_pos);
+                }
             }
             self.selected = None;
             self.cursor = self.cursor.round();
@@ -202,21 +210,25 @@ impl Board {
                 self.pieces[selected_i].set_pos(selected_pos_rounded);
                 if self
                     .referee
-                    .saw_swapped_pieces(&self.pieces, selected_i, overlap_i)
+                    .saw_any_piece(&self.pieces, vec![selected_i, overlap_i])
                 {
                     // TODO: defer after animation
                     self.pieces[overlap_i].set_pos(selected_pos_rounded);
-                    self.pieces[selected_i].alive = false;
-                    self.pieces[selected_i].pos.row = -2.0;
-                    while self.any_overlapping_piece(selected_i).is_some() {
-                        self.pieces[selected_i].pos.row -= 1.0;
-                    }
+                    self.kill(selected_i);
                 }
             }
             self.selected = None;
             self.cursor = self.cursor.round();
         } else {
             panic!("logic error: swapping pieces but there was no selection");
+        }
+    }
+
+    fn kill(&mut self, selected_i: usize) {
+        self.pieces[selected_i].alive = false;
+        self.pieces[selected_i].pos.row = -2.0;
+        while self.any_overlapping_piece(selected_i).is_some() {
+            self.pieces[selected_i].pos.row -= 1.0;
         }
     }
 

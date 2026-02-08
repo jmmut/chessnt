@@ -175,10 +175,11 @@ impl Referee {
         vec3(self.direction.x, 0.0, self.direction.y) * DIR_MULTIPLIER
     }
 
-    pub fn saw_swapped_pieces(&self, pieces: &Vec<Piece>, swapper: usize, swapped: usize) -> bool {
+    pub fn saw_any_piece(&self, pieces: &Vec<Piece>, indexes: Vec<usize>) -> bool {
         let radar = self.radar();
-        triangle_contains(radar, pieces[swapper].pos)
-            || triangle_contains(radar, pieces[swapped].pos)
+        indexes
+            .iter()
+            .any(|index| triangle_contains(radar, pieces[*index].pos))
     }
 }
 
