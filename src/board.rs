@@ -37,6 +37,7 @@ impl Team {
 
 #[derive(Clone)]
 pub struct Piece {
+    pub initial_pos: Coord,
     pub pos: Coord,
     pub moveset: Moveset,
     pub team: Team,
@@ -46,12 +47,17 @@ pub struct Piece {
 impl Piece {
     pub fn new(pos: Coord, movement: Move, team: Team) -> Self {
         Self {
+            initial_pos: pos,
             pos,
             moveset: vec![movement],
             team,
             moved: false,
             alive: true,
         }
+    }
+    pub fn set_pos(&mut self, new_pos: Coord) {
+        self.pos = new_pos;
+        self.initial_pos = new_pos;
     }
 }
 
@@ -69,7 +75,7 @@ pub enum Move {
 
 pub struct Board {
     cursor: Coord,
-    selected: Option<(usize, Coord)>,
+    selected: Option<usize>,
     size: Coord,
     pieces: Vec<Piece>,
     pub referee: Referee,
@@ -115,21 +121,21 @@ impl Board {
         }
     }
     fn get_selected_piece(&self) -> Option<&Piece> {
-        if let Some((index, _)) = self.selected {
+        if let Some(index) = self.selected {
             self.pieces.get(index)
         } else {
             None
         }
     }
-    fn get_selected_piece_and_pos(&self) -> Option<(&Piece, Coord)> {
-        if let Some((index, initial_pos)) = self.selected {
-            Some((self.pieces.get(index).unwrap(), initial_pos))
-        } else {
-            None
-        }
-    }
+    // fn get_selected_piece_and_pos(&self) -> Option<(&Piece, Coord)> {
+    //     if let Some(index) = self.selected {
+    //         Some((self.pieces.get(index).unwrap(), initial_pos))
+    //     } else {
+    //         None
+    //     }
+    // }
     fn get_selected_piece_mut(&mut self) -> Option<&mut Piece> {
-        if let Some((index, _)) = self.selected {
+        if let Some(index) = self.selected {
             self.pieces.get_mut(index)
         } else {
             None
@@ -144,7 +150,7 @@ impl Board {
     }
     pub fn select(&mut self) {
         let new_selection = self.cursor.round();
-        if let Some((_index, _initial)) = self.selected {
+        if let Some(_index) = self.selected {
             panic!("can't select if there's something already selected");
             // TODO: swap pieces?
             // let
@@ -160,20 +166,22 @@ impl Board {
         } else {
             for (i, piece) in self.pieces.iter().enumerate() {
                 if piece.pos == new_selection {
-                    self.selected = Some((i, piece.pos));
+                    self.selected = Some(i);
                     return;
                 }
             }
         }
     }
     pub fn deselect(&mut self) {
-        if let Some((selected_i, initial)) = self.selected {
+        if let Some(selected_i) = self.selected {
+            let initial = self.pieces[selected_i].initial_pos;
             let any_overlap_i = self.any_overlapping_piece(selected_i);
             if any_overlap_i.is_some() {
                 self.pieces[selected_i].pos = initial;
                 // TODO: maybe no need for an different key press for swapping?
             } else {
                 self.pieces[selected_i].pos = self.pieces[selected_i].pos.round();
+                self.pieces[selected_i].initial_pos = self.pieces[selected_i].pos;
             }
             self.selected = None;
             self.cursor = self.cursor.round();
@@ -185,17 +193,19 @@ impl Board {
         self.selected.is_some()
     }
     pub fn swap_pieces(&mut self) {
-        if let Some((selected_i, initial)) = self.selected {
+        if let Some(selected_i) = self.selected {
             let any_overlap_i = self.any_overlapping_piece(selected_i);
             if let Some(overlap_i) = any_overlap_i {
-                self.pieces[overlap_i].pos = initial;
-                self.pieces[selected_i].pos = self.pieces[selected_i].pos.round();
+                let initial = self.pieces[selected_i].initial_pos;
+                self.pieces[overlap_i].set_pos(initial.round());
+                let selected_pos_rounded = self.pieces[selected_i].pos.round();
+                self.pieces[selected_i].set_pos(selected_pos_rounded);
                 if self
                     .referee
                     .saw_swapped_pieces(&self.pieces, selected_i, overlap_i)
                 {
                     // TODO: defer after animation
-                    self.pieces[overlap_i].pos = self.pieces[selected_i].pos;
+                    self.pieces[overlap_i].set_pos(selected_pos_rounded);
                     self.pieces[selected_i].alive = false;
                     self.pieces[selected_i].pos.row = -2.0;
                     while self.any_overlapping_piece(selected_i).is_some() {
@@ -211,14 +221,26 @@ impl Board {
     }
 
     fn any_overlapping_piece(&mut self, selected_i: usize) -> Option<usize> {
-        let selected_rounded = self.pieces[selected_i].pos.round();
-        for (i, piece) in &mut self.pieces.iter().enumerate() {
-            if i != selected_i && piece.pos.round() == selected_rounded {
-                return Some(i);
-            }
-        }
-        None
+        any_overlapping_piece(selected_i, &self.pieces)
     }
+}
+
+fn any_overlapping_piece(selected_i: usize, pieces: &Vec<Piece>) -> Option<usize> {
+    let selected_rounded = pieces[selected_i].pos.round();
+    for (i, piece) in pieces.iter().enumerate() {
+        if i != selected_i && piece.pos.round() == selected_rounded {
+            return Some(i);
+        }
+    }
+    None
+}
+fn any_piece_at(pos: Coord, pieces: &Vec<Piece>) -> Option<usize> {
+    for (i, piece) in pieces.iter().enumerate() {
+        if piece.pos.round() == pos {
+            return Some(i);
+        }
+    }
+    None
 }
 
 impl Board {
@@ -319,11 +341,13 @@ impl Board {
 
     fn possible_moves_meshes(&self) -> Vec<Mesh> {
         let mut meshes = Vec::new();
-        if let Some((piece, initial_pos)) = self.get_selected_piece_and_pos() {
-            let mut ghost = piece.clone();
-            meshes.extend(mesh_cursor(initial_pos, GHOST, SELECTION_HEIGHT));
-            ghost.pos = initial_pos;
-            for movement in possible_moves(self.size, &ghost) {
+        if let Some(index) = self.selected {
+            meshes.extend(mesh_cursor(
+                self.pieces[index].initial_pos,
+                GHOST,
+                SELECTION_HEIGHT,
+            ));
+            for movement in possible_moves(self.size, &self.pieces, index) {
                 meshes.extend(mesh_cursor(movement, SELECTION, SELECTION_HEIGHT))
             }
         }
@@ -370,10 +394,11 @@ fn move_to_string(movement: Move) -> String {
     }
     .to_string()
 }
-fn possible_moves(size: Coord, piece: &Piece) -> Vec<Coord> {
+fn possible_moves(size: Coord, pieces: &Vec<Piece>, piece_index: usize) -> Vec<Coord> {
     let mut valid_moves = Vec::new();
+    let piece = &pieces[piece_index];
     for movement in &piece.moveset {
-        valid_moves.extend(piece_moves(movement, piece.pos, piece.team, size));
+        valid_moves.extend(piece_moves(movement, pieces, piece_index, size));
     }
     valid_moves
         .into_iter()
@@ -381,8 +406,12 @@ fn possible_moves(size: Coord, piece: &Piece) -> Vec<Coord> {
         .collect()
 }
 
-fn piece_moves(movement: &Move, piece_pos: Coord, team: Team, board_size: Coord) -> Vec<Coord> {
-    const PAWN: &[Coord] = &[Coord::new_i(-1, 0)];
+fn piece_moves(
+    movement: &Move,
+    pieces: &Vec<Piece>,
+    piece_index: usize,
+    board_size: Coord,
+) -> Vec<Coord> {
     const KING: &[Coord] = &[
         Coord::new_i(-1, 0),
         Coord::new_i(1, 0),
@@ -403,18 +432,9 @@ fn piece_moves(movement: &Move, piece_pos: Coord, team: Team, board_size: Coord)
         Coord::new_i(-1, 2),
         Coord::new_i(-2, 1),
     ];
+    let piece_pos = pieces[piece_index].initial_pos;
     match movement {
-        Move::Pawn => PAWN
-            .iter()
-            .map(|movement| {
-                if team.is_white() {
-                    *movement
-                } else {
-                    *movement * -1.0
-                }
-            })
-            .map(|p| p + piece_pos)
-            .collect(),
+        Move::Pawn => get_pawn_positions(piece_index, pieces, board_size),
         Move::Bishop => get_bishop_positions(piece_pos, board_size),
         Move::Knight => KNIGHT.iter().map(|p| *p + piece_pos).collect(),
         Move::Rook => get_rook_positions(piece_pos, board_size),
@@ -424,6 +444,37 @@ fn piece_moves(movement: &Move, piece_pos: Coord, team: Team, board_size: Coord)
             .chain(get_bishop_positions(piece_pos, board_size))
             .collect(),
     }
+}
+
+fn get_pawn_positions(piece_index: usize, pieces: &Vec<Piece>, board_size: Coord) -> Vec<Coord> {
+    let piece_pos = pieces[piece_index].initial_pos;
+    let team = pieces[piece_index].team;
+    let mut direction = Coord::new_i(-1, 0);
+    let mut moves = vec![];
+    if team.is_white() {
+        if piece_pos.column == board_size.column - 2.0 {
+            moves.push(direction * 2.0 + piece_pos);
+        }
+    } else {
+        direction *= -1.0;
+        if piece_pos.column == 1.0 {
+            moves.push(direction * 2.0 + piece_pos);
+        }
+    }
+    let attack = piece_pos + direction + Coord::new_i(0, 1);
+    if let Some(other) = any_piece_at(attack, pieces) {
+        if inside(attack, board_size) && pieces[other].team != pieces[piece_index].team {
+            moves.push(attack);
+        }
+    }
+    let attack = piece_pos + direction + Coord::new_i(0, -1);
+    if let Some(other) = any_piece_at(attack, pieces) {
+        if inside(attack, board_size) && pieces[other].team != pieces[piece_index].team {
+            moves.push(attack);
+        }
+    }
+    moves.push(direction + piece_pos);
+    moves
 }
 
 fn get_rook_positions(piece_pos: Coord, board_size: Coord) -> Vec<Coord> {
