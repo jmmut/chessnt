@@ -513,7 +513,10 @@ fn get_pawn_positions(piece_index: usize, pieces: &Vec<Piece>, board_size: Coord
             moves.push(direction * 2.0 + piece_pos);
         }
     }
-    moves.push(direction + piece_pos);
+    let front = direction + piece_pos;
+    if any_other_piece_at(front, piece_index, pieces).is_none() {
+        moves.push(front);
+    }
 
     let mut add_if_enemy_is_at = |attack| {
         if let Some(other) = any_other_piece_at(attack, piece_index, pieces) {
