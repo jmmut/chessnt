@@ -269,7 +269,7 @@ impl Board {
                 self.piece_size,
             ));
             meshes.push(to_mesh_texture_quad(
-                floor_corners(piece.pos, FLOOR_PIECE_HEIGHT),
+                floor_corners(piece.pos.round(), FLOOR_PIECE_HEIGHT),
                 WHITE,
                 Some(theme.textures.pieces[&(piece.team, piece.moveset[0])]),
                 false,
