@@ -92,9 +92,6 @@ fn handle_inputs_shoud_exit(board: &mut Board, dev_ui: &mut DevUi) -> bool {
             board.select();
         }
     }
-    if is_key_pressed(KeyCode::E) {
-        board.swap_pieces();
-    }
 
     if is_key_pressed(KeyCode::KpAdd) {
         unsafe {

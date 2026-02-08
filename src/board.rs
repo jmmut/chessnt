@@ -186,12 +186,26 @@ impl Board {
                 let referee_saw = self.referee.saw_any_piece(&self.pieces, vec![selected_i]);
                 let rounded_pos = self.pieces[overlap_i].pos.round();
                 let enemy = self.pieces[overlap_i].team != self.pieces[selected_i].team;
-                if moves.contains(&rounded_pos) && referee_saw && enemy {
-                    self.kill(overlap_i);
-                    self.pieces[selected_i].set_pos(rounded_pos);
-                    self.referee.turn.toggle();
+                if enemy {
+                    if moves.contains(&rounded_pos) && referee_saw {
+                        self.kill(overlap_i);
+                        self.pieces[selected_i].set_pos(rounded_pos);
+                        self.referee.turn.toggle();
+                    } else {
+                        self.pieces[selected_i].set_pos(initial);
+                    }
                 } else {
-                    self.pieces[selected_i].set_pos(initial);
+                    let initial = self.pieces[selected_i].initial_pos;
+                    self.pieces[overlap_i].set_pos(initial.round());
+                    self.pieces[selected_i].set_pos(rounded_pos);
+                    if self
+                        .referee
+                        .saw_any_piece(&self.pieces, vec![selected_i, overlap_i])
+                    {
+                        // TODO: defer after animation
+                        self.pieces[overlap_i].set_pos(rounded_pos);
+                        self.kill(selected_i);
+                    }
                 }
                 // TODO: maybe no need for an different key press for swapping?
             } else {
@@ -222,29 +236,6 @@ impl Board {
     }
     pub fn selected(&self) -> bool {
         self.selected.is_some()
-    }
-    pub fn swap_pieces(&mut self) {
-        if let Some(selected_i) = self.selected {
-            let any_overlap_i = self.any_overlapping_piece(selected_i);
-            if let Some(overlap_i) = any_overlap_i {
-                let initial = self.pieces[selected_i].initial_pos;
-                self.pieces[overlap_i].set_pos(initial.round());
-                let selected_pos_rounded = self.pieces[selected_i].pos.round();
-                self.pieces[selected_i].set_pos(selected_pos_rounded);
-                if self
-                    .referee
-                    .saw_any_piece(&self.pieces, vec![selected_i, overlap_i])
-                {
-                    // TODO: defer after animation
-                    self.pieces[overlap_i].set_pos(selected_pos_rounded);
-                    self.kill(selected_i);
-                }
-            }
-            self.selected = None;
-            self.cursor = self.cursor.round();
-        } else {
-            panic!("logic error: swapping pieces but there was no selection");
-        }
     }
 
     fn kill(&mut self, selected_i: usize) {
