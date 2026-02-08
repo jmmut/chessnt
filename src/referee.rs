@@ -1,4 +1,4 @@
-use crate::board::Piece;
+use crate::board::{Piece, Team};
 use crate::coord::Coord;
 use crate::COLUMNS;
 use macroquad::math::{vec2, vec3, Vec2, Vec3};
@@ -42,6 +42,7 @@ pub struct Referee {
     interpolation_s: f64,
     interpolation: Interpolation<Coord>,
     radar_start: Option<Vec2>,
+    pub turn: Team,
     pub trip_time: f64,
 }
 
@@ -74,6 +75,7 @@ impl Referee {
             interpolation_s: 0.0,
             interpolation,
             radar_start: None,
+            turn: Team::White,
             trip_time: (trip.column.abs() / REFEREE_SPEED) as f64,
         }
     }

@@ -1,15 +1,15 @@
+use crate::board::{Move, Team};
 use crate::{
     height_to_width, DEFAULT_ASPECT_RATIO, DEFAULT_FONT_SIZE, DEFAULT_WINDOW_HEIGHT,
     DEFAULT_WINDOW_WIDTH,
 };
+use juquad::draw::to_rect;
+use juquad::widgets::{StateStyle, Style as Coloring};
 use macroquad::color::Color;
 use macroquad::color_u8;
+use macroquad::math::{vec2, Rect};
 use macroquad::prelude::{Font, Texture2D, Vec2};
 use std::collections::HashMap;
-
-use crate::board::{Move, Team};
-use juquad::widgets::{StateStyle, Style as Coloring};
-use macroquad::math::vec2;
 
 pub struct Theme {
     pub screen: Vec2,
@@ -47,6 +47,9 @@ impl Theme {
     pub fn update_screen_size(&mut self, screen: Vec2) {
         self.screen = screen;
         self.font_size = choose_scale(screen.x, screen.y, self.base_font_size);
+    }
+    pub fn screen_rect(&self) -> Rect {
+        to_rect(vec2(0.0, 0.0), self.screen)
     }
     pub fn font(&self) -> Font {
         self.fonts.text
@@ -98,6 +101,10 @@ const fn choose_scale(width: f32, height: f32, font_size: f32) -> f32 {
         } else {
             2.0
         }
+}
+
+pub fn margin(theme: &Theme) -> Vec2 {
+    Vec2::splat(theme.font_size() * 2.0)
 }
 pub struct Fonts {
     pub titles: Font,

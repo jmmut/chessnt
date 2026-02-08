@@ -4,13 +4,12 @@ use crate::render::{
     floor_corners, mesh_coord, mesh_cursor, mesh_figure_texture, mesh_vertical_texture,
     to_mesh_texture_quad, to_mesh_triangle,
 };
-use crate::theme::{color_average, CameraPos, Theme};
+use crate::theme::{color_average, margin, Theme};
 use crate::ui::render_text_font;
-use crate::{set_3d_camera, TRANSPARENT};
-use juquad::widgets::anchor::Anchor;
-use macroquad::camera::set_default_camera;
+use crate::TRANSPARENT;
+use juquad::widgets::anchor::{Anchor, Horizontal, Layout, Vertical};
 use macroquad::color::{Color, DARKBLUE, DARKGREEN, DARKPURPLE, RED, WHITE};
-use macroquad::math::{vec2, vec3, Vec2, Vec3};
+use macroquad::math::{vec2, vec3, Rect, Vec2, Vec3};
 use macroquad::models::{draw_mesh, Mesh};
 
 const SELECTION: Color = color_average(DARKBLUE, TRANSPARENT);
@@ -32,6 +31,12 @@ pub enum Team {
 impl Team {
     pub fn is_white(&self) -> bool {
         *self == Team::White
+    }
+    pub fn toggle(&mut self) {
+        match self {
+            Team::White => *self = Team::Black,
+            Team::Black => *self = Team::White,
+        }
     }
 }
 
@@ -181,14 +186,22 @@ impl Board {
                 // TODO: maybe no need for an different key press for swapping?
             } else {
                 let rounded_pos = self.pieces[selected_i].pos.round();
+                let initial_pos = self.pieces[selected_i].initial_pos.round();
                 let mut moves = possible_moves(self.size, &self.pieces, selected_i);
                 moves.push(self.pieces[selected_i].initial_pos);
-                if !moves.contains(&rounded_pos)
-                    && self.referee.saw_any_piece(&self.pieces, vec![selected_i])
-                {
-                    self.kill(selected_i);
-                } else {
-                    self.pieces[selected_i].set_pos(rounded_pos);
+                let referee_saw = self.referee.saw_any_piece(&self.pieces, vec![selected_i]);
+                self.pieces[selected_i].set_pos(rounded_pos);
+                if referee_saw {
+                    if !moves.contains(&rounded_pos) {
+                        self.kill(selected_i);
+                    } else if self.referee.turn != self.pieces[selected_i].team {
+                        self.kill(selected_i);
+                    } else if rounded_pos != initial_pos {
+                        self.referee.turn.toggle();
+                    } else {
+                        // picked up the piece and dropped it the same place.
+                        // TODO: punish this?
+                    }
                 }
             }
             self.selected = None;
@@ -256,7 +269,8 @@ fn any_piece_at(pos: Coord, pieces: &Vec<Piece>) -> Option<usize> {
 }
 
 impl Board {
-    pub fn draw(&self, camera: &CameraPos, theme: &mut Theme) {
+    /// assumes 3d camera is enabled
+    pub fn draw_world(&self, theme: &Theme) {
         let mut meshes = Vec::new();
         self.draw_floor(theme);
 
@@ -269,13 +283,27 @@ impl Board {
         for mesh in meshes {
             draw_mesh(&mesh); // can't render cursor and figures online because of intersecting quads with transparencies
         }
-        self.draw_piece_info(camera, theme);
     }
 
-    fn draw_piece_info(&self, camera: &CameraPos, theme: &mut Theme) {
+    /// assumes default camera is enabled
+    pub fn draw_ui(&self, theme: &Theme) {
+        let _rect = theme.screen_rect();
+        let _rect = Anchor::inside(
+            _rect,
+            Layout::Vertical {
+                direction: Vertical::Bottom,
+                alignment: Horizontal::Left,
+            },
+            margin(theme),
+        )
+        .get_rect(vec2(0.0, 0.0));
+        let _rect = self.draw_turn(_rect, theme);
+        let _rect = self.draw_piece_info(_rect, theme);
+    }
+
+    fn draw_piece_info(&self, previous_rect: Rect, theme: &Theme) -> Rect {
         for piece in &self.pieces {
             if piece.pos.round() == self.cursor.round() {
-                set_default_camera();
                 render_text_font(
                     &format!(
                         "{} {}",
@@ -286,13 +314,28 @@ impl Board {
                         },
                         moves_to_string(&piece.moveset).to_uppercase()
                     ),
-                    Anchor::top_left(0.0, 0.0),
+                    Anchor::below(previous_rect, Horizontal::Left, 0.0),
                     theme,
                     theme.font_title(),
                 );
-                set_3d_camera(camera);
             }
         }
+        previous_rect
+    }
+    fn draw_turn(&self, previous_rect: Rect, theme: &Theme) -> Rect {
+        render_text_font(
+            &format!(
+                "It's {}'s turn",
+                if self.referee.turn.is_white() {
+                    "WHITE"
+                } else {
+                    "BLACK"
+                },
+            ),
+            Anchor::below(previous_rect, Horizontal::Left, 0.0),
+            theme,
+            theme.font_title(),
+        )
     }
 
     fn selection_meshes(&self) -> Vec<Mesh> {
@@ -304,7 +347,7 @@ impl Board {
         }
     }
 
-    fn piece_meshes(&self, theme: &mut Theme) -> Vec<Mesh> {
+    fn piece_meshes(&self, theme: &Theme) -> Vec<Mesh> {
         let mut meshes = Vec::new();
         for piece in &self.pieces {
             meshes.push(mesh_figure_texture(
@@ -331,7 +374,7 @@ impl Board {
         meshes
     }
 
-    fn referee_meshes(&self, theme: &mut Theme) -> Vec<Mesh> {
+    fn referee_meshes(&self, theme: &Theme) -> Vec<Mesh> {
         let coord_00 =
             (self.referee.pos_c() + Coord::new_f(0.5 - self.piece_size.x * 0.5, 0.5)).to_vec3(0.0);
         let looking_leftwards = self.referee.looking_leftwards();
@@ -366,7 +409,7 @@ impl Board {
         meshes
     }
 
-    fn draw_floor(&self, theme: &mut Theme) {
+    fn draw_floor(&self, theme: &Theme) {
         for column in 0..self.size.column() {
             for row in 0..self.size.row() {
                 let color = if (row + column) % 2 == 0 {

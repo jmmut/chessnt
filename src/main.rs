@@ -69,9 +69,10 @@ async fn fallible_main() -> AnyResult<()> {
 
         set_3d_camera(&camera);
         clear_background(LIGHTGRAY);
-        board.draw(&camera, theme);
+        board.draw_world(theme);
 
         set_default_camera();
+        board.draw_ui(theme);
         dev_ui.draw(&time, theme, &mut board, &mut camera);
         next_frame().await
     }
