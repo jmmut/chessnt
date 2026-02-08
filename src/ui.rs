@@ -10,6 +10,7 @@ use juquad::widgets::text::TextRect;
 use juquad::widgets::{Interaction, StateStyle, Widget};
 use macroquad::math::Rect;
 use macroquad::prelude::{Font, TextParams};
+use crate::INITIAL_DEV_UI;
 
 pub fn render_text(text: &str, anchor: Anchor, theme: &Theme) -> Rect {
     render_text_font(text, anchor, theme, theme.font())
@@ -139,7 +140,7 @@ pub struct DevUi {
 impl DevUi {
     pub fn new() -> Self {
         Self {
-            menu: DevUiMenu::Main,
+            menu: INITIAL_DEV_UI,
         }
     }
     pub fn toggle(&mut self) {

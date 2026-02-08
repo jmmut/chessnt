@@ -2,6 +2,7 @@ use crate::theme::CameraPos;
 use macroquad::camera::{set_camera, Camera3D};
 use macroquad::color::Color;
 use macroquad::math::vec3;
+use crate::ui::DevUiMenu;
 
 pub mod board;
 pub mod coord;
@@ -14,16 +15,17 @@ pub mod ui;
 pub const COLUMNS: i32 = 8;
 pub const ROWS: i32 = 8;
 
+pub const INITIAL_DEV_UI: DevUiMenu = DevUiMenu::Hidden;
+
 pub const TRANSPARENT: Color = Color::new(1.0, 1.0, 1.0, 0.0);
 
+pub const FPS_AVERAGE_FRAMES: i32 = 6;
 pub const DEFAULT_FONT_SIZE: f32 = 16.0;
 
 pub const DEFAULT_ASPECT_RATIO: f32 = 16.0 / 9.0;
 pub const DEFAULT_WINDOW_WIDTH: i32 = 992;
 pub const DEFAULT_WINDOW_HEIGHT: i32 = width_to_height_default(DEFAULT_WINDOW_WIDTH as f32) as i32;
 pub const DEFAULT_WINDOW_TITLE: &str = "Chessn't!";
-
-pub const FPS_AVERAGE_FRAMES: i32 = 6;
 
 pub type AnyError = Box<dyn std::error::Error>;
 pub type AnyResult<T> = Result<T, AnyError>;
