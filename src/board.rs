@@ -41,6 +41,7 @@ pub struct Piece {
     pub moveset: Moveset,
     pub team: Team,
     pub moved: bool,
+    pub alive: bool,
 }
 impl Piece {
     pub fn new(pos: Coord, movement: Move, team: Team) -> Self {
@@ -49,6 +50,7 @@ impl Piece {
             moveset: vec![movement],
             team,
             moved: false,
+            alive: true,
         }
     }
 }
@@ -166,16 +168,10 @@ impl Board {
     }
     pub fn deselect(&mut self) {
         if let Some((selected_i, initial)) = self.selected {
-            let selected_rounded = self.pieces[selected_i].pos.round();
-            let mut any_overlap = false;
-            for (i, piece) in &mut self.pieces.iter().enumerate() {
-                if i != selected_i && piece.pos == selected_rounded {
-                    any_overlap = true;
-                    break;
-                }
-            }
-            if any_overlap {
+            let any_overlap_i = self.any_overlapping_piece(selected_i);
+            if any_overlap_i.is_some() {
                 self.pieces[selected_i].pos = initial;
+                // TODO: maybe no need for an different key press for swapping?
             } else {
                 self.pieces[selected_i].pos = self.pieces[selected_i].pos.round();
             }
@@ -190,23 +186,38 @@ impl Board {
     }
     pub fn swap_pieces(&mut self) {
         if let Some((selected_i, initial)) = self.selected {
-            let selected_rounded = self.pieces[selected_i].pos.round();
-            let mut any_overlap_i = None;
-            for (i, piece) in &mut self.pieces.iter().enumerate() {
-                if i != selected_i && piece.pos == selected_rounded {
-                    any_overlap_i = Some(i);
-                    break;
-                }
-            }
+            let any_overlap_i = self.any_overlapping_piece(selected_i);
             if let Some(overlap_i) = any_overlap_i {
                 self.pieces[overlap_i].pos = initial;
                 self.pieces[selected_i].pos = self.pieces[selected_i].pos.round();
+                if self
+                    .referee
+                    .saw_swapped_pieces(&self.pieces, selected_i, overlap_i)
+                {
+                    // TODO: defer after animation
+                    self.pieces[overlap_i].pos = self.pieces[selected_i].pos;
+                    self.pieces[selected_i].alive = false;
+                    self.pieces[selected_i].pos.row = -2.0;
+                    while self.any_overlapping_piece(selected_i).is_some() {
+                        self.pieces[selected_i].pos.row -= 1.0;
+                    }
+                }
             }
             self.selected = None;
             self.cursor = self.cursor.round();
         } else {
             panic!("logic error: swapping pieces but there was no selection");
         }
+    }
+
+    fn any_overlapping_piece(&mut self, selected_i: usize) -> Option<usize> {
+        let selected_rounded = self.pieces[selected_i].pos.round();
+        for (i, piece) in &mut self.pieces.iter().enumerate() {
+            if i != selected_i && piece.pos.round() == selected_rounded {
+                return Some(i);
+            }
+        }
+        None
     }
 }
 

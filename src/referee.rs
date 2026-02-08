@@ -44,6 +44,7 @@ pub struct Referee {
     radar_start: Option<Vec2>,
     pub trip_time: f64,
 }
+
 #[derive(Copy, Clone)]
 pub struct Focus {
     time_still_s: f64,
@@ -172,6 +173,12 @@ impl Referee {
     }
     pub fn dir_v3(&self) -> Vec3 {
         vec3(self.direction.x, 0.0, self.direction.y) * DIR_MULTIPLIER
+    }
+
+    pub fn saw_swapped_pieces(&self, pieces: &Vec<Piece>, swapper: usize, swapped: usize) -> bool {
+        let radar = self.radar();
+        triangle_contains(radar, pieces[swapper].pos)
+            || triangle_contains(radar, pieces[swapped].pos)
     }
 }
 

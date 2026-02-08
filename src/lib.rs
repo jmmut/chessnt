@@ -1,8 +1,8 @@
 use crate::theme::CameraPos;
+use crate::ui::DevUiMenu;
 use macroquad::camera::{set_camera, Camera3D};
 use macroquad::color::Color;
 use macroquad::math::vec3;
-use crate::ui::DevUiMenu;
 
 pub mod board;
 pub mod coord;

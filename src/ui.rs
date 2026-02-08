@@ -1,6 +1,7 @@
 use crate::board::Board;
 use crate::theme::{CameraPos, Theme};
 use crate::time::Time;
+use crate::INITIAL_DEV_UI;
 use juquad::draw::draw_rect;
 use juquad::input::input_macroquad::InputMacroquad;
 use juquad::lazy::{Interactable, Renderable, Style, WidgetTrait};
@@ -10,7 +11,6 @@ use juquad::widgets::text::TextRect;
 use juquad::widgets::{Interaction, StateStyle, Widget};
 use macroquad::math::Rect;
 use macroquad::prelude::{Font, TextParams};
-use crate::INITIAL_DEV_UI;
 
 pub fn render_text(text: &str, anchor: Anchor, theme: &Theme) -> Rect {
     render_text_font(text, anchor, theme, theme.font())
