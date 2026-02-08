@@ -181,8 +181,18 @@ impl Board {
         if let Some(selected_i) = self.selected {
             let initial = self.pieces[selected_i].initial_pos;
             let any_overlap_i = self.any_overlapping_piece(selected_i);
-            if any_overlap_i.is_some() {
-                self.pieces[selected_i].pos = initial;
+            if let Some(overlap_i) = any_overlap_i {
+                let moves = possible_moves(self.size, &self.pieces, selected_i);
+                let referee_saw = self.referee.saw_any_piece(&self.pieces, vec![selected_i]);
+                let rounded_pos = self.pieces[overlap_i].pos.round();
+                let enemy = self.pieces[overlap_i].team != self.pieces[selected_i].team;
+                if moves.contains(&rounded_pos) && referee_saw && enemy {
+                    self.kill(overlap_i);
+                    self.pieces[selected_i].set_pos(rounded_pos);
+                    self.referee.turn.toggle();
+                } else {
+                    self.pieces[selected_i].set_pos(initial);
+                }
                 // TODO: maybe no need for an different key press for swapping?
             } else {
                 let rounded_pos = self.pieces[selected_i].pos.round();
@@ -252,16 +262,12 @@ impl Board {
 
 fn any_overlapping_piece(selected_i: usize, pieces: &Vec<Piece>) -> Option<usize> {
     let selected_rounded = pieces[selected_i].pos.round();
-    for (i, piece) in pieces.iter().enumerate() {
-        if i != selected_i && piece.pos.round() == selected_rounded {
-            return Some(i);
-        }
-    }
-    None
+    any_other_piece_at(selected_rounded, selected_i, pieces)
 }
-fn any_piece_at(pos: Coord, pieces: &Vec<Piece>) -> Option<usize> {
+
+fn any_other_piece_at(pos: Coord, index: usize, pieces: &Vec<Piece>) -> Option<usize> {
     for (i, piece) in pieces.iter().enumerate() {
-        if piece.pos.round() == pos {
+        if i != index && piece.pos.round() == pos {
             return Some(i);
         }
     }
@@ -516,19 +522,17 @@ fn get_pawn_positions(piece_index: usize, pieces: &Vec<Piece>, board_size: Coord
             moves.push(direction * 2.0 + piece_pos);
         }
     }
-    let attack = piece_pos + direction + Coord::new_i(0, 1);
-    if let Some(other) = any_piece_at(attack, pieces) {
-        if inside(attack, board_size) && pieces[other].team != pieces[piece_index].team {
-            moves.push(attack);
-        }
-    }
-    let attack = piece_pos + direction + Coord::new_i(0, -1);
-    if let Some(other) = any_piece_at(attack, pieces) {
-        if inside(attack, board_size) && pieces[other].team != pieces[piece_index].team {
-            moves.push(attack);
-        }
-    }
     moves.push(direction + piece_pos);
+
+    let mut add_if_enemy_is_at = |attack| {
+        if let Some(other) = any_other_piece_at(attack, piece_index, pieces) {
+            if inside(attack, board_size) && pieces[other].team != pieces[piece_index].team {
+                moves.push(attack);
+            }
+        }
+    };
+    add_if_enemy_is_at(piece_pos + direction + Coord::new_i(0, 1));
+    add_if_enemy_is_at(piece_pos + direction + Coord::new_i(0, -1));
     moves
 }
 
