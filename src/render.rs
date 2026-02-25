@@ -24,19 +24,32 @@ pub fn floor_corners(coord: Coord, height: f32) -> [Vec3; 4] {
 }
 
 pub fn mesh_cursor(coord: Coord, color: Color, height: f32) -> Vec<Mesh> {
+    let width = 0.1;
     let mut meshes = Vec::new();
-    let coord_00: Vec3 = coord.to_vec3(height);
-    let coord_10 = coord_00 + vec3(1.0, 0.0, 0.0);
-    let coord_01 = coord_00 + vec3(0.0, 0.0, 0.5);
-    let coord_11 = coord_00 + vec3(1.0, 0.0, 0.5);
-    meshes.push(to_mesh([coord_00, coord_10, coord_01, coord_11], color));
-    // draw_mesh(&mesh);
-    let coord_00: Vec3 = coord_00 + vec3(0.0, 0.0, 0.5);
-    let coord_10 = coord_00 + vec3(1.0, 0.0, 0.0);
-    let coord_01 = coord_00 + vec3(0.0, 0.0, 0.5);
-    let coord_11 = coord_00 + vec3(1.0, 0.0, 0.5);
-    meshes.push(to_mesh([coord_00, coord_10, coord_01, coord_11], color));
+    let x = vec3(1.0, 0.0, 0.0);
+    let z = vec3(0.0, 0.0, width);
+    let q = quad(coord.to_vec3(height), x, z);
+    meshes.push(to_mesh(q, color));
+    let coord_00 = coord.to_vec3(height) + vec3(0.0, 0.0, 1.0 - width);
+    let q = quad(coord_00, x, z);
+    meshes.push(to_mesh(q, color));
+
+    let x = vec3(width, 0.0, 0.0);
+    let z = vec3(0.0, 0.0, 1.0);
+    let q = quad(coord.to_vec3(height), x, z);
+    meshes.push(to_mesh(q, color));
+    let coord_00: Vec3 = coord.to_vec3(height) + vec3(1.0 - width, 0.0, 0.0);
+    let q = quad(coord_00, x, z);
+    meshes.push(to_mesh(q, color));
+    
     meshes
+}
+
+fn quad(coord_00: Vec3, x: Vec3, z: Vec3) -> [Vec3; 4] {
+    let coord_10 = coord_00 + x;
+    let coord_01 = coord_00 + z;
+    let coord_11 = coord_00 + x + z;
+    [coord_00, coord_10, coord_01, coord_11]
 }
 
 // pub fn mesh_figure(piece: &Piece, color: Color) -> Mesh {
