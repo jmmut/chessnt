@@ -41,7 +41,7 @@ pub fn mesh_cursor(coord: Coord, color: Color, height: f32) -> Vec<Mesh> {
     let coord_00: Vec3 = coord.to_vec3(height) + vec3(1.0 - width, 0.0, 0.0);
     let q = quad(coord_00, x, z);
     meshes.push(to_mesh(q, color));
-    
+
     meshes
 }
 

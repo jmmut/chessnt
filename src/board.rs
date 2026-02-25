@@ -4,11 +4,11 @@ use crate::render::{
     floor_corners, mesh_coord, mesh_cursor, mesh_figure_texture, mesh_vertical_texture,
     to_mesh_texture_quad, to_mesh_triangle,
 };
-use crate::theme::{color_average, margin, Theme};
+use crate::theme::{color_average, color_average_weight, margin, Theme};
 use crate::ui::render_text_font;
 use crate::TRANSPARENT;
 use juquad::widgets::anchor::{Anchor, Horizontal, Layout, Vertical};
-use macroquad::color::{Color, BLUE, DARKBLUE, DARKGREEN, DARKPURPLE, GRAY, GREEN, PURPLE, RED, WHITE};
+use macroquad::color::{Color, BLUE, DARKBLUE, GRAY, GREEN, PURPLE, RED, WHITE, YELLOW};
 use macroquad::math::{vec2, vec3, Rect, Vec2, Vec3};
 use macroquad::models::{draw_mesh, Mesh};
 
@@ -19,7 +19,8 @@ const RADAR: Color = color_average(RED, TRANSPARENT);
 // const GHOST: Color = color_average(DARKPURPLE, TRANSPARENT);
 const GHOST: Color = color_average(PURPLE, GRAY);
 // const CURSOR: Color = color_average(DARKGREEN, TRANSPARENT);
-const CURSOR: Color = color_average(GREEN, GRAY);
+const CURSOR_WHITE: Color = color_average_weight(color_average(GREEN, GRAY), YELLOW, 0.3);
+const CURSOR_BLACK: Color = color_average_weight(color_average(GREEN, GRAY), DARKBLUE, 0.3);
 // const FIGURE: Color = color_average(PINK, TRANSPARENT);
 const CURSOR_HEIGHT: f32 = 0.1;
 const SELECTION_HEIGHT: f32 = CURSOR_HEIGHT * 0.5;
@@ -40,6 +41,13 @@ impl Team {
             Team::White => *self = Team::Black,
             Team::Black => *self = Team::White,
         }
+    }
+}
+pub fn cursor_color(team: Team) -> Color {
+    if team.is_white() {
+        CURSOR_WHITE
+    } else {
+        CURSOR_BLACK
     }
 }
 
@@ -82,8 +90,10 @@ pub enum Move {
 }
 
 pub struct Board {
-    cursor: Coord,
-    selected: Option<usize>,
+    cursor_white: Coord,
+    cursor_black: Coord,
+    selected_white: Option<usize>,
+    selected_black: Option<usize>,
     size: Coord,
     pieces: Vec<Piece>,
     pub referee: Referee,
@@ -91,17 +101,19 @@ pub struct Board {
 }
 
 impl Board {
-    pub fn new(cursor: Coord, size: Coord, pieces: Vec<Piece>) -> Self {
+    pub fn new(cursor_white: Coord, cursor_black: Coord, size: Coord, pieces: Vec<Piece>) -> Self {
         Self {
-            cursor,
-            selected: None,
+            cursor_white,
+            cursor_black,
+            selected_white: None,
+            selected_black: None,
             size,
             pieces,
             piece_size: vec2(0.3, 1.0),
             referee: Referee::new(),
         }
     }
-    pub fn new_chess(cursor: Coord, size: Coord) -> Self {
+    pub fn new_chess(cursor_white: Coord, cursor_black: Coord, size: Coord) -> Self {
         let back_column = vec![
             (0, Move::Rook),
             (1, Move::Knight),
@@ -120,7 +132,7 @@ impl Board {
             pieces.push(Piece::new(Coord::new_i(1, *row), Move::Pawn, Team::Black));
         }
 
-        Self::new(cursor, size, pieces)
+        Self::new(cursor_white, cursor_black, size, pieces)
     }
     pub fn tick(&mut self, delta_s: f64) {
         self.referee.tick(delta_s, &self.pieces);
@@ -128,8 +140,8 @@ impl Board {
             piece.moved = false;
         }
     }
-    fn get_selected_piece(&self) -> Option<&Piece> {
-        if let Some(index) = self.selected {
+    fn get_selected_piece(&self, team: Team) -> Option<&Piece> {
+        if let Some(index) = self.selected(team) {
             self.pieces.get(index)
         } else {
             None
@@ -142,23 +154,23 @@ impl Board {
     //         None
     //     }
     // }
-    fn get_selected_piece_mut(&mut self) -> Option<&mut Piece> {
-        if let Some(index) = self.selected {
+    fn get_selected_piece_mut(&mut self, team: Team) -> Option<&mut Piece> {
+        if let Some(index) = self.selected(team) {
             self.pieces.get_mut(index)
         } else {
             None
         }
     }
-    pub fn move_cursor_rel(&mut self, delta: Coord) {
-        if let Some(piece) = self.get_selected_piece_mut() {
+    pub fn move_cursor_rel(&mut self, delta: Coord, team: Team) {
+        if let Some(piece) = self.get_selected_piece_mut(team) {
             piece.pos += delta;
             piece.moved = true;
         }
-        self.cursor += delta;
+        *self.cursor_mut(team) += delta;
     }
-    pub fn select(&mut self) {
-        let new_selection = self.cursor.round();
-        if let Some(_index) = self.selected {
+    pub fn select(&mut self, team: Team) {
+        let new_selection = self.cursor(team).round();
+        if let Some(_index) = self.selected(team) {
             panic!("can't select if there's something already selected");
             // TODO: swap pieces?
             // let
@@ -174,14 +186,14 @@ impl Board {
         } else {
             for (i, piece) in self.pieces.iter().enumerate() {
                 if piece.pos == new_selection {
-                    self.selected = Some(i);
+                    *self.selected_mut(team) = Some(i);
                     return;
                 }
             }
         }
     }
-    pub fn deselect(&mut self) {
-        if let Some(selected_i) = self.selected {
+    pub fn deselect(&mut self, team: Team) {
+        if let Some(selected_i) = self.selected(team) {
             let initial = self.pieces[selected_i].initial_pos;
             let any_overlap_i = self.any_overlapping_piece(selected_i);
             if let Some(overlap_i) = any_overlap_i {
@@ -231,14 +243,42 @@ impl Board {
                     }
                 }
             }
-            self.selected = None;
-            self.cursor = self.cursor.round();
+            *self.selected_mut(team) = None;
+            *self.cursor_mut(team) = self.cursor(team).round();
         } else {
             panic!("logic error: deselecting but there was no selection");
         }
     }
-    pub fn selected(&self) -> bool {
-        self.selected.is_some()
+    pub fn is_selected(&self, team: Team) -> bool {
+        self.selected(team).is_some()
+    }
+    fn selected(&self, team: Team) -> Option<usize> {
+        if team == Team::White {
+            self.selected_white
+        } else {
+            self.selected_black
+        }
+    }
+    fn selected_mut(&mut self, team: Team) -> &mut Option<usize> {
+        if team == Team::White {
+            &mut self.selected_white
+        } else {
+            &mut self.selected_black
+        }
+    }
+    fn cursor(&self, team: Team) -> Coord {
+        if team == Team::White {
+            self.cursor_white
+        } else {
+            self.cursor_black
+        }
+    }
+    fn cursor_mut(&mut self, team: Team) -> &mut Coord {
+        if team == Team::White {
+            &mut self.cursor_white
+        } else {
+            &mut self.cursor_black
+        }
     }
 
     fn kill(&mut self, selected_i: usize) {
@@ -274,10 +314,12 @@ impl Board {
         let mut meshes = Vec::new();
         self.draw_floor(theme);
 
-        meshes.extend(self.selection_meshes());
+        meshes.extend(self.selection_meshes(Team::White));
+        meshes.extend(self.selection_meshes(Team::Black));
         meshes.extend(self.piece_meshes(theme));
         meshes.extend(self.referee_meshes(theme));
-        meshes.extend(self.possible_moves_meshes());
+        meshes.extend(self.possible_moves_meshes(Team::White));
+        meshes.extend(self.possible_moves_meshes(Team::Black));
 
         meshes.sort_by(|a, b| depth(a).total_cmp(&depth(b)));
         for mesh in meshes {
@@ -298,20 +340,25 @@ impl Board {
         )
         .get_rect(vec2(0.0, 0.0));
         let _rect = self.draw_turn(_rect, theme);
-        let _rect = self.draw_piece_info(_rect, theme);
+        let _rect = self.draw_piece_info(_rect, Team::White, theme);
+        let _rect = self.draw_piece_info(_rect, Team::Black, theme);
     }
 
-    fn draw_piece_info(&self, previous_rect: Rect, theme: &Theme) -> Rect {
+    fn draw_piece_info(&self, previous_rect: Rect, team: Team, theme: &Theme) -> Rect {
+        fn team_name(team: Team) -> &'static str {
+            if team.is_white() {
+                "WHITE"
+            } else {
+                "BLACK"
+            }
+        }
         for piece in &self.pieces {
-            if piece.pos.round() == self.cursor.round() {
-                render_text_font(
+            if piece.pos.round() == self.cursor(team).round() {
+                return render_text_font(
                     &format!(
-                        "{} {}",
-                        if piece.team.is_white() {
-                            "WHITE"
-                        } else {
-                            "BLACK"
-                        },
+                        "{}: {} {}",
+                        team_name(team),
+                        team_name(piece.team),
                         moves_to_string(&piece.moveset).to_uppercase()
                     ),
                     Anchor::below(previous_rect, Horizontal::Left, 0.0),
@@ -338,12 +385,12 @@ impl Board {
         )
     }
 
-    fn selection_meshes(&self) -> Vec<Mesh> {
-        if let Some(_selected) = self.get_selected_piece() {
+    fn selection_meshes(&self, team: Team) -> Vec<Mesh> {
+        if let Some(_selected) = self.get_selected_piece(team) {
             // meshes.extend(mesh_cursor(_selected.pos, SELECTION, SELECTION_HEIGHT));
             vec![]
         } else {
-            mesh_cursor(self.cursor, CURSOR, CURSOR_HEIGHT)
+            mesh_cursor(self.cursor(team), cursor_color(team), CURSOR_HEIGHT)
         }
     }
 
@@ -394,9 +441,9 @@ impl Board {
         vec![mesh, radar]
     }
 
-    fn possible_moves_meshes(&self) -> Vec<Mesh> {
+    fn possible_moves_meshes(&self, team: Team) -> Vec<Mesh> {
         let mut meshes = Vec::new();
-        if let Some(index) = self.selected {
+        if let Some(index) = self.selected(team) {
             meshes.extend(mesh_cursor(
                 self.pieces[index].initial_pos,
                 GHOST,

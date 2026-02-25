@@ -54,7 +54,11 @@ async fn fallible_main() -> AnyResult<()> {
         fovy: 44.33,   // 45.0,
         target_y: 0.5, // 0.0,
     };
-    let mut board = Board::new_chess(Coord::new_i(4, 4), Coord::new_i(COLUMNS, ROWS));
+    let mut board = Board::new_chess(
+        Coord::new_i(6, 4),
+        Coord::new_i(2, 4),
+        Coord::new_i(COLUMNS, ROWS),
+    );
     let mut dev_ui = DevUi::new();
     let mut time = Time::new();
     loop {
@@ -85,13 +89,8 @@ fn handle_inputs_shoud_exit(board: &mut Board, dev_ui: &mut DevUi) -> bool {
 
     move_cursor_or_piece(board);
 
-    if is_key_pressed(KeyCode::Space) {
-        if board.selected() {
-            board.deselect();
-        } else {
-            board.select();
-        }
-    }
+    select(board, KeyCode::Space, Team::Black);
+    select(board, KeyCode::Enter, Team::White);
 
     if is_key_pressed(KeyCode::KpAdd) {
         unsafe {
@@ -106,39 +105,72 @@ fn handle_inputs_shoud_exit(board: &mut Board, dev_ui: &mut DevUi) -> bool {
     is_key_pressed(KeyCode::Escape)
 }
 
+struct Directions {
+    left: KeyCode,
+    right: KeyCode,
+    up: KeyCode,
+    down: KeyCode,
+}
 fn move_cursor_or_piece(board: &mut Board) {
-    if board.selected() {
+    const WASD: Directions = Directions {
+        up: KeyCode::W,
+        down: KeyCode::S,
+        left: KeyCode::A,
+        right: KeyCode::D,
+    };
+    const ARROWS: Directions = Directions {
+        up: KeyCode::Up,
+        down: KeyCode::Down,
+        left: KeyCode::Left,
+        right: KeyCode::Right,
+    };
+    move_cursor_or_piece_team(board, Team::White, ARROWS);
+    move_cursor_or_piece_team(board, Team::Black, WASD);
+}
+
+fn move_cursor_or_piece_team(board: &mut Board, team: Team, directions: Directions) {
+    let max = 0.05;
+    if board.is_selected(team) {
         let mut delta = Coord::new_f(0.0, 0.0);
-        let max = 0.05;
-        if is_key_down(KeyCode::Right) || is_key_down(KeyCode::D) {
+        if is_key_down(directions.right) {
             delta += Coord::new_f(0.1, 0.0);
         }
-        if is_key_down(KeyCode::Left) || is_key_down(KeyCode::A) {
+        if is_key_down(directions.left) {
             delta += Coord::new_f(-0.1, 0.0);
         }
-        if is_key_down(KeyCode::Up) || is_key_down(KeyCode::W) {
+        if is_key_down(directions.up) {
             delta += Coord::new_f(0.0, -0.1);
         }
-        if is_key_down(KeyCode::Down) || is_key_down(KeyCode::S) {
+        if is_key_down(directions.down) {
             delta += Coord::new_f(0.0, 0.1);
         }
         if delta != Coord::new_i(0, 0) {
             delta = delta.into::<Vec2>().normalize().into();
             delta *= max;
-            board.move_cursor_rel(delta);
+            board.move_cursor_rel(delta, team);
         }
     } else {
-        if is_key_pressed(KeyCode::Right) || is_key_pressed(KeyCode::D) {
-            board.move_cursor_rel(Coord::new_i(1, 0));
+        if is_key_pressed(directions.right) {
+            board.move_cursor_rel(Coord::new_i(1, 0), team);
         }
-        if is_key_pressed(KeyCode::Left) || is_key_pressed(KeyCode::A) {
-            board.move_cursor_rel(Coord::new_i(-1, 0));
+        if is_key_pressed(directions.left) {
+            board.move_cursor_rel(Coord::new_i(-1, 0), team);
         }
-        if is_key_pressed(KeyCode::Up) || is_key_pressed(KeyCode::W) {
-            board.move_cursor_rel(Coord::new_i(0, -1));
+        if is_key_pressed(directions.up) {
+            board.move_cursor_rel(Coord::new_i(0, -1), team);
         }
-        if is_key_pressed(KeyCode::Down) || is_key_pressed(KeyCode::S) {
-            board.move_cursor_rel(Coord::new_i(0, 1));
+        if is_key_pressed(directions.down) {
+            board.move_cursor_rel(Coord::new_i(0, 1), team);
+        }
+    }
+}
+
+fn select(board: &mut Board, key: KeyCode, team: Team) {
+    if is_key_pressed(key) {
+        if board.is_selected(team) {
+            board.deselect(team);
+        } else {
+            board.select(team);
         }
     }
 }
