@@ -9,16 +9,16 @@ pub fn mesh_coord(coord: Coord, color: Color) -> Mesh {
     mesh_coord_h(coord, color, 0.0)
 }
 pub fn mesh_coord_h(coord: Coord, color: Color, height: f32) -> Mesh {
-    let corners = floor_corners(coord, height);
+    let corners = floor_corners(coord, height, 1.0);
     let mesh = to_mesh(corners, color);
     mesh
 }
 
-pub fn floor_corners(coord: Coord, height: f32) -> [Vec3; 4] {
+pub fn floor_corners(coord: Coord, height: f32, tile_size: f32) -> [Vec3; 4] {
     let coord_00: Vec3 = coord.to_vec3(height);
-    let coord_10 = (coord + Coord::new_i(1, 0)).to_vec3(height);
-    let coord_01 = (coord + Coord::new_i(0, 1)).to_vec3(height);
-    let coord_11 = (coord + Coord::new_i(1, 1)).to_vec3(height);
+    let coord_10 = (coord + Coord::new_f(tile_size, 0.0)).to_vec3(height);
+    let coord_01 = (coord + Coord::new_f(0.0, tile_size)).to_vec3(height);
+    let coord_11 = (coord + Coord::new_f(tile_size, tile_size)).to_vec3(height);
     let corners = [coord_00, coord_10, coord_01, coord_11];
     corners
 }
@@ -58,7 +58,7 @@ fn quad(coord_00: Vec3, x: Vec3, z: Vec3) -> [Vec3; 4] {
 // }
 pub fn mesh_figure_texture(piece: &Piece, color: Color, texture: Texture2D, size: Vec2) -> Mesh {
     let coord_00 = (piece.pos + Coord::new_f(0.5 - size.x * 0.5, 0.5)).to_vec3(0.0);
-    mesh_vertical_texture(coord_00, color, Some(texture), false, size)
+    mesh_vertical_texture(coord_00, color, Some(texture), piece.team.is_white(), size)
 }
 pub fn mesh_vertical_texture(
     coord_00: Vec3,

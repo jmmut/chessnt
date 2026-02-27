@@ -25,7 +25,7 @@ const CURSOR_BLACK: Color = color_average_weight(color_average(GREEN, GRAY), DAR
 const CURSOR_HEIGHT: f32 = 0.1;
 const SELECTION_HEIGHT: f32 = CURSOR_HEIGHT * 0.5;
 const RADAR_HEIGHT: f32 = SELECTION_HEIGHT * 0.9;
-const FLOOR_PIECE_HEIGHT: f32 = RADAR_HEIGHT * 0.8;
+const FLOOR_PIECE_HEIGHT: f32 = RADAR_HEIGHT * 0.2;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Team {
@@ -134,6 +134,9 @@ impl Board {
 
         Self::new(cursor_white, cursor_black, size, pieces)
     }
+    pub fn reset(&mut self) {
+        *self = Self::new_chess(self.cursor_white, self.cursor_black, self.size);
+    }
     pub fn tick(&mut self, delta_s: f64) {
         self.referee.tick(delta_s, &self.pieces);
         for piece in &mut self.pieces {
@@ -224,7 +227,7 @@ impl Board {
                 }
                 // TODO: maybe no need for an different key press for swapping?
             } else {
-                let rounded_pos = self.pieces[selected_i].pos.round();
+                let rounded_pos = self.pieces[selected_i].pos.round(); // TODO: leave positions unrounded
                 let initial_pos = self.pieces[selected_i].initial_pos.round();
                 let mut moves = possible_moves(self.size, &self.pieces, selected_i);
                 moves.push(self.pieces[selected_i].initial_pos);
@@ -399,15 +402,19 @@ impl Board {
         for piece in &self.pieces {
             meshes.push(mesh_figure_texture(
                 piece,
-                WHITE,
+                if piece.team.is_white() { WHITE } else { GRAY },
                 theme.textures.placeholder,
                 self.piece_size,
             ));
+            // meshes.push(to_mesh(
+            //     floor_corners(piece.pos + Coord::new_f(0.5, 0.5), FLOOR_PIECE_HEIGHT * 1.1, 0.2),
+            //     BLUE,
+            // ));
             meshes.push(to_mesh_texture_quad(
-                floor_corners(piece.pos.round(), FLOOR_PIECE_HEIGHT),
+                floor_corners(piece.pos.round(), FLOOR_PIECE_HEIGHT, 1.0),
                 WHITE,
                 Some(theme.textures.pieces[&(piece.team, piece.moveset[0])]),
-                false,
+                piece.team.is_white(),
                 true,
             ));
 

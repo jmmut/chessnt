@@ -89,8 +89,8 @@ fn handle_inputs_shoud_exit(board: &mut Board, dev_ui: &mut DevUi) -> bool {
 
     move_cursor_or_piece(board);
 
-    select(board, KeyCode::Space, Team::Black);
-    select(board, KeyCode::Enter, Team::White);
+    select(board, &[KeyCode::Space], Team::Black);
+    select(board, &[KeyCode::KpEnter, KeyCode::Enter], Team::White);
 
     if is_key_pressed(KeyCode::KpAdd) {
         unsafe {
@@ -101,6 +101,9 @@ fn handle_inputs_shoud_exit(board: &mut Board, dev_ui: &mut DevUi) -> bool {
         unsafe {
             SCALE /= 1.3;
         }
+    }
+    if is_key_pressed(KeyCode::R) {
+        board.reset();
     }
     is_key_pressed(KeyCode::Escape)
 }
@@ -165,12 +168,14 @@ fn move_cursor_or_piece_team(board: &mut Board, team: Team, directions: Directio
     }
 }
 
-fn select(board: &mut Board, key: KeyCode, team: Team) {
-    if is_key_pressed(key) {
-        if board.is_selected(team) {
-            board.deselect(team);
-        } else {
-            board.select(team);
+fn select(board: &mut Board, keys: &[KeyCode], team: Team) {
+    for key in keys {
+        if is_key_pressed(*key) {
+            if board.is_selected(team) {
+                board.deselect(team);
+            } else {
+                board.select(team);
+            }
         }
     }
 }
