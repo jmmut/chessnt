@@ -105,6 +105,12 @@ fn handle_inputs_shoud_exit(board: &mut Board, dev_ui: &mut DevUi) -> bool {
     if is_key_pressed(KeyCode::R) {
         board.reset();
     }
+    if is_key_pressed(KeyCode::P) {
+        board.referee.referee_paused = !board.referee.referee_paused;
+    }
+    if is_key_pressed(KeyCode::O) {
+        board.referee.render_radar = !board.referee.render_radar;
+    }
     is_key_pressed(KeyCode::Escape)
 }
 

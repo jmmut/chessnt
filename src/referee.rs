@@ -44,6 +44,8 @@ pub struct Referee {
     radar_start: Option<Vec2>,
     pub turn: Team,
     pub trip_time: f64,
+    pub referee_paused: bool,
+    pub render_radar: bool,
 }
 
 #[derive(Copy, Clone)]
@@ -77,34 +79,38 @@ impl Referee {
             radar_start: None,
             turn: Team::White,
             trip_time: (trip.column.abs() / REFEREE_SPEED) as f64,
+            referee_paused: false,
+            render_radar: true,
         }
     }
     pub fn tick(&mut self, delta_s: f64, pieces: &Vec<Piece>) {
-        self.maybe_focus(delta_s, pieces);
-        if let Some(focus) = &self.focused {
-            self.direction =
-                (pieces[focus.piece_index].pos.into::<Vec2>() - self.position).normalize();
-        } else {
-            self.interpolation_s += delta_s;
-            self.prev_position = self.position;
-            self.position = self
-                .interpolation
-                .at(smooth((self.interpolation_s / self.trip_time) as f32))
-                .into();
-            let y = 1.0;
-            let x = (self.position.x - self.prev_position.x) / delta_s as f32
-                * self.trip_time as f32
-                * 0.4;
-            let dir_end = vec2(x, y);
-            if let Some(radar_start) = self.radar_start {
-                self.direction = Interpolation::new(radar_start, dir_end)
-                    .at(smooth((self.interpolation_s / self.trip_time) as f32));
+        if !self.referee_paused {
+            self.maybe_focus(delta_s, pieces);
+            if let Some(focus) = &self.focused {
+                self.direction =
+                    (pieces[focus.piece_index].pos.into::<Vec2>() - self.position).normalize();
             } else {
-                self.direction = dir_end;
+                self.interpolation_s += delta_s;
+                self.prev_position = self.position;
+                self.position = self
+                    .interpolation
+                    .at(smooth((self.interpolation_s / self.trip_time) as f32))
+                    .into();
+                let y = 1.0;
+                let x = (self.position.x - self.prev_position.x) / delta_s as f32
+                    * self.trip_time as f32
+                    * 0.4;
+                let dir_end = vec2(x, y);
+                if let Some(radar_start) = self.radar_start {
+                    self.direction = Interpolation::new(radar_start, dir_end)
+                        .at(smooth((self.interpolation_s / self.trip_time) as f32));
+                } else {
+                    self.direction = dir_end;
+                }
             }
-        }
-        if self.interpolation_s >= self.trip_time {
-            self.reset_referee_movement_interp();
+            if self.interpolation_s >= self.trip_time {
+                self.reset_referee_movement_interp();
+            }
         }
     }
 

@@ -24,7 +24,7 @@ const CURSOR_BLACK: Color = color_average_weight(color_average(GREEN, GRAY), DAR
 // const FIGURE: Color = color_average(PINK, TRANSPARENT);
 const CURSOR_HEIGHT: f32 = 0.1;
 const SELECTION_HEIGHT: f32 = CURSOR_HEIGHT * 0.5;
-const RADAR_HEIGHT: f32 = SELECTION_HEIGHT * 0.9;
+const RADAR_HEIGHT: f32 = SELECTION_HEIGHT * 0.7;
 const FLOOR_PIECE_HEIGHT: f32 = RADAR_HEIGHT * 0.2;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -445,7 +445,11 @@ impl Board {
         let radar_right = radar_right.into::<Vec3>() + square_offset;
         let radar_left = radar_left.into::<Vec3>() + square_offset;
         let radar = to_mesh_triangle([radar_base, radar_right, radar_left], RADAR);
-        vec![mesh, radar]
+        let mut meshes = vec![mesh];
+        if self.referee.render_radar {
+            meshes.push(radar);
+        }
+        meshes
     }
 
     fn possible_moves_meshes(&self, team: Team) -> Vec<Mesh> {
