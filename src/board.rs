@@ -439,6 +439,7 @@ impl Board {
             looking_leftwards,
             self.piece_size,
         );
+
         let [radar_base, radar_right, radar_left] = self.referee.radar();
         let square_offset = vec3(0.5, RADAR_HEIGHT, 0.5);
         let radar_base = radar_base.into::<Vec3>() + square_offset;

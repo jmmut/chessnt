@@ -10,7 +10,7 @@ pub fn mesh_coord(coord: Coord, color: Color) -> Mesh {
 }
 pub fn mesh_coord_h(coord: Coord, color: Color, height: f32) -> Mesh {
     let corners = floor_corners(coord, height, 1.0);
-    let mesh = to_mesh(corners, color);
+    let mesh = to_mesh_quad(corners, color);
     mesh
 }
 
@@ -26,29 +26,31 @@ pub fn floor_corners(coord: Coord, height: f32, tile_size: f32) -> [Vec3; 4] {
 pub fn mesh_cursor(coord: Coord, color: Color, height: f32) -> Vec<Mesh> {
     let width = 0.1;
     let mut meshes = Vec::new();
-    let x = vec3(1.0, 0.0, 0.0);
-    let z = vec3(0.0, 0.0, width);
-    let q = quad(coord.to_vec3(height), x, z);
-    meshes.push(to_mesh(q, color));
+    let q = horizontal_quad(coord.to_vec3(height), 1.0, width);
+    meshes.push(to_mesh_quad(q, color));
     let coord_00 = coord.to_vec3(height) + vec3(0.0, 0.0, 1.0 - width);
-    let q = quad(coord_00, x, z);
-    meshes.push(to_mesh(q, color));
+    let q = horizontal_quad(coord_00, 1.0, width);
+    meshes.push(to_mesh_quad(q, color));
 
-    let x = vec3(width, 0.0, 0.0);
-    let z = vec3(0.0, 0.0, 1.0);
-    let q = quad(coord.to_vec3(height), x, z);
-    meshes.push(to_mesh(q, color));
+    let q = horizontal_quad(coord.to_vec3(height), width, 1.0);
+    meshes.push(to_mesh_quad(q, color));
     let coord_00: Vec3 = coord.to_vec3(height) + vec3(1.0 - width, 0.0, 0.0);
-    let q = quad(coord_00, x, z);
-    meshes.push(to_mesh(q, color));
+    let q = horizontal_quad(coord_00, width, 1.0);
+    meshes.push(to_mesh_quad(q, color));
 
     meshes
 }
 
-fn quad(coord_00: Vec3, x: Vec3, z: Vec3) -> [Vec3; 4] {
-    let coord_10 = coord_00 + x;
-    let coord_01 = coord_00 + z;
-    let coord_11 = coord_00 + x + z;
+fn horizontal_quad(coord_00: Vec3, x: f32, z: f32) -> [Vec3; 4] {
+    quad(coord_00, vec3(x, 0.0, 0.0), vec3(0.0, 0.0, z))
+}
+fn vertical_quad(coord_00: Vec3, x: f32, y: f32) -> [Vec3; 4] {
+    quad(coord_00, vec3(x, 0.0, 0.0), vec3(0.0, y, 0.0))
+}
+fn quad(coord_00: Vec3, a: Vec3, b: Vec3) -> [Vec3; 4] {
+    let coord_10 = coord_00 + a;
+    let coord_01 = coord_00 + b;
+    let coord_11 = coord_00 + a + b;
     [coord_00, coord_10, coord_01, coord_11]
 }
 
@@ -67,19 +69,11 @@ pub fn mesh_vertical_texture(
     flip_horiz: bool,
     size: Vec2,
 ) -> Mesh {
-    let coord_10 = coord_00 + vec3(size.x, 0.0, 0.0);
-    let coord_01 = coord_00 + vec3(0.0, size.y, 0.0);
-    let coord_11 = coord_00 + vec3(size.x, size.y, 0.0);
-    let mesh = to_mesh_texture_quad(
-        [coord_00, coord_10, coord_01, coord_11],
-        color,
-        texture,
-        flip_horiz,
-        false,
-    );
+    let corners = vertical_quad(coord_00, size.x, size.y);
+    let mesh = to_mesh_texture_quad(corners, color, texture, flip_horiz, false);
     mesh
 }
-pub fn to_mesh(corners: [Vec3; 4], color: Color) -> Mesh {
+pub fn to_mesh_quad(corners: [Vec3; 4], color: Color) -> Mesh {
     let coords = corners.to_vec();
     let mut vertices = Vec::new();
     for position in coords {
