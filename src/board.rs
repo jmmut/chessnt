@@ -188,7 +188,7 @@ impl Board {
             // self.selected = Some(new_selection)
         } else {
             for (i, piece) in self.pieces.iter().enumerate() {
-                if piece.pos == new_selection {
+                if piece.pos == new_selection && piece.team == team {
                     *self.selected_mut(team) = Some(i);
                     return;
                 }
