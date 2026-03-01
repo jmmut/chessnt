@@ -1,2 +1,6 @@
 /target
-.idea/
+/.idea/
+untracked/
+
+# for reference images that dictate the design of visual features
+/assets/refs
