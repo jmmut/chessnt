@@ -47,6 +47,7 @@ pub struct Referee {
     pub trip_time: f64,
     pub referee_paused: bool,
     pub render_radar: bool,
+    all_seeing: bool,
 }
 
 #[derive(Copy, Clone)]
@@ -82,6 +83,7 @@ impl Referee {
             trip_time: (trip.column.abs() / REFEREE_SPEED) as f64,
             referee_paused: false,
             render_radar: true,
+            all_seeing: false,
         }
     }
     pub fn tick(&mut self, delta_s: f64, pieces: &Vec<Piece>) {
@@ -188,11 +190,18 @@ impl Referee {
         vec3(self.direction.x, 0.0, self.direction.y) * DIR_MULTIPLIER
     }
 
+    pub fn set_all_seeing(&mut self, value: bool) {
+        self.all_seeing = value;
+    }
     pub fn saw_any_piece(&self, pieces: &Vec<Piece>, indexes: Vec<usize>) -> bool {
-        let radar = self.radar();
-        indexes
-            .iter()
-            .any(|index| triangle_contains(radar, pieces[*index].pos_f()))
+        if self.all_seeing {
+            true
+        } else {
+            let radar = self.radar();
+            indexes
+                .iter()
+                .any(|index| triangle_contains(radar, pieces[*index].pos_f()))
+        }
     }
     pub fn focus_progress(&self) -> Option<f64> {
         if let Some(focused) = self.focused {

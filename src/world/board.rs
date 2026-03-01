@@ -78,6 +78,9 @@ impl Board {
     pub fn reset(&mut self) {
         *self = Self::new_chess(self.cursor_white, self.cursor_black);
     }
+    pub fn set_all_seeing_referee(&mut self, value: bool) {
+        self.referee.set_all_seeing(value)
+    }
     pub fn tick(&mut self, delta_s: f64) {
         self.referee.tick(delta_s, &self.pieces);
         for piece in &mut self.pieces {
@@ -142,14 +145,20 @@ impl Board {
         if let Some(selected_i) = self.selected(team) {
             self.pieces[selected_i].cooldown_s = Some(0.0);
             let initial = self.pieces[selected_i].initial_pos;
-            let any_overlap_i = self.any_overlapping_piece(selected_i);
-            if let Some(overlap_i) = any_overlap_i {
+            let overlaps_i = self.overlapping_pieces(selected_i);
+            assert!(
+                overlaps_i.len() <= 1,
+                "killing several pieces in the same tile is unsupported"
+            );
+            if let Some(overlap_i) = overlaps_i.last().cloned() {
                 let moves = possible_moves(self.size, &self.pieces, selected_i);
                 let referee_saw = self.referee.saw_any_piece(&self.pieces, vec![selected_i]);
                 let rounded_pos = self.pieces[overlap_i].pos_i();
-                let enemy = self.pieces[overlap_i].team != self.pieces[selected_i].team;
+                let overlap_team = self.pieces[overlap_i].team;
+                let enemy = overlap_team != self.pieces[selected_i].team;
                 if enemy {
                     if moves.contains(&rounded_pos) && referee_saw {
+                        // self.
                         self.kill(overlap_i);
                         self.pieces[selected_i].set_pos_and_initial(rounded_pos);
                         self.referee.turn.toggle();
@@ -228,31 +237,42 @@ impl Board {
     }
 
     fn kill(&mut self, selected_i: usize) {
+        if let Some(selected) = self.selected_black {
+            if selected == selected_i {
+                self.selected_black = None;
+            }
+        }
+        if let Some(selected) = self.selected_white {
+            if selected == selected_i {
+                self.selected_white = None;
+            }
+        }
         self.pieces[selected_i].alive = false;
         let column = self.pieces[selected_i].pos_i().column();
         self.pieces[selected_i].set_pos_and_initial(Coord::new_i(column, -2));
-        while self.any_overlapping_piece(selected_i).is_some() {
+        while self.overlapping_pieces(selected_i).len() > 0 {
             self.pieces[selected_i].move_rel(Coord::new_i(0, -1));
         }
     }
 
-    fn any_overlapping_piece(&mut self, selected_i: usize) -> Option<usize> {
-        any_overlapping_piece(selected_i, &self.pieces)
+    fn overlapping_pieces(&mut self, selected_i: usize) -> Vec<usize> {
+        overlapping_piece(selected_i, &self.pieces)
     }
 }
 
-fn any_overlapping_piece(selected_i: usize, pieces: &Vec<Piece>) -> Option<usize> {
+fn overlapping_piece(selected_i: usize, pieces: &Vec<Piece>) -> Vec<usize> {
     let selected_rounded = pieces[selected_i].pos_i();
-    any_other_piece_at(selected_rounded, selected_i, pieces)
+    other_pieces_at(selected_rounded, selected_i, pieces)
 }
 
-pub fn any_other_piece_at(pos: Coord, index: usize, pieces: &Vec<Piece>) -> Option<usize> {
+pub fn other_pieces_at(pos: Coord, index: usize, pieces: &Vec<Piece>) -> Vec<usize> {
+    let mut others = Vec::new();
     for (i, piece) in pieces.iter().enumerate() {
         if i != index && piece.pos_i() == pos {
-            return Some(i);
+            others.push(i);
         }
     }
-    None
+    others
 }
 
 impl Board {
@@ -483,5 +503,26 @@ mod tests {
                 .moved(true)
                 .into()]
         )
+    }
+    #[test]
+    fn test_deselect_when_killed() {
+        let pos_left = Coord::new_i(0, 0);
+        let pos_right = Coord::new_i(1, 0);
+        let size = Coord::new_i(2, 1);
+        let pieces = vec![
+            Piece::new(pos_left, Move::Queen, Team::White),
+            Piece::new(pos_right, Move::Rook, Team::Black),
+        ];
+        let mut board = Board::new(pos_left, pos_right, size, pieces.clone());
+        board.set_all_seeing_referee(true);
+
+        board.select(Team::White);
+        board.select(Team::Black);
+        board.move_cursor_rel(Coord::new_i(1, 0), Team::White);
+        assert_eq!(board.cursor(Team::Black), pos_right);
+        assert_eq!(board.get_selected_piece(Team::Black), Some(&pieces[1]));
+        board.deselect(Team::White);
+        assert_eq!(board.cursor(Team::Black), pos_right);
+        assert_eq!(board.get_selected_piece(Team::Black), None);
     }
 }

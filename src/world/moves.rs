@@ -1,5 +1,5 @@
 use crate::coord::Coord;
-use crate::world::board::any_other_piece_at;
+use crate::world::board::other_pieces_at;
 use crate::world::piece::Piece;
 
 pub type Moveset = Vec<Move>;
@@ -111,12 +111,17 @@ fn get_pawn_positions(piece_index: usize, pieces: &Vec<Piece>, board_size: Coord
         }
     }
     let front = direction + piece_pos;
-    if any_other_piece_at(front, piece_index, pieces).is_none() {
+    if other_pieces_at(front, piece_index, pieces).len() == 0 {
         moves.push(front);
     }
 
     let mut add_if_enemy_is_at = |attack| {
-        if let Some(other) = any_other_piece_at(attack, piece_index, pieces) {
+        let attackable = other_pieces_at(attack, piece_index, pieces);
+        assert!(
+            attackable.len() <= 1,
+            "killing several pieces in the same tile is unsupported"
+        );
+        if let Some(other) = attackable.last().cloned() {
             if inside(attack, board_size) && pieces[other].team != pieces[piece_index].team {
                 moves.push(attack);
             }
