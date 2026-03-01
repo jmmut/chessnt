@@ -1,6 +1,6 @@
-use crate::world::board::Board;
 use crate::theme::{CameraPos, Theme};
 use crate::time::Time;
+use crate::world::board::Board;
 use crate::INITIAL_DEV_UI;
 use juquad::draw::draw_rect;
 use juquad::input::input_macroquad::InputMacroquad;
@@ -15,11 +15,29 @@ use macroquad::prelude::{Font, TextParams};
 pub fn render_text(text: &str, anchor: Anchor, theme: &Theme) -> Rect {
     render_text_font(text, anchor, theme, theme.font())
 }
+pub fn render_title(text: &str, anchor: Anchor, theme: &Theme) -> Rect {
+    render_text_font_size(
+        text,
+        anchor,
+        theme,
+        theme.font_title(),
+        theme.font_size_title(),
+    )
+}
 pub fn render_text_font(text: &str, anchor: Anchor, theme: &Theme, font: Font) -> Rect {
+    render_text_font_size(text, anchor, theme, font, theme.font_size())
+}
+pub fn render_text_font_size(
+    text: &str,
+    anchor: Anchor,
+    theme: &Theme,
+    font: Font,
+    font_size: f32,
+) -> Rect {
     let t = TextRect::new_generic(
         text,
         anchor,
-        theme.font_size(),
+        font_size,
         Some(font),
         macroquad::prelude::measure_text,
     );

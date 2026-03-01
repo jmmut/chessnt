@@ -1,4 +1,5 @@
-use crate::world::board::{Move, Team};
+use crate::world::moves::Move;
+use crate::world::team::Team;
 use crate::{
     height_to_width, DEFAULT_ASPECT_RATIO, DEFAULT_FONT_SIZE, DEFAULT_WINDOW_HEIGHT,
     DEFAULT_WINDOW_WIDTH,

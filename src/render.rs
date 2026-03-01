@@ -1,5 +1,5 @@
-use crate::world::board::Piece;
 use crate::coord::Coord;
+use crate::world::piece::Piece;
 use macroquad::color::Color;
 use macroquad::math::{vec2, vec3, Vec2, Vec3};
 use macroquad::models::{Mesh, Vertex};

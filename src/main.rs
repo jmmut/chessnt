@@ -1,12 +1,16 @@
-use chessnt::world::board::{Board, Move, Team};
 use chessnt::coord::Coord;
 use chessnt::theme::{CameraPos, Fonts, Textures, Theme};
 use chessnt::time::Time;
-use chessnt::ui::{DevUi, SCALE};
+use chessnt::ui::{
+    render_title, DevUi, SCALE,
+};
+use chessnt::world::board::Board;
+use chessnt::world::team::Team;
 use chessnt::{
     set_3d_camera, AnyResult, COLUMNS, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_TITLE,
     DEFAULT_WINDOW_WIDTH, ROWS,
 };
+use juquad::widgets::anchor::Anchor;
 use macroquad::camera::set_default_camera;
 use macroquad::input::{is_key_down, is_key_pressed, KeyCode};
 use macroquad::math::{vec2, Vec2};
@@ -15,6 +19,7 @@ use macroquad::prelude::{
 };
 use macroquad::prelude::{load_texture, load_ttf_font};
 use std::collections::HashMap;
+use chessnt::world::moves::Move;
 
 #[macroquad::main(window_conf)]
 async fn main() {
@@ -24,24 +29,7 @@ async fn main() {
 }
 
 async fn fallible_main() -> AnyResult<()> {
-    #[rustfmt::skip]
-    let textures = Textures {
-        placeholder: load_texture("assets/images/ph_chara.png").await?,
-        pieces: HashMap::from([
-            ((Team::White, Move::Pawn), load_texture("assets/images/pieces/icon-w-peon.png").await?),
-            ((Team::White, Move::Rook), load_texture("assets/images/pieces/icon-w-torre.png").await?),
-            ((Team::White, Move::Knight), load_texture("assets/images/pieces/icon-w-caballo.png").await?),
-            ((Team::White, Move::Bishop), load_texture("assets/images/pieces/icon-w-alfil.png").await?),
-            ((Team::White, Move::Queen), load_texture("assets/images/pieces/icon-w-reina.png").await?),
-            ((Team::White, Move::King), load_texture("assets/images/pieces/icon-w-rey.png").await?),
-            ((Team::Black, Move::Pawn), load_texture("assets/images/pieces/icon-b-peon.png").await?),
-            ((Team::Black, Move::Rook), load_texture("assets/images/pieces/icon-b-torre.png").await?),
-            ((Team::Black, Move::Knight), load_texture("assets/images/pieces/icon-b-caballo.png").await?),
-            ((Team::Black, Move::Bishop), load_texture("assets/images/pieces/icon-b-alfil.png").await?),
-            ((Team::Black, Move::Queen), load_texture("assets/images/pieces/icon-b-reina.png").await?),
-            ((Team::Black, Move::King), load_texture("assets/images/pieces/icon-b-rey.png").await?),
-        ]),
-    };
+    let textures = load_textures().await?;
     let fonts = Fonts {
         titles: load_ttf_font("assets/fonts/LilitaOne-Regular.ttf").await?,
         text: load_ttf_font("assets/fonts/TitilliumWeb-SemiBold.ttf").await?,
@@ -78,8 +66,36 @@ async fn fallible_main() -> AnyResult<()> {
         set_default_camera();
         board.draw_ui(theme);
         dev_ui.draw(&time, theme, &mut board, &mut camera);
+        if is_key_pressed(KeyCode::T) {
+            let anchor = Anchor::center_v(theme.screen_rect().center());
+            render_title("Re-loading textures", anchor, theme);
+            next_frame().await;
+            theme.textures = load_textures().await?;
+        }
         next_frame().await
     }
+}
+
+async fn load_textures() -> AnyResult<Textures> {
+    #[rustfmt::skip]
+    let textures = Textures {
+        placeholder: load_texture("assets/images/ph_chara.png").await?,
+        pieces: HashMap::from([
+            ((Team::White, Move::Pawn), load_texture("assets/images/pieces/icon-w-peon.png").await?),
+            ((Team::White, Move::Rook), load_texture("assets/images/pieces/icon-w-torre.png").await?),
+            ((Team::White, Move::Knight), load_texture("assets/images/pieces/icon-w-caballo.png").await?),
+            ((Team::White, Move::Bishop), load_texture("assets/images/pieces/icon-w-alfil.png").await?),
+            ((Team::White, Move::Queen), load_texture("assets/images/pieces/icon-w-reina.png").await?),
+            ((Team::White, Move::King), load_texture("assets/images/pieces/icon-w-rey.png").await?),
+            ((Team::Black, Move::Pawn), load_texture("assets/images/pieces/icon-b-peon.png").await?),
+            ((Team::Black, Move::Rook), load_texture("assets/images/pieces/icon-b-torre.png").await?),
+            ((Team::Black, Move::Knight), load_texture("assets/images/pieces/icon-b-caballo.png").await?),
+            ((Team::Black, Move::Bishop), load_texture("assets/images/pieces/icon-b-alfil.png").await?),
+            ((Team::Black, Move::Queen), load_texture("assets/images/pieces/icon-b-reina.png").await?),
+            ((Team::Black, Move::King), load_texture("assets/images/pieces/icon-b-rey.png").await?),
+        ]),
+    };
+    Ok(textures)
 }
 
 fn handle_inputs_shoud_exit(board: &mut Board, dev_ui: &mut DevUi) -> bool {

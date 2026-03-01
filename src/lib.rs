@@ -10,8 +10,11 @@ pub mod theme;
 pub mod time;
 pub mod ui;
 pub mod world {
-    pub mod referee;
     pub mod board;
+    pub mod piece;
+    pub mod referee;
+    pub mod team;
+    pub mod moves;
 }
 
 pub const COLUMNS: i32 = 8;
