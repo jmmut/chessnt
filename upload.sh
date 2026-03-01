@@ -36,26 +36,22 @@ if git show-ref --tags "$new_version" --quiet; then
   if [ "$current" = "$new_version" ] ; then
     echo "uploading version ${new_version}"
   else
-    read -p  "tag ${new_version} exists but is not checked out! want to retag here? [y/N]" -n 1 -r
+    read -p "tag ${new_version} exists but is not checked out! want to retag here? [y/N]" -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-      git tag -a -f ${new_version}
+      git tag -a -f $new_version
     else
       echo "aborting"
       exit 1
     fi
   fi
-else 
+else
   echo 
   read -p "tag ${new_version} doesn't exist. Want to tag now? [y/N] " -n 1 -r
   echo
   if [[ $REPLY =~ ^[Yy]$ ]]; then
-    git tag $new_version -m "$(git show HEAD~1 --pretty="%s" |head -n 1)"
-    read -p "tag description is '$(git tag -n  | tail -n 1)'. Want to change that? [y/N] " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-      git tag -a -f ${new_version}
-    fi
+    git tag $new_version
+    git tag -a -f $new_version
   else
     echo "aborting"
     exit 1
@@ -65,7 +61,10 @@ fi
 read -p "finally, push to github? [y/N] " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
+  set -x
+  git push origin HEAD
   git push origin $new_version
+  set +x
   echo "upload successful"
 else
   echo "not uploaded"
