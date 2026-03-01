@@ -11,6 +11,10 @@ fi
 
 new_version=$1
 
+set -x
+cargo fmt
+set +x
+
 if [[ $(git status --porcelain 2> /dev/null | grep -v "??" | wc -l)  != "0" ]]
 then
 	echo "git workspace is dirty. Please commit your changes before tagging a version"
