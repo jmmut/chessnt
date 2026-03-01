@@ -1,8 +1,8 @@
 use crate::coord::Coord;
-use crate::referee::Referee;
+use crate::referee::{texture_pos_to_v3, Referee};
 use crate::render::{
     floor_corners, mesh_coord, mesh_cursor, mesh_figure_texture, mesh_vertical_texture,
-    to_mesh_texture_quad, to_mesh_triangle,
+    to_mesh_quad, to_mesh_texture_quad, to_mesh_triangle, vertical_quad,
 };
 use crate::theme::{color_average, color_average_weight, margin, Theme};
 use crate::ui::render_text_font;
@@ -26,6 +26,7 @@ const CURSOR_HEIGHT: f32 = 0.1;
 const SELECTION_HEIGHT: f32 = CURSOR_HEIGHT * 0.5;
 const RADAR_HEIGHT: f32 = SELECTION_HEIGHT * 0.7;
 const FLOOR_PIECE_HEIGHT: f32 = RADAR_HEIGHT * 0.2;
+const COOLDOWN: f64 = 2.0;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Team {
@@ -59,6 +60,7 @@ pub struct Piece {
     pub team: Team,
     pub moved: bool,
     pub alive: bool,
+    pub cooldown_s: Option<f64>,
 }
 impl Piece {
     pub fn new(pos: Coord, movement: Move, team: Team) -> Self {
@@ -69,6 +71,7 @@ impl Piece {
             team,
             moved: false,
             alive: true,
+            cooldown_s: None,
         }
     }
     pub fn set_pos(&mut self, new_pos: Coord) {
@@ -141,6 +144,16 @@ impl Board {
         self.referee.tick(delta_s, &self.pieces);
         for piece in &mut self.pieces {
             piece.moved = false;
+            piece.cooldown_s = if let Some(mut cooldown) = piece.cooldown_s {
+                cooldown += delta_s;
+                if cooldown > COOLDOWN {
+                    None
+                } else {
+                    Some(cooldown)
+                }
+            } else {
+                None
+            }
         }
     }
     fn get_selected_piece(&self, team: Team) -> Option<&Piece> {
@@ -189,14 +202,17 @@ impl Board {
         } else {
             for (i, piece) in self.pieces.iter().enumerate() {
                 if piece.pos == new_selection && piece.team == team {
-                    *self.selected_mut(team) = Some(i);
-                    return;
+                    if piece.cooldown_s.is_none() {
+                        *self.selected_mut(team) = Some(i);
+                        return;
+                    }
                 }
             }
         }
     }
     pub fn deselect(&mut self, team: Team) {
         if let Some(selected_i) = self.selected(team) {
+            self.pieces[selected_i].cooldown_s = Some(0.0);
             let initial = self.pieces[selected_i].initial_pos;
             let any_overlap_i = self.any_overlapping_piece(selected_i);
             if let Some(overlap_i) = any_overlap_i {
@@ -410,6 +426,17 @@ impl Board {
             //     floor_corners(piece.pos + Coord::new_f(0.5, 0.5), FLOOR_PIECE_HEIGHT * 1.1, 0.2),
             //     BLUE,
             // ));
+
+            meshes.extend(progress_bar_mesh(
+                piece.pos,
+                self.piece_size,
+                if let Some(cooldown) = piece.cooldown_s {
+                    Some(cooldown / COOLDOWN)
+                } else {
+                    None
+                },
+            ));
+
             meshes.push(to_mesh_texture_quad(
                 floor_corners(piece.pos.round(), FLOOR_PIECE_HEIGHT, 1.0),
                 WHITE,
@@ -429,8 +456,7 @@ impl Board {
     }
 
     fn referee_meshes(&self, theme: &Theme) -> Vec<Mesh> {
-        let coord_00 =
-            (self.referee.pos_c() + Coord::new_f(0.5 - self.piece_size.x * 0.5, 0.5)).to_vec3(0.0);
+        let coord_00 = self.referee.pos_v3(self.piece_size.x, 0.0);
         let looking_leftwards = self.referee.looking_leftwards();
         let mesh = mesh_vertical_texture(
             coord_00,
@@ -439,6 +465,14 @@ impl Board {
             looking_leftwards,
             self.piece_size,
         );
+        let mut meshes = vec![mesh];
+
+        let bar = progress_bar_mesh(
+            self.referee.pos_c(),
+            self.piece_size,
+            self.referee.focus_progress(),
+        );
+        meshes.extend(bar);
 
         let [radar_base, radar_right, radar_left] = self.referee.radar();
         let square_offset = vec3(0.5, RADAR_HEIGHT, 0.5);
@@ -446,7 +480,6 @@ impl Board {
         let radar_right = radar_right.into::<Vec3>() + square_offset;
         let radar_left = radar_left.into::<Vec3>() + square_offset;
         let radar = to_mesh_triangle([radar_base, radar_right, radar_left], RADAR);
-        let mut meshes = vec![mesh];
         if self.referee.render_radar {
             meshes.push(radar);
         }
@@ -479,6 +512,16 @@ impl Board {
                 draw_mesh(&mesh_coord(Coord::new_i(column, row), color));
             }
         }
+    }
+}
+
+fn progress_bar_mesh(texture_pos: Coord, piece_size: Vec2, progress: Option<f64>) -> Vec<Mesh> {
+    if let Some(progress) = progress {
+        let width = 1.0 - progress as f32;
+        let pos = texture_pos_to_v3(texture_pos, width, piece_size.y * 1.2);
+        vec![to_mesh_quad(vertical_quad(pos, width, 0.3), RADAR)]
+    } else {
+        Vec::new()
     }
 }
 

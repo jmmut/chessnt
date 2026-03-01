@@ -165,6 +165,10 @@ impl Referee {
     pub fn pos_v2(&self) -> Vec2 {
         self.position
     }
+    pub fn pos_v3(&self, piece_size_x: f32, y: f32) -> Vec3 {
+        texture_pos_to_v3(self.pos_c(), piece_size_x, y)
+    }
+
     pub fn dir_c(&self) -> Coord {
         let mut d: Coord = self.direction.into();
         d = d.normalize();
@@ -189,6 +193,18 @@ impl Referee {
             .iter()
             .any(|index| triangle_contains(radar, pieces[*index].pos))
     }
+    pub fn focus_progress(&self) -> Option<f64> {
+        if let Some(focused) = self.focused {
+            Some(focused.time_still_s / VIGILANCE_TIMER)
+        } else {
+            None
+        }
+    }
+}
+
+pub fn texture_pos_to_v3(pos: Coord, piece_size_x: f32, y: f32) -> Vec3 {
+    let v3 = (pos + Coord::new_f(0.5 - piece_size_x * 0.5, 0.5)).to_vec3(y);
+    v3
 }
 
 fn triangle_contains(triangle: [Coord; 3], point: Coord) -> bool {
