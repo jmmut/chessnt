@@ -1,4 +1,4 @@
-use crate::board::Piece;
+use crate::world::board::Piece;
 use crate::coord::Coord;
 use macroquad::color::Color;
 use macroquad::math::{vec2, vec3, Vec2, Vec3};

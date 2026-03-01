@@ -1,4 +1,4 @@
-use crate::board::Board;
+use crate::world::board::Board;
 use crate::theme::{CameraPos, Theme};
 use crate::time::Time;
 use crate::INITIAL_DEV_UI;

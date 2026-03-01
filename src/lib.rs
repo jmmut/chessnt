@@ -4,13 +4,15 @@ use macroquad::camera::{set_camera, Camera3D};
 use macroquad::color::Color;
 use macroquad::math::vec3;
 
-pub mod board;
 pub mod coord;
-pub mod referee;
 pub mod render;
 pub mod theme;
 pub mod time;
 pub mod ui;
+pub mod world {
+    pub mod referee;
+    pub mod board;
+}
 
 pub const COLUMNS: i32 = 8;
 pub const ROWS: i32 = 8;

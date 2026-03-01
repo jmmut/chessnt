@@ -1,4 +1,4 @@
-use chessnt::board::{Board, Move, Team};
+use chessnt::world::board::{Board, Move, Team};
 use chessnt::coord::Coord;
 use chessnt::theme::{CameraPos, Fonts, Textures, Theme};
 use chessnt::time::Time;

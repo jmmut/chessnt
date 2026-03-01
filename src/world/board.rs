@@ -1,9 +1,6 @@
 use crate::coord::Coord;
-use crate::referee::{texture_pos_to_v3, Referee};
-use crate::render::{
-    floor_corners, mesh_coord, mesh_cursor, mesh_figure_texture, mesh_vertical_texture,
-    to_mesh_quad, to_mesh_texture_quad, to_mesh_triangle, vertical_quad,
-};
+use crate::world::referee::{texture_pos_to_v3, Referee};
+use crate::render::{floor_corners, mesh_coord, mesh_cursor, mesh_figure_texture, mesh_vertical_texture, to_mesh_quad, to_mesh_texture_quad, to_mesh_triangle, vertical_quad};
 use crate::theme::{color_average, color_average_weight, margin, Theme};
 use crate::ui::render_text_font;
 use crate::TRANSPARENT;
