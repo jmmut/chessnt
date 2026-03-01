@@ -54,7 +54,7 @@ impl Board {
             referee: Referee::new(),
         }
     }
-    pub fn new_chess(cursor_white: Coord, cursor_black: Coord, size: Coord) -> Self {
+    pub fn new_chess(cursor_white: Coord, cursor_black: Coord) -> Self {
         let back_column = vec![
             (0, Move::Rook),
             (1, Move::Knight),
@@ -72,11 +72,11 @@ impl Board {
             pieces.push(Piece::new(Coord::new_i(6, *row), Move::Pawn, Team::White));
             pieces.push(Piece::new(Coord::new_i(1, *row), Move::Pawn, Team::Black));
         }
-
+        let size = Coord::new_i(8, 8);
         Self::new(cursor_white, cursor_black, size, pieces)
     }
     pub fn reset(&mut self) {
-        *self = Self::new_chess(self.cursor_white, self.cursor_black, self.size);
+        *self = Self::new_chess(self.cursor_white, self.cursor_black);
     }
     pub fn tick(&mut self, delta_s: f64) {
         self.referee.tick(delta_s, &self.pieces);
@@ -107,7 +107,7 @@ impl Board {
     }
     pub fn move_cursor_rel(&mut self, delta: Coord, team: Team) {
         if let Some(piece) = self.get_selected_piece_mut(team) {
-            piece.pos += delta;
+            piece.set_pos(piece.pos_f() + delta);
             piece.moved = true;
         }
         *self.cursor_mut(team) += delta;
@@ -129,7 +129,7 @@ impl Board {
             // self.selected = Some(new_selection)
         } else {
             for (i, piece) in self.pieces.iter().enumerate() {
-                if piece.pos == new_selection && piece.team == team {
+                if piece.pos_i() == new_selection && piece.team == team {
                     if piece.cooldown_s.is_none() {
                         *self.selected_mut(team) = Some(i);
                         return;
@@ -146,37 +146,36 @@ impl Board {
             if let Some(overlap_i) = any_overlap_i {
                 let moves = possible_moves(self.size, &self.pieces, selected_i);
                 let referee_saw = self.referee.saw_any_piece(&self.pieces, vec![selected_i]);
-                let rounded_pos = self.pieces[overlap_i].pos.round();
+                let rounded_pos = self.pieces[overlap_i].pos_i();
                 let enemy = self.pieces[overlap_i].team != self.pieces[selected_i].team;
                 if enemy {
                     if moves.contains(&rounded_pos) && referee_saw {
                         self.kill(overlap_i);
-                        self.pieces[selected_i].set_pos(rounded_pos);
+                        self.pieces[selected_i].set_pos_and_initial(rounded_pos);
                         self.referee.turn.toggle();
                     } else {
-                        self.pieces[selected_i].set_pos(initial);
+                        self.pieces[selected_i].set_pos_and_initial(initial);
                     }
                 } else {
                     let initial = self.pieces[selected_i].initial_pos;
-                    self.pieces[overlap_i].set_pos(initial.round());
-                    self.pieces[selected_i].set_pos(rounded_pos);
+                    self.pieces[overlap_i].set_pos_and_initial(initial.round());
+                    self.pieces[selected_i].set_pos_and_initial(rounded_pos);
                     if self
                         .referee
                         .saw_any_piece(&self.pieces, vec![selected_i, overlap_i])
                     {
                         // TODO: defer after animation
-                        self.pieces[overlap_i].set_pos(rounded_pos);
+                        self.pieces[overlap_i].set_pos_and_initial(rounded_pos);
                         self.kill(selected_i);
                     }
                 }
-                // TODO: maybe no need for an different key press for swapping?
             } else {
-                let rounded_pos = self.pieces[selected_i].pos.round(); // TODO: leave positions unrounded
+                let rounded_pos = self.pieces[selected_i].pos_i(); // TODO: leave positions unrounded
                 let initial_pos = self.pieces[selected_i].initial_pos.round();
                 let mut moves = possible_moves(self.size, &self.pieces, selected_i);
                 moves.push(self.pieces[selected_i].initial_pos);
                 let referee_saw = self.referee.saw_any_piece(&self.pieces, vec![selected_i]);
-                self.pieces[selected_i].set_pos(rounded_pos);
+                self.pieces[selected_i].set_pos_and_initial(rounded_pos);
                 if referee_saw {
                     if !moves.contains(&rounded_pos) {
                         self.kill(selected_i);
@@ -230,9 +229,10 @@ impl Board {
 
     fn kill(&mut self, selected_i: usize) {
         self.pieces[selected_i].alive = false;
-        self.pieces[selected_i].pos.row = -2.0;
+        let column = self.pieces[selected_i].pos_i().column();
+        self.pieces[selected_i].set_pos_and_initial(Coord::new_i(column, -2));
         while self.any_overlapping_piece(selected_i).is_some() {
-            self.pieces[selected_i].pos.row -= 1.0;
+            self.pieces[selected_i].move_rel(Coord::new_i(0, -1));
         }
     }
 
@@ -242,13 +242,13 @@ impl Board {
 }
 
 fn any_overlapping_piece(selected_i: usize, pieces: &Vec<Piece>) -> Option<usize> {
-    let selected_rounded = pieces[selected_i].pos.round();
+    let selected_rounded = pieces[selected_i].pos_i();
     any_other_piece_at(selected_rounded, selected_i, pieces)
 }
 
 pub fn any_other_piece_at(pos: Coord, index: usize, pieces: &Vec<Piece>) -> Option<usize> {
     for (i, piece) in pieces.iter().enumerate() {
-        if i != index && piece.pos.round() == pos {
+        if i != index && piece.pos_i() == pos {
             return Some(i);
         }
     }
@@ -300,7 +300,7 @@ impl Board {
             }
         }
         for piece in &self.pieces {
-            if piece.pos.round() == self.cursor(team).round() {
+            if piece.pos_i() == self.cursor(team).round() {
                 return render_text_font(
                     &format!(
                         "{}: {} {}",
@@ -356,13 +356,13 @@ impl Board {
             // ));
 
             meshes.extend(mesh_progress_bar(
-                piece.pos,
+                piece.pos_f(),
                 self.piece_size,
                 piece.cooldown_progress(),
             ));
 
             meshes.push(mesh_texture_quad(
-                floor_corners(piece.pos.round(), FLOOR_PIECE_HEIGHT, 1.0),
+                floor_corners(piece.pos_i(), FLOOR_PIECE_HEIGHT, 1.0),
                 WHITE,
                 Some(theme.textures.pieces[&(piece.team, piece.moveset[0])]),
                 piece.team.is_white(),
@@ -451,4 +451,37 @@ pub fn cursor_color(team: Team) -> Color {
 fn depth(mesh: &Mesh) -> f32 {
     (mesh.vertices[0].position.z + mesh.vertices[2].position.z) * 0.5 * 0.001
         + (mesh.vertices[0].position.y + mesh.vertices[2].position.y) * 0.5 * 10.0
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::world::piece::PieceMock;
+
+    fn pieces_at(pos: Coord, pieces: &[Piece]) -> Vec<&Piece> {
+        let mut found = Vec::new();
+        for piece in pieces {
+            if piece.pos_i() == pos {
+                found.push(piece);
+            }
+        }
+        found
+    }
+
+    #[test]
+    fn test_move_pawn() {
+        let mut board = Board::new_chess(Coord::new_i(6, 0), Coord::new_i(1, 0));
+        board.select(Team::White);
+        board.move_cursor_rel(Coord::new_i(-1, 0), Team::White);
+        board.deselect(Team::White);
+        let expected_pos = Coord::new_i(5, 0);
+        let at_5_0 = pieces_at(expected_pos, &board.pieces);
+        assert_eq!(
+            at_5_0,
+            vec![&PieceMock::new(expected_pos, vec![Move::Pawn], Team::White)
+                .cooldown(Some(0.0))
+                .moved(true)
+                .into()]
+        )
+    }
 }

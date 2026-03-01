@@ -89,7 +89,7 @@ impl Referee {
             self.maybe_focus(delta_s, pieces);
             if let Some(focus) = &self.focused {
                 self.direction =
-                    (pieces[focus.piece_index].pos.into::<Vec2>() - self.position).normalize();
+                    (pieces[focus.piece_index].pos_f().into::<Vec2>() - self.position).normalize();
             } else {
                 self.interpolation_s += delta_s;
                 self.prev_position = self.position;
@@ -133,7 +133,7 @@ impl Referee {
 
     fn maybe_focus(&mut self, delta_s: f64, pieces: &Vec<Piece>) {
         for (piece_index, piece) in pieces.iter().enumerate() {
-            if piece.moved && triangle_contains(self.radar(), piece.pos) {
+            if piece.moved && triangle_contains(self.radar(), piece.pos_f()) {
                 self.focused = Some(Focus {
                     time_still_s: 0.0,
                     piece_index,
@@ -192,7 +192,7 @@ impl Referee {
         let radar = self.radar();
         indexes
             .iter()
-            .any(|index| triangle_contains(radar, pieces[*index].pos))
+            .any(|index| triangle_contains(radar, pieces[*index].pos_f()))
     }
     pub fn focus_progress(&self) -> Option<f64> {
         if let Some(focused) = self.focused {

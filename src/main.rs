@@ -6,8 +6,7 @@ use chessnt::world::board::Board;
 use chessnt::world::moves::Move;
 use chessnt::world::team::Team;
 use chessnt::{
-    set_3d_camera, AnyResult, COLUMNS, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_TITLE,
-    DEFAULT_WINDOW_WIDTH, ROWS,
+    set_3d_camera, AnyResult, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_TITLE, DEFAULT_WINDOW_WIDTH,
 };
 use juquad::widgets::anchor::Anchor;
 use macroquad::camera::set_default_camera;
@@ -40,11 +39,7 @@ async fn fallible_main() -> AnyResult<()> {
         fovy: 44.33,   // 45.0,
         target_y: 0.5, // 0.0,
     };
-    let mut board = Board::new_chess(
-        Coord::new_i(6, 4),
-        Coord::new_i(2, 4),
-        Coord::new_i(COLUMNS, ROWS),
-    );
+    let mut board = Board::new_chess(Coord::new_i(6, 4), Coord::new_i(2, 4));
     let mut dev_ui = DevUi::new();
     let mut time = Time::new();
     loop {

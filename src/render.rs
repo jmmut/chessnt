@@ -67,7 +67,7 @@ fn quad(coord_00: Vec3, a: Vec3, b: Vec3) -> [Vec3; 4] {
 //     mesh_vertical_texture(coord_00, 2.0, color, None)
 // }
 pub fn mesh_figure_texture(piece: &Piece, color: Color, texture: Texture2D, size: Vec2) -> Mesh {
-    let coord_00 = (piece.pos + Coord::new_f(0.5 - size.x * 0.5, 0.5)).to_vec3(0.0);
+    let coord_00 = (piece.pos_f() + Coord::new_f(0.5 - size.x * 0.5, 0.5)).to_vec3(0.0);
     mesh_vertical_texture(coord_00, color, Some(texture), piece.team.is_white(), size)
 }
 pub fn mesh_vertical_texture(
