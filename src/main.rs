@@ -1,10 +1,9 @@
 use chessnt::coord::Coord;
 use chessnt::theme::{CameraPos, Fonts, Textures, Theme};
 use chessnt::time::Time;
-use chessnt::ui::{
-    render_title, DevUi, SCALE,
-};
+use chessnt::ui::{render_title, DevUi, SCALE};
 use chessnt::world::board::Board;
+use chessnt::world::moves::Move;
 use chessnt::world::team::Team;
 use chessnt::{
     set_3d_camera, AnyResult, COLUMNS, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_TITLE,
@@ -19,7 +18,6 @@ use macroquad::prelude::{
 };
 use macroquad::prelude::{load_texture, load_ttf_font};
 use std::collections::HashMap;
-use chessnt::world::moves::Move;
 
 #[macroquad::main(window_conf)]
 async fn main() {

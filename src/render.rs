@@ -1,5 +1,7 @@
 use crate::coord::Coord;
+use crate::world::board::RADAR;
 use crate::world::piece::Piece;
+use crate::world::referee::texture_pos_to_v3;
 use macroquad::color::Color;
 use macroquad::math::{vec2, vec3, Vec2, Vec3};
 use macroquad::models::{Mesh, Vertex};
@@ -10,33 +12,39 @@ pub fn mesh_coord(coord: Coord, color: Color) -> Mesh {
 }
 pub fn mesh_coord_h(coord: Coord, color: Color, height: f32) -> Mesh {
     let corners = floor_corners(coord, height, 1.0);
-    let mesh = to_mesh_quad(corners, color);
+    let mesh = mesh_quad(corners, color);
     mesh
 }
 
 pub fn floor_corners(coord: Coord, height: f32, tile_size: f32) -> [Vec3; 4] {
     let coord_00: Vec3 = coord.to_vec3(height);
-    let coord_10 = (coord + Coord::new_f(tile_size, 0.0)).to_vec3(height);
-    let coord_01 = (coord + Coord::new_f(0.0, tile_size)).to_vec3(height);
-    let coord_11 = (coord + Coord::new_f(tile_size, tile_size)).to_vec3(height);
-    let corners = [coord_00, coord_10, coord_01, coord_11];
-    corners
+    horizontal_quad(coord_00, tile_size, tile_size)
+}
+
+pub fn mesh_progress_bar(texture_pos: Coord, piece_size: Vec2, progress: Option<f64>) -> Vec<Mesh> {
+    if let Some(progress) = progress {
+        let width = 1.0 - progress as f32;
+        let pos = texture_pos_to_v3(texture_pos, width, piece_size.y * 1.2);
+        vec![mesh_quad(vertical_quad(pos, width, 0.3), RADAR)]
+    } else {
+        Vec::new()
+    }
 }
 
 pub fn mesh_cursor(coord: Coord, color: Color, height: f32) -> Vec<Mesh> {
     let width = 0.1;
     let mut meshes = Vec::new();
     let q = horizontal_quad(coord.to_vec3(height), 1.0, width);
-    meshes.push(to_mesh_quad(q, color));
+    meshes.push(mesh_quad(q, color));
     let coord_00 = coord.to_vec3(height) + vec3(0.0, 0.0, 1.0 - width);
     let q = horizontal_quad(coord_00, 1.0, width);
-    meshes.push(to_mesh_quad(q, color));
+    meshes.push(mesh_quad(q, color));
 
     let q = horizontal_quad(coord.to_vec3(height), width, 1.0);
-    meshes.push(to_mesh_quad(q, color));
+    meshes.push(mesh_quad(q, color));
     let coord_00: Vec3 = coord.to_vec3(height) + vec3(1.0 - width, 0.0, 0.0);
     let q = horizontal_quad(coord_00, width, 1.0);
-    meshes.push(to_mesh_quad(q, color));
+    meshes.push(mesh_quad(q, color));
 
     meshes
 }
@@ -70,10 +78,10 @@ pub fn mesh_vertical_texture(
     size: Vec2,
 ) -> Mesh {
     let corners = vertical_quad(coord_00, size.x, size.y);
-    let mesh = to_mesh_texture_quad(corners, color, texture, flip_horiz, false);
+    let mesh = mesh_texture_quad(corners, color, texture, flip_horiz, false);
     mesh
 }
-pub fn to_mesh_quad(corners: [Vec3; 4], color: Color) -> Mesh {
+pub fn mesh_quad(corners: [Vec3; 4], color: Color) -> Mesh {
     let coords = corners.to_vec();
     let mut vertices = Vec::new();
     for position in coords {
@@ -90,7 +98,7 @@ pub fn to_mesh_quad(corners: [Vec3; 4], color: Color) -> Mesh {
         texture: None,
     }
 }
-pub fn to_mesh_texture_quad(
+pub fn mesh_texture_quad(
     corners: [Vec3; 4],
     color: Color,
     texture: Option<Texture2D>,
@@ -124,7 +132,7 @@ pub fn to_mesh_texture_quad(
     }
 }
 
-pub fn to_mesh_triangle(corners: [Vec3; 3], color: Color) -> Mesh {
+pub fn mesh_triangle(corners: [Vec3; 3], color: Color) -> Mesh {
     let mut vertices = Vec::new();
     for corner in corners {
         vertices.push(Vertex {

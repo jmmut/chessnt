@@ -1,9 +1,9 @@
 use crate::coord::Coord;
+use crate::world::piece::Piece;
 use crate::world::team::Team;
 use crate::COLUMNS;
 use macroquad::math::{vec2, vec3, Vec2, Vec3};
 use std::ops::{Add, Mul};
-use crate::world::piece::Piece;
 
 pub struct Interpolation<T> {
     start: T,

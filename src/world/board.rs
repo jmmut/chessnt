@@ -1,24 +1,24 @@
 use crate::coord::Coord;
 use crate::render::{
-    floor_corners, mesh_coord, mesh_cursor, mesh_figure_texture, mesh_vertical_texture,
-    to_mesh_quad, to_mesh_texture_quad, to_mesh_triangle, vertical_quad,
+    floor_corners, mesh_coord, mesh_cursor, mesh_figure_texture, mesh_progress_bar,
+    mesh_texture_quad, mesh_triangle, mesh_vertical_texture,
 };
 use crate::theme::{color_average, color_average_weight, margin, Theme};
 use crate::ui::render_text_font;
-use crate::world::referee::{texture_pos_to_v3, Referee};
+use crate::world::moves::{moves_to_string, possible_moves, Move};
+use crate::world::piece::Piece;
+use crate::world::referee::Referee;
 use crate::world::team::Team;
 use crate::TRANSPARENT;
 use juquad::widgets::anchor::{Anchor, Horizontal, Layout, Vertical};
 use macroquad::color::{Color, BLUE, DARKBLUE, GRAY, GREEN, PURPLE, RED, WHITE, YELLOW};
 use macroquad::math::{vec2, vec3, Rect, Vec2, Vec3};
 use macroquad::models::{draw_mesh, Mesh};
-use crate::world::moves::{moves_to_string, possible_moves, Move};
-use crate::world::piece::Piece;
 
 // const SELECTION: Color = color_average(DARKBLUE, TRANSPARENT);
 const SELECTION: Color = color_average(BLUE, GRAY);
 // const RADAR: Color = color_average(color_average(RED, LIGHTGRAY), TRANSPARENT);
-const RADAR: Color = color_average(RED, TRANSPARENT);
+pub const RADAR: Color = color_average(RED, TRANSPARENT);
 // const GHOST: Color = color_average(DARKPURPLE, TRANSPARENT);
 const GHOST: Color = color_average(PURPLE, GRAY);
 // const CURSOR: Color = color_average(DARKGREEN, TRANSPARENT);
@@ -29,7 +29,6 @@ const CURSOR_HEIGHT: f32 = 0.1;
 const SELECTION_HEIGHT: f32 = CURSOR_HEIGHT * 0.5;
 const RADAR_HEIGHT: f32 = SELECTION_HEIGHT * 0.7;
 const FLOOR_PIECE_HEIGHT: f32 = RADAR_HEIGHT * 0.2;
-
 
 pub struct Board {
     cursor_white: Coord,
@@ -356,13 +355,13 @@ impl Board {
             //     BLUE,
             // ));
 
-            meshes.extend(progress_bar_mesh(
+            meshes.extend(mesh_progress_bar(
                 piece.pos,
                 self.piece_size,
                 piece.cooldown_progress(),
             ));
 
-            meshes.push(to_mesh_texture_quad(
+            meshes.push(mesh_texture_quad(
                 floor_corners(piece.pos.round(), FLOOR_PIECE_HEIGHT, 1.0),
                 WHITE,
                 Some(theme.textures.pieces[&(piece.team, piece.moveset[0])]),
@@ -392,7 +391,7 @@ impl Board {
         );
         let mut meshes = vec![mesh];
 
-        let bar = progress_bar_mesh(
+        let bar = mesh_progress_bar(
             self.referee.pos_c(),
             self.piece_size,
             self.referee.focus_progress(),
@@ -404,7 +403,7 @@ impl Board {
         let radar_base = radar_base.into::<Vec3>() + square_offset;
         let radar_right = radar_right.into::<Vec3>() + square_offset;
         let radar_left = radar_left.into::<Vec3>() + square_offset;
-        let radar = to_mesh_triangle([radar_base, radar_right, radar_left], RADAR);
+        let radar = mesh_triangle([radar_base, radar_right, radar_left], RADAR);
         if self.referee.render_radar {
             meshes.push(radar);
         }
@@ -448,15 +447,6 @@ pub fn cursor_color(team: Team) -> Color {
     }
 }
 
-fn progress_bar_mesh(texture_pos: Coord, piece_size: Vec2, progress: Option<f64>) -> Vec<Mesh> {
-    if let Some(progress) = progress {
-        let width = 1.0 - progress as f32;
-        let pos = texture_pos_to_v3(texture_pos, width, piece_size.y * 1.2);
-        vec![to_mesh_quad(vertical_quad(pos, width, 0.3), RADAR)]
-    } else {
-        Vec::new()
-    }
-}
 /// assumes meshes are just quads, with vertices in zig-zag order. (top left, top right, bottom left, bottom right).
 fn depth(mesh: &Mesh) -> f32 {
     (mesh.vertices[0].position.z + mesh.vertices[2].position.z) * 0.5 * 0.001
