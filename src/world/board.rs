@@ -153,14 +153,14 @@ impl Board {
             if let Some(overlap_i) = overlaps_i.last().cloned() {
                 let moves = possible_moves(self.size, &self.pieces, selected_i);
                 let referee_saw = self.referee.saw_any_piece(&self.pieces, vec![selected_i]);
-                let rounded_pos = self.pieces[overlap_i].pos_i();
+                let rounded_overlap_initial = self.pieces[overlap_i].pos_initial_i();
                 let overlap_team = self.pieces[overlap_i].team;
                 let enemy = overlap_team != self.pieces[selected_i].team;
                 if enemy {
-                    if moves.contains(&rounded_pos) && referee_saw {
+                    if moves.contains(&rounded_overlap_initial) && referee_saw {
                         // self.
                         self.kill(overlap_i);
-                        self.pieces[selected_i].set_pos_and_initial(rounded_pos);
+                        self.pieces[selected_i].set_pos_and_initial(rounded_overlap_initial);
                         self.referee.turn.toggle();
                     } else {
                         self.pieces[selected_i].set_pos_and_initial(initial);
@@ -168,13 +168,13 @@ impl Board {
                 } else {
                     let initial = self.pieces[selected_i].initial_pos;
                     self.pieces[overlap_i].set_pos_and_initial(initial.round());
-                    self.pieces[selected_i].set_pos_and_initial(rounded_pos);
+                    self.pieces[selected_i].set_pos_and_initial(rounded_overlap_initial);
                     if self
                         .referee
                         .saw_any_piece(&self.pieces, vec![selected_i, overlap_i])
                     {
                         // TODO: defer after animation
-                        self.pieces[overlap_i].set_pos_and_initial(rounded_pos);
+                        self.pieces[overlap_i].set_pos_and_initial(rounded_overlap_initial);
                         self.kill(selected_i);
                     }
                 }
@@ -236,17 +236,17 @@ impl Board {
         }
     }
 
+    fn force_deselect(&mut self, selected_i: usize, team: Team) {
+        if let Some(selected) = self.selected(team) {
+            if selected == selected_i {
+                *self.selected_mut(team) = None;
+                *self.cursor_mut(team) = self.cursor(team).round();
+            }
+        }
+    }
     fn kill(&mut self, selected_i: usize) {
-        if let Some(selected) = self.selected_black {
-            if selected == selected_i {
-                self.selected_black = None;
-            }
-        }
-        if let Some(selected) = self.selected_white {
-            if selected == selected_i {
-                self.selected_white = None;
-            }
-        }
+        self.force_deselect(selected_i, Team::Black);
+        self.force_deselect(selected_i, Team::White);
         self.pieces[selected_i].alive = false;
         let column = self.pieces[selected_i].pos_i().column();
         self.pieces[selected_i].set_pos_and_initial(Coord::new_i(column, -2));
@@ -268,7 +268,7 @@ fn overlapping_piece(selected_i: usize, pieces: &Vec<Piece>) -> Vec<usize> {
 pub fn other_pieces_at(pos: Coord, index: usize, pieces: &Vec<Piece>) -> Vec<usize> {
     let mut others = Vec::new();
     for (i, piece) in pieces.iter().enumerate() {
-        if i != index && piece.pos_i() == pos {
+        if i != index && piece.pos_initial_i() == pos {
             others.push(i);
         }
     }
@@ -519,10 +519,50 @@ mod tests {
         board.select(Team::White);
         board.select(Team::Black);
         board.move_cursor_rel(Coord::new_i(1, 0), Team::White);
-        assert_eq!(board.cursor(Team::Black), pos_right);
-        assert_eq!(board.get_selected_piece(Team::Black), Some(&pieces[1]));
+        board.move_cursor_rel(Coord::new_f(0.1, 0.0), Team::Black);
+        assert_eq!(board.cursor(Team::Black), Coord::new_f(1.1, 0.0));
+        let black_piece = board.get_selected_piece(Team::Black);
+        let mock = PieceMock::from(&board.pieces[1]).initial_pos(pos_right);
+        let mock = mock.into();
+        let expected_black = Some(&mock);
+        assert_eq!(black_piece, expected_black);
         board.deselect(Team::White);
-        assert_eq!(board.cursor(Team::Black), pos_right);
+        assert_eq!(board.cursor(Team::Black), Coord::new_f(1.0, 0.0));
         assert_eq!(board.get_selected_piece(Team::Black), None);
+    }
+
+    fn team_alive_pos(pieces: &[Piece]) -> Vec<(Team, bool, Coord)> {
+        pieces
+            .iter()
+            .map(|piece| (piece.team, piece.alive, piece.pos_i()))
+            .collect()
+    }
+
+    #[test]
+    fn test_kill_a_moved_piece() {
+        let pos_left = Coord::new_i(0, 0);
+        let pos_right = Coord::new_i(2, 0);
+        let size = Coord::new_i(3, 3);
+        let pieces = vec![
+            Piece::new(pos_left, Move::Rook, Team::White),
+            Piece::new(pos_right, Move::Bishop, Team::Black),
+        ];
+        let mut board = Board::new(pos_left, pos_right, size, pieces);
+        board.set_all_seeing_referee(true);
+
+        board.select(Team::White);
+        board.select(Team::Black);
+
+        board.move_cursor_rel(Coord::new_i(2, 0), Team::White);
+        board.move_cursor_rel(Coord::new_i(-1, 1), Team::Black);
+
+        board.deselect(Team::White);
+        assert_eq!(
+            team_alive_pos(&board.pieces),
+            vec![
+                (Team::White, true, pos_right),
+                (Team::Black, false, Coord::new_i(1, -2))
+            ]
+        );
     }
 }

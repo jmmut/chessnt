@@ -36,6 +36,14 @@ impl PieceMock {
             cooldown_s: None,
         }
     }
+    pub fn pos(mut self, pos: Coord) -> Self {
+        self.pos = pos;
+        self
+    }
+    pub fn initial_pos(mut self, initial_pos: Coord) -> Self {
+        self.initial_pos = initial_pos;
+        self
+    }
     pub fn moved(mut self, moved: bool) -> Self {
         self.moved = Some(moved);
         self
@@ -52,6 +60,7 @@ impl PieceMock {
 impl From<PieceMock> for Piece {
     fn from(value: PieceMock) -> Self {
         let mut piece = Self::new(value.pos, Move::Pawn, value.team);
+        piece.initial_pos = value.initial_pos;
         piece.moveset = value.moveset;
         if let Some(moved) = value.moved {
             piece.moved = moved;
@@ -61,6 +70,19 @@ impl From<PieceMock> for Piece {
         }
         piece.cooldown_s = value.cooldown_s;
         piece
+    }
+}
+impl From<&Piece> for PieceMock {
+    fn from(value: &Piece) -> Self {
+        Self {
+            initial_pos: value.initial_pos,
+            pos: value.pos,
+            moveset: value.moveset.clone(),
+            team: value.team,
+            moved: Some(value.moved),
+            alive: Some(value.alive),
+            cooldown_s: value.cooldown_s,
+        }
     }
 }
 impl Piece {
@@ -87,6 +109,9 @@ impl Piece {
     }
     pub fn pos_i(&self) -> Coord {
         self.pos.round()
+    }
+    pub fn pos_initial_i(&self) -> Coord {
+        self.initial_pos.round()
     }
     pub fn pos_f(&self) -> Coord {
         self.pos
