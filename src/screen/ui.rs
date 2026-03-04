@@ -1,5 +1,5 @@
-use crate::theme::{CameraPos, Theme};
-use crate::time::Time;
+use crate::core::time::Time;
+use crate::screen::theme::{CameraPos, Theme};
 use crate::world::board::Board;
 use crate::INITIAL_DEV_UI;
 use juquad::draw::draw_rect;

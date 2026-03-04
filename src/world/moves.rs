@@ -1,4 +1,4 @@
-use crate::coord::Coord;
+use crate::core::coord::Coord;
 use crate::world::board::other_pieces_at;
 use crate::world::piece::Piece;
 

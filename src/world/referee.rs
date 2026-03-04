@@ -1,4 +1,4 @@
-use crate::coord::Coord;
+use crate::core::coord::Coord;
 use crate::world::piece::Piece;
 use crate::world::team::Team;
 use crate::COLUMNS;

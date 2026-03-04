@@ -1,4 +1,4 @@
-use crate::coord::Coord;
+use crate::core::coord::Coord;
 use crate::world::board::RADAR;
 use crate::world::piece::Piece;
 use crate::world::referee::texture_pos_to_v3;

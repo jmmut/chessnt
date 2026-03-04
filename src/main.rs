@@ -1,7 +1,7 @@
-use chessnt::coord::Coord;
-use chessnt::theme::{CameraPos, Fonts, Textures, Theme};
-use chessnt::time::Time;
-use chessnt::ui::{render_title, DevUi, SCALE};
+use chessnt::core::coord::Coord;
+use chessnt::core::time::Time;
+use chessnt::screen::theme::{CameraPos, Fonts, Textures, Theme};
+use chessnt::screen::ui::{render_title, DevUi, SCALE};
 use chessnt::world::board::Board;
 use chessnt::world::moves::Move;
 use chessnt::world::team::Team;

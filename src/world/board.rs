@@ -1,10 +1,10 @@
-use crate::coord::Coord;
-use crate::render::{
+use crate::core::coord::Coord;
+use crate::screen::render::{
     floor_corners, mesh_coord, mesh_cursor, mesh_figure_texture, mesh_progress_bar,
     mesh_texture_quad, mesh_triangle, mesh_vertical_texture,
 };
-use crate::theme::{color_average, color_average_weight, margin, Theme};
-use crate::ui::render_text_font;
+use crate::screen::theme::{color_average, color_average_weight, margin, Theme};
+use crate::screen::ui::render_text_font;
 use crate::world::moves::{moves_to_string, possible_moves, Move};
 use crate::world::piece::Piece;
 use crate::world::referee::Referee;

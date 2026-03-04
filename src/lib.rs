@@ -1,14 +1,18 @@
-use crate::theme::CameraPos;
-use crate::ui::DevUiMenu;
 use macroquad::camera::{set_camera, Camera3D};
 use macroquad::color::Color;
 use macroquad::math::vec3;
+use screen::theme::CameraPos;
+use screen::ui::DevUiMenu;
 
-pub mod coord;
-pub mod render;
-pub mod theme;
-pub mod time;
-pub mod ui;
+pub mod core {
+    pub mod coord;
+    pub mod time;
+}
+pub mod screen {
+    pub mod render;
+    pub mod theme;
+    pub mod ui;
+}
 pub mod world {
     pub mod board;
     pub mod moves;
