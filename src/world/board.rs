@@ -181,20 +181,18 @@ impl Board {
             } else {
                 let rounded_pos = self.pieces[selected_i].pos_i(); // TODO: leave positions unrounded
                 let initial_pos = self.pieces[selected_i].initial_pos.round();
-                let mut moves = possible_moves(self.size, &self.pieces, selected_i);
-                moves.push(self.pieces[selected_i].initial_pos);
+                let moves = possible_moves(self.size, &self.pieces, selected_i);
                 let referee_saw = self.referee.saw_any_piece(&self.pieces, vec![selected_i]);
                 self.pieces[selected_i].set_pos_and_initial(rounded_pos);
                 if referee_saw {
-                    if !moves.contains(&rounded_pos) {
+                    if initial_pos == rounded_pos {
+                        // grabbed and dropped in the same place: ok for both teams
+                    } else if !moves.contains(&rounded_pos) {
                         self.kill(selected_i);
                     } else if self.referee.turn != self.pieces[selected_i].team {
                         self.kill(selected_i);
-                    } else if rounded_pos != initial_pos {
-                        self.referee.turn.toggle();
                     } else {
-                        // picked up the piece and dropped it the same place.
-                        // TODO: punish this?
+                        self.referee.turn.toggle();
                     }
                 }
             }
@@ -538,8 +536,7 @@ mod tests {
             .collect()
     }
 
-    #[test]
-    fn test_kill_a_moved_piece() {
+    fn rook_bishop_3_3() -> (Coord, Coord, Board) {
         let pos_left = Coord::new_i(0, 0);
         let pos_right = Coord::new_i(2, 0);
         let size = Coord::new_i(3, 3);
@@ -549,6 +546,12 @@ mod tests {
         ];
         let mut board = Board::new(pos_left, pos_right, size, pieces);
         board.set_all_seeing_referee(true);
+        (pos_left, pos_right, board)
+    }
+
+    #[test]
+    fn test_kill_a_moved_piece() {
+        let (_, pos_right, mut board) = rook_bishop_3_3();
 
         board.select(Team::White);
         board.select(Team::Black);
@@ -561,7 +564,28 @@ mod tests {
             team_alive_pos(&board.pieces),
             vec![
                 (Team::White, true, pos_right),
-                (Team::Black, false, Coord::new_i(1, -2))
+                (Team::Black, false, Coord::new_i(1, -2)),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_grab_and_drop_in_the_same_place() {
+        let (pos_left, pos_right, mut board) = rook_bishop_3_3();
+        assert_eq!(board.referee.turn, Team::White);
+        board.select(Team::White);
+        board.tick(0.1);
+        board.deselect(Team::White);
+        assert_eq!(board.referee.turn, Team::White);
+        board.select(Team::Black);
+        board.tick(0.1);
+        board.deselect(Team::Black);
+        assert_eq!(board.referee.turn, Team::White);
+        assert_eq!(
+            team_alive_pos(&board.pieces),
+            vec![
+                (Team::White, true, pos_left),
+                (Team::Black, true, pos_right),
             ]
         );
     }
