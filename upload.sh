@@ -54,8 +54,8 @@ else
   read -p "tag ${new_version} doesn't exist. Want to tag now? [y/N] " -n 1 -r
   echo
   if [[ $REPLY =~ ^[Yy]$ ]]; then
-    git tag $new_version
-    git tag -a -f $new_version
+    git tag $new_version -m "$(git show --pretty="%s" |head -n 1)"
+    git tag -f -a $new_version
   else
     echo "aborting"
     exit 1
