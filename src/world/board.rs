@@ -1,7 +1,7 @@
 use crate::core::coord::Coord;
 use crate::screen::render::{
-    floor_corners, mesh_coord, mesh_cursor, mesh_figure_texture, mesh_progress_bar,
-    mesh_texture_quad, mesh_triangle, mesh_vertical_texture,
+    floor_corners, mesh_coord, mesh_cursor, mesh_cursor_width, mesh_figure_texture,
+    mesh_progress_bar, mesh_texture_quad, mesh_triangle, mesh_vertical_texture,
 };
 use crate::screen::theme::{color_average, color_average_weight, Theme};
 use crate::world::moves::{compute_attackers, possible_moves, Move};
@@ -431,10 +431,11 @@ impl Board {
     fn checks_meshes(&self) -> Vec<Mesh> {
         let mut meshes = Vec::new();
         for (_team, kind_index) in self.in_check() {
-            meshes.extend(mesh_cursor(
+            meshes.extend(mesh_cursor_width(
                 self.pieces[kind_index].initial_pos,
                 CHECK,
                 SELECTION_HEIGHT,
+                0.2,
             ));
         }
         meshes

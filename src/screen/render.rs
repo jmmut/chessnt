@@ -32,7 +32,9 @@ pub fn mesh_progress_bar(texture_pos: Coord, piece_size: Vec2, progress: Option<
 }
 
 pub fn mesh_cursor(coord: Coord, color: Color, height: f32) -> Vec<Mesh> {
-    let width = 0.1;
+    mesh_cursor_width(coord, color, height, 0.1)
+}
+pub fn mesh_cursor_width(coord: Coord, color: Color, height: f32, width: f32) -> Vec<Mesh> {
     let mut meshes = Vec::new();
     let q = horizontal_quad(coord.to_vec3(height), 1.0, width);
     meshes.push(mesh_quad(q, color));
