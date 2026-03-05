@@ -84,13 +84,13 @@ fn piece_moves(
     let piece_pos = pieces[piece_index].initial_pos;
     match movement {
         Move::Pawn => get_pawn_positions(piece_index, pieces, board_size),
-        Move::Bishop => get_bishop_positions(piece_pos, board_size),
+        Move::Bishop => get_bishop_positions(piece_pos, pieces, board_size),
         Move::Knight => KNIGHT.iter().map(|p| *p + piece_pos).collect(),
-        Move::Rook => get_rook_positions(piece_pos, board_size),
+        Move::Rook => get_rook_positions(piece_pos, pieces, board_size),
         Move::King => KING.iter().map(|p| *p + piece_pos).collect(),
-        Move::Queen => get_rook_positions(piece_pos, board_size)
+        Move::Queen => get_rook_positions(piece_pos, pieces, board_size)
             .into_iter()
-            .chain(get_bishop_positions(piece_pos, board_size))
+            .chain(get_bishop_positions(piece_pos, pieces, board_size))
             .collect(),
     }
 }
@@ -132,38 +132,58 @@ fn get_pawn_positions(piece_index: usize, pieces: &Vec<Piece>, board_size: Coord
     moves
 }
 
-fn get_rook_positions(piece_pos: Coord, board_size: Coord) -> Vec<Coord> {
+fn get_rook_positions(piece_pos: Coord, pieces: &Vec<Piece>, board_size: Coord) -> Vec<Coord> {
+    let occupied = to_occupied_matrix(pieces, board_size);
     let mut positions = Vec::new();
-    for column in 0..board_size.column() {
-        let coord = Coord::new_i(column, piece_pos.row());
-        if coord != piece_pos {
-            positions.push(coord)
-        }
-    }
-    for row in 0..board_size.row() {
-        let coord = Coord::new_i(piece_pos.column(), row);
-        if coord != piece_pos {
-            positions.push(coord)
-        }
+    for dir in [
+        Coord::new_i(-1, 0),
+        Coord::new_i(1, 0),
+        Coord::new_i(0, -1),
+        Coord::new_i(0, 1),
+    ] {
+        add_direction(piece_pos, board_size, &occupied, dir, &mut positions);
     }
     positions
 }
 
-fn get_bishop_positions(piece_pos: Coord, board_size: Coord) -> Vec<Coord> {
+fn get_bishop_positions(piece_pos: Coord, pieces: &Vec<Piece>, board_size: Coord) -> Vec<Coord> {
+    let occupied = to_occupied_matrix(pieces, board_size);
     let mut positions = Vec::new();
-    add_diagonal(piece_pos, board_size, Coord::new_i(-1, -1), &mut positions);
-    add_diagonal(piece_pos, board_size, Coord::new_i(-1, 1), &mut positions);
-    add_diagonal(piece_pos, board_size, Coord::new_i(1, -1), &mut positions);
-    add_diagonal(piece_pos, board_size, Coord::new_i(1, 1), &mut positions);
+    for dir in [
+        Coord::new_i(-1, -1),
+        Coord::new_i(-1, 1),
+        Coord::new_i(1, -1),
+        Coord::new_i(1, 1),
+    ] {
+        add_direction(piece_pos, board_size, &occupied, dir, &mut positions);
+    }
     positions
 }
 
-fn add_diagonal(piece_pos: Coord, board_size: Coord, delta: Coord, positions: &mut Vec<Coord>) {
-    let mut diagonal = piece_pos;
+fn to_occupied_matrix(pieces: &Vec<Piece>, board_size: Coord) -> Vec<Vec<bool>> {
+    let mut occupied = vec![vec![false; board_size.column as usize]; board_size.row as usize];
+    for piece in pieces {
+        let pos = piece.pos_i();
+        occupied[pos.row as usize][pos.column as usize] = true;
+    }
+    occupied
+}
+
+fn add_direction(
+    piece_pos: Coord,
+    board_size: Coord,
+    occupied: &Vec<Vec<bool>>,
+    delta: Coord,
+    positions: &mut Vec<Coord>,
+) {
+    let mut test = piece_pos;
     loop {
-        diagonal += delta;
-        if inside(diagonal, board_size) {
-            positions.push(diagonal);
+        test += delta;
+        if inside(test, board_size) {
+            positions.push(test);
+            if occupied[test.row as usize][test.column as usize] {
+                break;
+            }
         } else {
             break;
         }
@@ -287,5 +307,23 @@ mod tests {
         let pawn_index = find_first(Team::White, Move::Pawn, &pieces).unwrap();
         let attackers = compute_attackers(king_index, board_size, &pieces);
         assert_eq!(attackers, vec![bishop_index, pawn_index]);
+    }
+    #[test]
+    fn test_jumping_pieces() {
+        #[rustfmt::skip]
+        let (board_size, pieces) = parse_board("
+            bk bp wr wq
+            -- bp -- --
+            -- wh wb --
+        ");
+        let king_index = find_first(Team::Black, Move::King, &pieces).unwrap();
+        let knight_index = find_first(Team::White, Move::Knight, &pieces).unwrap();
+        let attackers = compute_attackers(king_index, board_size, &pieces);
+        assert_eq!(attackers, vec![knight_index]);
+    }
+
+    #[test]
+    fn test_pawn_movement() {
+        todo!()
     }
 }
