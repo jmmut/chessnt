@@ -9,9 +9,11 @@ pub mod core {
     pub mod time;
 }
 pub mod screen {
+    pub mod anchorer;
     pub mod render;
     pub mod theme;
     pub mod ui;
+    pub mod ui_board;
 }
 pub mod world {
     pub mod board;

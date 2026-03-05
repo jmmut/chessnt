@@ -1,17 +1,17 @@
 use crate::core::coord::Coord;
-use crate::world::board::other_pieces_at;
+use crate::world::board::{other_pieces_at, PieceIndex};
 use crate::world::piece::Piece;
 
 pub type Moveset = Vec<Move>;
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, PartialOrd)]
 pub enum Move {
     Pawn,
-    Bishop,
     Knight,
+    Bishop,
     Rook,
-    King,
     Queen,
+    King,
 }
 
 pub fn moves_to_string(moveset: &Moveset) -> String {
@@ -175,4 +175,117 @@ fn inside(pos: Coord, board_size: Coord) -> bool {
         && pos.column < board_size.column
         && pos.row >= 0.0
         && pos.row < board_size.row
+}
+
+pub fn compute_attackers(i: PieceIndex, board_size: Coord, pieces: &Vec<Piece>) -> Vec<PieceIndex> {
+    let target = &pieces[i];
+    let target_pos = target.pos_initial_i();
+    let mut attackers = Vec::new();
+    for (other_i, _other_piece) in pieces.iter().enumerate() {
+        if i != other_i {
+            let moves = possible_moves(board_size, pieces, other_i);
+            if moves.contains(&target_pos) {
+                attackers.push(other_i)
+            };
+        }
+    }
+    attackers
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::coord::Coord;
+    use crate::world::board::find_first;
+    use crate::world::piece::Piece;
+    use crate::world::team::Team;
+
+    fn parse_board(text: &str) -> (Coord, Vec<Piece>) {
+        let mut max_columns = None;
+        let mut pieces = Vec::new();
+        let mut line_count = 0;
+        for line in text.lines() {
+            let trimmed = line.trim();
+            if trimmed.len() > 0 {
+                let tiles = trimmed.split(' ').collect::<Vec<_>>();
+                if let Some(max) = max_columns {
+                    if tiles.len() as i32 > max {
+                        max_columns = Some(tiles.len() as i32);
+                    }
+                } else {
+                    max_columns = Some(tiles.len() as i32);
+                }
+                for (column, tile) in tiles.iter().enumerate() {
+                    let color = tile.as_bytes()[0];
+                    let team = if color == b'w' {
+                        Some(Team::White)
+                    } else if color == b'b' {
+                        Some(Team::Black)
+                    } else {
+                        None
+                    };
+                    if let Some(team) = team {
+                        let piece = tile.as_bytes()[1];
+                        let coord = Coord::new_i(column as i32, line_count);
+                        let movement = if piece == b'k' {
+                            Some(Move::King)
+                        } else if piece == b'q' {
+                            Some(Move::Queen)
+                        } else if piece == b'b' {
+                            Some(Move::Bishop)
+                        } else if piece == b'h' {
+                            Some(Move::Knight)
+                        } else if piece == b'r' {
+                            Some(Move::Rook)
+                        } else if piece == b'p' {
+                            Some(Move::Pawn)
+                        } else {
+                            None
+                        };
+                        if let Some(movement) = movement {
+                            pieces.push(Piece::new(coord, movement, team));
+                        }
+                    }
+                }
+                line_count += 1;
+            }
+        }
+        (Coord::new_i(max_columns.unwrap_or(0), line_count), pieces)
+    }
+    #[test]
+    fn test_parse_board() {
+        #[rustfmt::skip]
+        let (size, parsed_pieces) = parse_board("
+            -- -- wb --
+            -- -- -- wr
+            bk -- -- --
+            -- wp -- --
+            -- -- -- --
+        ");
+        let pieces = vec![
+            Piece::new(Coord::new_i(2, 0), Move::Bishop, Team::White),
+            Piece::new(Coord::new_i(3, 1), Move::Rook, Team::White),
+            Piece::new(Coord::new_i(0, 2), Move::King, Team::Black),
+            Piece::new(Coord::new_i(1, 3), Move::Pawn, Team::White),
+        ];
+        // parsed_pieces.sort();
+        // pieces.sort();
+        assert_eq!(size, Coord::new_i(4, 5));
+        assert_eq!(parsed_pieces, pieces);
+    }
+    #[test]
+    fn test_check() {
+        #[rustfmt::skip]
+        let (board_size, pieces) = parse_board("
+            -- -- wb --
+            -- -- -- wr
+            bk -- -- --
+            -- wp -- --
+        ");
+        let king_index = find_first(Team::Black, Move::King, &pieces).unwrap();
+        let bishop_index = find_first(Team::White, Move::Bishop, &pieces).unwrap();
+        let pawn_index = find_first(Team::White, Move::Pawn, &pieces).unwrap();
+        let attackers = compute_attackers(king_index, board_size, &pieces);
+        assert_eq!(attackers, vec![bishop_index, pawn_index]);
+    }
 }

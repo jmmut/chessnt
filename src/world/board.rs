@@ -3,16 +3,14 @@ use crate::screen::render::{
     floor_corners, mesh_coord, mesh_cursor, mesh_figure_texture, mesh_progress_bar,
     mesh_texture_quad, mesh_triangle, mesh_vertical_texture,
 };
-use crate::screen::theme::{color_average, color_average_weight, margin, Theme};
-use crate::screen::ui::render_text_font;
-use crate::world::moves::{moves_to_string, possible_moves, Move};
+use crate::screen::theme::{color_average, color_average_weight, Theme};
+use crate::world::moves::{compute_attackers, possible_moves, Move};
 use crate::world::piece::Piece;
 use crate::world::referee::Referee;
 use crate::world::team::Team;
 use crate::TRANSPARENT;
-use juquad::widgets::anchor::{Anchor, Horizontal, Layout, Vertical};
 use macroquad::color::{Color, BLUE, DARKBLUE, GRAY, GREEN, PURPLE, RED, WHITE, YELLOW};
-use macroquad::math::{vec2, vec3, Rect, Vec2, Vec3};
+use macroquad::math::{vec2, vec3, Vec2, Vec3};
 use macroquad::models::{draw_mesh, Mesh};
 
 // const SELECTION: Color = color_average(DARKBLUE, TRANSPARENT);
@@ -30,11 +28,13 @@ const SELECTION_HEIGHT: f32 = CURSOR_HEIGHT * 0.5;
 const RADAR_HEIGHT: f32 = SELECTION_HEIGHT * 0.7;
 const FLOOR_PIECE_HEIGHT: f32 = RADAR_HEIGHT * 0.2;
 
+pub type PieceIndex = usize;
+
 pub struct Board {
     cursor_white: Coord,
     cursor_black: Coord,
-    selected_white: Option<usize>,
-    selected_black: Option<usize>,
+    selected_white: Option<PieceIndex>,
+    selected_black: Option<PieceIndex>,
     size: Coord,
     pieces: Vec<Piece>,
     pub referee: Referee,
@@ -205,21 +205,21 @@ impl Board {
     pub fn is_selected(&self, team: Team) -> bool {
         self.selected(team).is_some()
     }
-    fn selected(&self, team: Team) -> Option<usize> {
+    fn selected(&self, team: Team) -> Option<PieceIndex> {
         if team == Team::White {
             self.selected_white
         } else {
             self.selected_black
         }
     }
-    fn selected_mut(&mut self, team: Team) -> &mut Option<usize> {
+    fn selected_mut(&mut self, team: Team) -> &mut Option<PieceIndex> {
         if team == Team::White {
             &mut self.selected_white
         } else {
             &mut self.selected_black
         }
     }
-    fn cursor(&self, team: Team) -> Coord {
+    pub fn cursor(&self, team: Team) -> Coord {
         if team == Team::White {
             self.cursor_white
         } else {
@@ -234,7 +234,7 @@ impl Board {
         }
     }
 
-    fn force_deselect(&mut self, selected_i: usize, team: Team) {
+    fn force_deselect(&mut self, selected_i: PieceIndex, team: Team) {
         if let Some(selected) = self.selected(team) {
             if selected == selected_i {
                 *self.selected_mut(team) = None;
@@ -242,7 +242,7 @@ impl Board {
             }
         }
     }
-    fn kill(&mut self, selected_i: usize) {
+    fn kill(&mut self, selected_i: PieceIndex) {
         self.force_deselect(selected_i, Team::Black);
         self.force_deselect(selected_i, Team::White);
         self.pieces[selected_i].alive = false;
@@ -253,17 +253,45 @@ impl Board {
         }
     }
 
-    fn overlapping_pieces(&mut self, selected_i: usize) -> Vec<usize> {
+    fn overlapping_pieces(&mut self, selected_i: PieceIndex) -> Vec<PieceIndex> {
         overlapping_piece(selected_i, &self.pieces)
+    }
+    pub fn pieces(&self) -> &Vec<Piece> {
+        &self.pieces
+    }
+    pub fn in_check(&self) -> Vec<Team> {
+        let mut checks = Vec::new();
+        self.add_check(Team::White, &mut checks);
+        self.add_check(Team::Black, &mut checks);
+        checks
+    }
+
+    fn add_check(&self, team: Team, checks: &mut Vec<Team>) {
+        if let Some(king) = find_first(team, Move::King, self.pieces()) {
+            let attacks = compute_attackers(king, self.size, &self.pieces);
+            if attacks.len() > 0 {
+                checks.push(team);
+            }
+        }
     }
 }
 
-fn overlapping_piece(selected_i: usize, pieces: &Vec<Piece>) -> Vec<usize> {
+pub fn find_first(team: Team, move_type: Move, pieces: &Vec<Piece>) -> Option<PieceIndex> {
+    let moveset = vec![move_type];
+    for (i, piece) in pieces.iter().enumerate() {
+        if piece.team == team && piece.moveset == moveset {
+            return Some(i);
+        }
+    }
+    None
+}
+
+fn overlapping_piece(selected_i: PieceIndex, pieces: &Vec<Piece>) -> Vec<PieceIndex> {
     let selected_rounded = pieces[selected_i].pos_i();
     other_pieces_at(selected_rounded, selected_i, pieces)
 }
 
-pub fn other_pieces_at(pos: Coord, index: usize, pieces: &Vec<Piece>) -> Vec<usize> {
+pub fn other_pieces_at(pos: Coord, index: PieceIndex, pieces: &Vec<Piece>) -> Vec<PieceIndex> {
     let mut others = Vec::new();
     for (i, piece) in pieces.iter().enumerate() {
         if i != index && piece.pos_initial_i() == pos {
@@ -290,64 +318,6 @@ impl Board {
         for mesh in meshes {
             draw_mesh(&mesh); // can't render cursor and figures online because of intersecting quads with transparencies
         }
-    }
-
-    /// assumes default camera is enabled
-    pub fn draw_ui(&self, theme: &Theme) {
-        let _rect = theme.screen_rect();
-        let _rect = Anchor::inside(
-            _rect,
-            Layout::Vertical {
-                direction: Vertical::Bottom,
-                alignment: Horizontal::Left,
-            },
-            margin(theme),
-        )
-        .get_rect(vec2(0.0, 0.0));
-        let _rect = self.draw_turn(_rect, theme);
-        let _rect = self.draw_piece_info(_rect, Team::White, theme);
-        let _rect = self.draw_piece_info(_rect, Team::Black, theme);
-    }
-
-    fn draw_piece_info(&self, previous_rect: Rect, team: Team, theme: &Theme) -> Rect {
-        fn team_name(team: Team) -> &'static str {
-            if team.is_white() {
-                "WHITE"
-            } else {
-                "BLACK"
-            }
-        }
-        for piece in &self.pieces {
-            if piece.pos_i() == self.cursor(team).round() {
-                return render_text_font(
-                    &format!(
-                        "{}: {} {}",
-                        team_name(team),
-                        team_name(piece.team),
-                        moves_to_string(&piece.moveset).to_uppercase()
-                    ),
-                    Anchor::below(previous_rect, Horizontal::Left, 0.0),
-                    theme,
-                    theme.font_title(),
-                );
-            }
-        }
-        previous_rect
-    }
-    fn draw_turn(&self, previous_rect: Rect, theme: &Theme) -> Rect {
-        render_text_font(
-            &format!(
-                "It's {}'s turn",
-                if self.referee.turn.is_white() {
-                    "WHITE"
-                } else {
-                    "BLACK"
-                },
-            ),
-            Anchor::below(previous_rect, Horizontal::Left, 0.0),
-            theme,
-            theme.font_title(),
-        )
     }
 
     fn selection_meshes(&self, team: Team) -> Vec<Mesh> {

@@ -1,7 +1,7 @@
 use macroquad::math::{f32, vec2, vec3, IVec2, Vec2, Vec3};
 use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
 pub struct Coord {
     pub column: f32,
     pub row: f32,

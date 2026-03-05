@@ -4,7 +4,7 @@ use crate::world::team::Team;
 
 pub const COOLDOWN: f64 = 2.0;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub struct Piece {
     pub initial_pos: Coord,
     pos: Coord,
@@ -138,3 +138,16 @@ impl Piece {
         }
     }
 }
+
+// impl Ord for Piece {
+//     fn cmp(&self, other: &Self) -> Ordering {
+//         self.team.partial_cmp(&other.team).unwrap().then_with(|| {
+//             self.moveset.partial_cmp(&other.moveset).unwrap().then_with(|| {
+//                 self.pos.partial_cmp(&other.pos).unwrap()
+//             })
+//         })
+//     }
+// }
+// impl Eq for Piece {
+//
+// }
