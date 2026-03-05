@@ -57,7 +57,7 @@ fn horizontal_quad(coord_00: Vec3, x: f32, z: f32) -> [Vec3; 4] {
 pub fn vertical_quad(coord_00: Vec3, x: f32, y: f32) -> [Vec3; 4] {
     quad(coord_00, vec3(x, 0.0, 0.0), vec3(0.0, y, 0.0))
 }
-fn quad(coord_00: Vec3, a: Vec3, b: Vec3) -> [Vec3; 4] {
+pub fn quad(coord_00: Vec3, a: Vec3, b: Vec3) -> [Vec3; 4] {
     let coord_10 = coord_00 + a;
     let coord_01 = coord_00 + b;
     let coord_11 = coord_00 + a + b;

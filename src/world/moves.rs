@@ -121,7 +121,7 @@ fn get_positions(
 fn get_pawn_positions(piece_index: usize, pieces: &Vec<Piece>, board_size: Coord) -> Vec<Coord> {
     let piece_pos = pieces[piece_index].initial_pos;
     let team = pieces[piece_index].team;
-    let direction = Coord::new_i(if team.is_white() {-1} else {1}, 0);
+    let direction = Coord::new_i(if team.is_white() { -1 } else { 1 }, 0);
     let starting_pawn_column = if team.is_white() {
         board_size.column() - 2
     } else {
@@ -132,7 +132,9 @@ fn get_pawn_positions(piece_index: usize, pieces: &Vec<Piece>, board_size: Coord
     if empty_tile(front, piece_index, pieces) {
         moves.push(front);
         let double_start = direction + front;
-        if piece_pos.column() == starting_pawn_column && empty_tile(double_start, piece_index, pieces) {
+        if piece_pos.column() == starting_pawn_column
+            && empty_tile(double_start, piece_index, pieces)
+        {
             moves.push(double_start);
         }
     }
