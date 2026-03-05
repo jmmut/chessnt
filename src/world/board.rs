@@ -19,6 +19,7 @@ const SELECTION: Color = color_average(BLUE, GRAY);
 pub const RADAR: Color = color_average(RED, TRANSPARENT);
 // const GHOST: Color = color_average(DARKPURPLE, TRANSPARENT);
 const GHOST: Color = color_average(PURPLE, GRAY);
+const CHECK: Color = color_average(RED, GRAY);
 // const CURSOR: Color = color_average(DARKGREEN, TRANSPARENT);
 const CURSOR_WHITE: Color = color_average_weight(color_average(GREEN, GRAY), YELLOW, 0.3);
 const CURSOR_BLACK: Color = color_average_weight(color_average(GREEN, GRAY), DARKBLUE, 0.3);
@@ -259,18 +260,18 @@ impl Board {
     pub fn pieces(&self) -> &Vec<Piece> {
         &self.pieces
     }
-    pub fn in_check(&self) -> Vec<Team> {
+    pub fn in_check(&self) -> Vec<(Team, PieceIndex)> {
         let mut checks = Vec::new();
         self.add_check(Team::White, &mut checks);
         self.add_check(Team::Black, &mut checks);
         checks
     }
 
-    fn add_check(&self, team: Team, checks: &mut Vec<Team>) {
+    fn add_check(&self, team: Team, checks: &mut Vec<(Team, PieceIndex)>) {
         if let Some(king) = find_first(team, Move::King, self.pieces()) {
             let attacks = compute_attackers(king, self.size, &self.pieces);
             if attacks.len() > 0 {
-                checks.push(team);
+                checks.push((team, king));
             }
         }
     }
@@ -313,6 +314,7 @@ impl Board {
         meshes.extend(self.referee_meshes(theme));
         meshes.extend(self.possible_moves_meshes(Team::White));
         meshes.extend(self.possible_moves_meshes(Team::Black));
+        meshes.extend(self.checks_meshes());
 
         meshes.sort_by(|a, b| depth(a).total_cmp(&depth(b)));
         for mesh in meshes {
@@ -424,6 +426,18 @@ impl Board {
                 draw_mesh(&mesh_coord(Coord::new_i(column, row), color));
             }
         }
+    }
+
+    fn checks_meshes(&self) -> Vec<Mesh> {
+        let mut meshes = Vec::new();
+        for (_team, kind_index) in self.in_check() {
+            meshes.extend(mesh_cursor(
+                self.pieces[kind_index].initial_pos,
+                CHECK,
+                SELECTION_HEIGHT,
+            ));
+        }
+        meshes
     }
 }
 

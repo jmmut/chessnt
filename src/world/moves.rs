@@ -182,7 +182,7 @@ pub fn compute_attackers(i: PieceIndex, board_size: Coord, pieces: &Vec<Piece>) 
     let target_pos = target.pos_initial_i();
     let mut attackers = Vec::new();
     for (other_i, _other_piece) in pieces.iter().enumerate() {
-        if i != other_i {
+        if i != other_i && target.team != pieces[other_i].team {
             let moves = possible_moves(board_size, pieces, other_i);
             if moves.contains(&target_pos) {
                 attackers.push(other_i)
@@ -277,7 +277,7 @@ mod tests {
     fn test_check() {
         #[rustfmt::skip]
         let (board_size, pieces) = parse_board("
-            -- -- wb --
+            br -- wb --
             -- -- -- wr
             bk -- -- --
             -- wp -- --

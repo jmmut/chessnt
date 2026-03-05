@@ -19,7 +19,7 @@ impl Board {
 
         let layout = Layout::vertical(Vertical::Bottom, Horizontal::Center);
         let mut _rect = inside_initial(theme, screen, layout);
-        for team in self.in_check() {
+        for (team, _kind_index) in self.in_check() {
             _rect = self.draw_check(_rect, team, theme);
         }
     }
