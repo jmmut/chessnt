@@ -301,6 +301,9 @@ pub fn other_pieces_at(pos: Coord, index: PieceIndex, pieces: &Vec<Piece>) -> Ve
     }
     others
 }
+pub fn empty_tile(double_start: Coord, piece_index: usize, pieces: &Vec<Piece>) -> bool {
+    other_pieces_at(double_start, piece_index, pieces).len() == 0
+}
 
 impl Board {
     /// assumes 3d camera is enabled

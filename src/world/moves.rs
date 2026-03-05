@@ -1,6 +1,7 @@
 use crate::core::coord::Coord;
-use crate::world::board::{other_pieces_at, PieceIndex};
+use crate::world::board::{empty_tile, other_pieces_at, PieceIndex};
 use crate::world::piece::Piece;
+use crate::world::team::Team;
 
 pub type Moveset = Vec<Move>;
 
@@ -81,38 +82,59 @@ fn piece_moves(
         Coord::new_i(-1, 2),
         Coord::new_i(-2, 1),
     ];
-    let piece_pos = pieces[piece_index].initial_pos;
+    let piece = &pieces[piece_index];
+    let occupied = &to_occupied_matrix(pieces, board_size);
     match movement {
         Move::Pawn => get_pawn_positions(piece_index, pieces, board_size),
-        Move::Bishop => get_bishop_positions(piece_pos, pieces, board_size),
-        Move::Knight => KNIGHT.iter().map(|p| *p + piece_pos).collect(),
-        Move::Rook => get_rook_positions(piece_pos, pieces, board_size),
-        Move::King => KING.iter().map(|p| *p + piece_pos).collect(),
-        Move::Queen => get_rook_positions(piece_pos, pieces, board_size)
+        Move::Bishop => get_bishop_positions(piece, occupied, board_size),
+        Move::Knight => get_positions(piece, KNIGHT, occupied, board_size),
+        Move::Rook => get_rook_positions(piece, occupied, board_size),
+        Move::King => get_positions(piece, KING, occupied, board_size),
+        Move::Queen => get_rook_positions(piece, occupied, board_size)
             .into_iter()
-            .chain(get_bishop_positions(piece_pos, pieces, board_size))
+            .chain(get_bishop_positions(piece, occupied, board_size))
             .collect(),
     }
+}
+
+fn get_positions(
+    piece: &Piece,
+    possible: &[Coord],
+    occupied: &Vec<Vec<Option<Team>>>,
+    board_size: Coord,
+) -> Vec<Coord> {
+    let piece_pos = piece.pos_initial_i();
+    possible
+        .iter()
+        .map(|p| *p + piece_pos)
+        .filter(|coord| inside(*coord, board_size))
+        .filter(|coord| {
+            if let Some(other_team) = is_occupied(*coord, occupied) {
+                piece.team != other_team
+            } else {
+                true
+            }
+        })
+        .collect()
 }
 
 fn get_pawn_positions(piece_index: usize, pieces: &Vec<Piece>, board_size: Coord) -> Vec<Coord> {
     let piece_pos = pieces[piece_index].initial_pos;
     let team = pieces[piece_index].team;
-    let mut direction = Coord::new_i(-1, 0);
-    let mut moves = vec![];
-    if team.is_white() {
-        if piece_pos.column == board_size.column - 2.0 {
-            moves.push(direction * 2.0 + piece_pos);
-        }
+    let direction = Coord::new_i(if team.is_white() {-1} else {1}, 0);
+    let starting_pawn_column = if team.is_white() {
+        board_size.column() - 2
     } else {
-        direction *= -1.0;
-        if piece_pos.column == 1.0 {
-            moves.push(direction * 2.0 + piece_pos);
-        }
-    }
+        1
+    };
+    let mut moves = vec![];
     let front = direction + piece_pos;
-    if other_pieces_at(front, piece_index, pieces).len() == 0 {
+    if empty_tile(front, piece_index, pieces) {
         moves.push(front);
+        let double_start = direction + front;
+        if piece_pos.column() == starting_pawn_column && empty_tile(double_start, piece_index, pieces) {
+            moves.push(double_start);
+        }
     }
 
     let mut add_if_enemy_is_at = |attack| {
@@ -132,8 +154,11 @@ fn get_pawn_positions(piece_index: usize, pieces: &Vec<Piece>, board_size: Coord
     moves
 }
 
-fn get_rook_positions(piece_pos: Coord, pieces: &Vec<Piece>, board_size: Coord) -> Vec<Coord> {
-    let occupied = to_occupied_matrix(pieces, board_size);
+fn get_rook_positions(
+    piece: &Piece,
+    occupied: &Vec<Vec<Option<Team>>>,
+    board_size: Coord,
+) -> Vec<Coord> {
     let mut positions = Vec::new();
     for dir in [
         Coord::new_i(-1, 0),
@@ -141,13 +166,16 @@ fn get_rook_positions(piece_pos: Coord, pieces: &Vec<Piece>, board_size: Coord) 
         Coord::new_i(0, -1),
         Coord::new_i(0, 1),
     ] {
-        add_direction(piece_pos, board_size, &occupied, dir, &mut positions);
+        add_direction(piece, board_size, &occupied, dir, &mut positions);
     }
     positions
 }
 
-fn get_bishop_positions(piece_pos: Coord, pieces: &Vec<Piece>, board_size: Coord) -> Vec<Coord> {
-    let occupied = to_occupied_matrix(pieces, board_size);
+fn get_bishop_positions(
+    piece: &Piece,
+    occupied: &Vec<Vec<Option<Team>>>,
+    board_size: Coord,
+) -> Vec<Coord> {
     let mut positions = Vec::new();
     for dir in [
         Coord::new_i(-1, -1),
@@ -155,34 +183,43 @@ fn get_bishop_positions(piece_pos: Coord, pieces: &Vec<Piece>, board_size: Coord
         Coord::new_i(1, -1),
         Coord::new_i(1, 1),
     ] {
-        add_direction(piece_pos, board_size, &occupied, dir, &mut positions);
+        add_direction(piece, board_size, &occupied, dir, &mut positions);
     }
     positions
 }
 
-fn to_occupied_matrix(pieces: &Vec<Piece>, board_size: Coord) -> Vec<Vec<bool>> {
-    let mut occupied = vec![vec![false; board_size.column as usize]; board_size.row as usize];
+fn to_occupied_matrix(pieces: &Vec<Piece>, board_size: Coord) -> Vec<Vec<Option<Team>>> {
+    let mut occupied = vec![vec![None; board_size.column as usize]; board_size.row as usize];
     for piece in pieces {
-        let pos = piece.pos_i();
-        occupied[pos.row as usize][pos.column as usize] = true;
+        let pos = piece.pos_initial_i();
+        if inside(pos, board_size) {
+            occupied[pos.row() as usize][pos.column() as usize] = Some(piece.team);
+        }
     }
     occupied
 }
+fn is_occupied(test: Coord, occupied: &Vec<Vec<Option<Team>>>) -> Option<Team> {
+    occupied[test.row() as usize][test.column() as usize]
+}
 
 fn add_direction(
-    piece_pos: Coord,
+    piece: &Piece,
     board_size: Coord,
-    occupied: &Vec<Vec<bool>>,
+    occupied: &Vec<Vec<Option<Team>>>,
     delta: Coord,
     positions: &mut Vec<Coord>,
 ) {
-    let mut test = piece_pos;
+    let mut test = piece.pos_initial_i();
     loop {
         test += delta;
         if inside(test, board_size) {
-            positions.push(test);
-            if occupied[test.row as usize][test.column as usize] {
+            if let Some(other_team) = is_occupied(test, occupied) {
+                if piece.team != other_team {
+                    positions.push(test);
+                }
                 break;
+            } else {
+                positions.push(test);
             }
         } else {
             break;
@@ -324,6 +361,14 @@ mod tests {
 
     #[test]
     fn test_pawn_movement() {
-        todo!()
+        #[rustfmt::skip]
+        let (board_size, pieces) = parse_board("
+            -- wh -- --
+            -- wr wp --
+            -- bp -- --
+        ");
+        let white_pawn = find_first(Team::White, Move::Pawn, &pieces).unwrap();
+        let moves = possible_moves(board_size, &pieces, white_pawn);
+        assert_eq!(moves, vec![Coord::new_i(1, 2)]);
     }
 }
