@@ -13,6 +13,7 @@ and which modification you made.
 The fonts used in this game are licensed under OFL:
 - [Lilita](licenses/OFL_Lilita.txt)
 - [Unbounded](licenses/OFL_Unbounded.txt)
+- [JetBrains_Mono](licenses/OFL_JetBrains_Mono.txt)
 
 The source code dependencies are licensed under MIT, Apache 2.0, or BSD3.
 See [LICENSE-3rdparty.csv](licenses/LICENSE-3rdparty.csv) for details.

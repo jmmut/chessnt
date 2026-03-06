@@ -58,11 +58,17 @@ impl Theme {
     pub fn font_title(&self) -> Font {
         self.fonts.titles
     }
+    pub fn font_dev(&self) -> Font {
+        self.fonts.dev
+    }
     pub fn font_size(&self) -> f32 {
         self.font_size
     }
     pub fn font_size_title(&self) -> f32 {
         self.font_size * 1.5
+    }
+    pub fn font_size_dev(&self) -> f32 {
+        self.font_size * 0.92
     }
     pub fn coloring(&self) -> Coloring {
         self.coloring
@@ -74,20 +80,30 @@ pub struct CameraPos {
     pub fovy: f32,
     pub target_y: f32,
 }
+impl Default for CameraPos {
+    fn default() -> Self {
+        CameraPos {
+            y: 12.69,      // 6.0,
+            z: 17.57,      // 8.0,
+            fovy: 44.33,   // 45.0,
+            target_y: 0.5, // 0.0,
+        }
+    }
+}
 pub struct Textures {
     pub placeholder: Texture2D,
     pub pieces: HashMap<(Team, Move), Texture2D>,
 }
 
 pub struct Palette {
-    pub white_tiles: Color,
-    pub black_tiles: Color,
+    pub tiles_white: Color,
+    pub tiles_black: Color,
+    pub cursor_white: Color,
+    pub cursor_black: Color,
     pub radar: Color,
     pub ghost: Color,
     pub selection: Color,
     pub check: Color,
-    pub cursor_white: Color,
-    pub cursor_black: Color,
 }
 
 // // const SELECTION: Color = color_average(DARKBLUE, TRANSPARENT);
@@ -104,8 +120,8 @@ pub struct Palette {
 impl Default for Palette {
     fn default() -> Self {
         Self {
-            white_tiles: from_hex(0xF7FFE5),
-            black_tiles: from_hex(0x181449),
+            tiles_white: from_hex(0xF7FFE5),
+            tiles_black: from_hex(0x181449),
             radar: color_average(RED, TRANSPARENT),
             ghost: color_average(PURPLE, GRAY),
             selection: color_average(BLUE, GRAY),
@@ -113,6 +129,32 @@ impl Default for Palette {
             cursor_white: color_average_weight(color_average(GREEN, GRAY), YELLOW, 0.3),
             cursor_black: color_average_weight(color_average(GREEN, GRAY), DARKBLUE, 0.3),
         }
+    }
+}
+impl Palette {
+    pub fn list(&self) -> Vec<(&'static str, Color)> {
+        vec![
+            ("tiles_white", self.tiles_white),
+            ("tiles_black", self.tiles_black),
+            ("cursor_white", self.cursor_white),
+            ("cursor_black", self.cursor_black),
+            ("radar", self.radar),
+            ("ghost", self.ghost),
+            ("selection", self.selection),
+            ("check", self.check),
+        ]
+    }
+    pub fn set(&mut self, index: usize, color: Color) {
+        *[
+            &mut self.tiles_white,
+            &mut self.tiles_black,
+            &mut self.cursor_white,
+            &mut self.cursor_black,
+            &mut self.radar,
+            &mut self.ghost,
+            &mut self.selection,
+            &mut self.check,
+        ][index] = color;
     }
 }
 const fn choose_scale(width: f32, height: f32, font_size: f32) -> f32 {
@@ -133,10 +175,11 @@ pub fn margin(theme: &Theme) -> Vec2 {
 pub struct Fonts {
     pub titles: Font,
     pub text: Font,
+    pub dev: Font,
 }
 impl Fonts {
-    pub fn new(titles: Font, text: Font) -> Self {
-        Self { titles, text }
+    pub fn new(titles: Font, text: Font, dev: Font) -> Self {
+        Self { titles, text, dev }
     }
 }
 pub const fn from_hex(hex: u32) -> Color {

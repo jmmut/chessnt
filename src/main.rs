@@ -1,7 +1,8 @@
 use chessnt::core::coord::Coord;
 use chessnt::core::time::Time;
 use chessnt::screen::theme::{CameraPos, Fonts, Textures, Theme};
-use chessnt::screen::ui::{render_title, DevUi, SCALE};
+use chessnt::screen::ui::{render_title, SCALE};
+use chessnt::screen::ui_dev::DevUi;
 use chessnt::world::board::Board;
 use chessnt::world::moves::Move;
 use chessnt::world::team::Team;
@@ -29,15 +30,11 @@ async fn fallible_main() -> AnyResult<()> {
     let fonts = Fonts {
         titles: load_ttf_font("assets/fonts/LilitaOne-Regular.ttf").await?,
         text: load_ttf_font("assets/fonts/TitilliumWeb-SemiBold.ttf").await?,
+        dev: load_ttf_font("assets/fonts/JetBrainsMono-Regular.ttf").await?,
     };
     let mut theme_owned = Theme::new(textures, fonts);
     let theme = &mut theme_owned;
-    let mut camera = CameraPos {
-        y: 12.69,      // 6.0,
-        z: 17.57,      // 8.0,
-        fovy: 44.33,   // 45.0,
-        target_y: 0.5, // 0.0,
-    };
+    let mut camera = CameraPos::default();
     let mut board = Board::new_chess(Coord::new_i(6, 4), Coord::new_i(2, 4));
     let mut dev_ui = DevUi::new();
     let mut time = Time::new();

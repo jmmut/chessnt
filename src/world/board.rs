@@ -3,13 +3,13 @@ use crate::screen::render::{
     floor_corners, mesh_coord, mesh_cursor, mesh_cursor_width, mesh_figure_texture,
     mesh_progress_bar, mesh_quad, mesh_texture_quad, mesh_triangle, mesh_vertical_texture, quad,
 };
-use crate::screen::theme::{color_average, color_average_weight, Theme};
+use crate::screen::theme::{color_average, Theme};
 use crate::world::moves::{compute_attackers, possible_moves, Move};
 use crate::world::piece::Piece;
 use crate::world::referee::Referee;
 use crate::world::team::Team;
 use crate::TRANSPARENT;
-use macroquad::color::{Color, BLUE, DARKBLUE, GRAY, GREEN, LIGHTGRAY, PURPLE, RED, WHITE, YELLOW};
+use macroquad::color::{Color, GRAY, GREEN, LIGHTGRAY, WHITE};
 use macroquad::math::{vec2, vec3, Vec2, Vec3};
 use macroquad::models::{draw_mesh, Mesh};
 
@@ -31,6 +31,8 @@ pub struct Board {
     pub piece_size: Vec2,
 }
 
+pub const DEFAULT_PIECE_SIZE: Vec2 = vec2(0.3, 1.0);
+
 impl Board {
     pub fn new(cursor_white: Coord, cursor_black: Coord, size: Coord, pieces: Vec<Piece>) -> Self {
         Self {
@@ -40,7 +42,7 @@ impl Board {
             selected_black: None,
             size,
             pieces,
-            piece_size: vec2(0.3, 1.0),
+            piece_size: DEFAULT_PIECE_SIZE,
             referee: Referee::new(),
         }
     }
@@ -418,9 +420,9 @@ impl Board {
         for column in 0..self.size.column() {
             for row in 0..self.size.row() {
                 let color = if (row + column) % 2 == 0 {
-                    theme.palette.black_tiles
+                    theme.palette.tiles_black
                 } else {
-                    theme.palette.white_tiles
+                    theme.palette.tiles_white
                 };
                 draw_mesh(&mesh_coord(Coord::new_i(column, row), color));
             }

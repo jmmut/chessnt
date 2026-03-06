@@ -2,7 +2,7 @@ use macroquad::camera::{set_camera, Camera3D};
 use macroquad::color::Color;
 use macroquad::math::vec3;
 use screen::theme::CameraPos;
-use screen::ui::DevUiMenu;
+use screen::ui_dev::DevUiMenu;
 
 pub mod core {
     pub mod coord;
@@ -14,6 +14,7 @@ pub mod screen {
     pub mod theme;
     pub mod ui;
     pub mod ui_board;
+    pub mod ui_dev;
 }
 pub mod world {
     pub mod board;
