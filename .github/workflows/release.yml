@@ -30,6 +30,8 @@ jobs:
           # just a sanity check run (and also helpful in case you're sharing CI logs)
           ./butler -V
 
+      - uses: Swatinem/rust-cache@v2
+
       - name: Build
         run: cargo build -r
 
@@ -97,6 +99,8 @@ jobs:
           chmod +x butler
           # just a sanity check run (and also helpful in case you're sharing CI logs)
           ./butler -V
+
+      - uses: Swatinem/rust-cache@v2
 
       - name: Build
         run: cargo build -r
