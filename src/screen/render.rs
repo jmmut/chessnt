@@ -1,5 +1,5 @@
 use crate::core::coord::Coord;
-use crate::world::board::RADAR;
+use crate::screen::theme::Theme;
 use crate::world::piece::Piece;
 use crate::world::referee::texture_pos_to_v3;
 use macroquad::color::Color;
@@ -21,11 +21,19 @@ pub fn floor_corners(coord: Coord, height: f32, tile_size: f32) -> [Vec3; 4] {
     horizontal_quad(coord_00, tile_size, tile_size)
 }
 
-pub fn mesh_progress_bar(texture_pos: Coord, piece_size: Vec2, progress: Option<f64>) -> Vec<Mesh> {
+pub fn mesh_progress_bar(
+    texture_pos: Coord,
+    piece_size: Vec2,
+    progress: Option<f64>,
+    theme: &Theme,
+) -> Vec<Mesh> {
     if let Some(progress) = progress {
         let width = 1.0 - progress as f32;
         let pos = texture_pos_to_v3(texture_pos, width, piece_size.y * 1.2);
-        vec![mesh_quad(vertical_quad(pos, width, 0.3), RADAR)]
+        vec![mesh_quad(
+            vertical_quad(pos, width, 0.3),
+            theme.palette.radar,
+        )]
     } else {
         Vec::new()
     }

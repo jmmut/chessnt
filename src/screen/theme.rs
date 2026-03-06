@@ -2,11 +2,11 @@ use crate::world::moves::Move;
 use crate::world::team::Team;
 use crate::{
     height_to_width, DEFAULT_ASPECT_RATIO, DEFAULT_FONT_SIZE, DEFAULT_WINDOW_HEIGHT,
-    DEFAULT_WINDOW_WIDTH,
+    DEFAULT_WINDOW_WIDTH, TRANSPARENT,
 };
 use juquad::draw::to_rect;
 use juquad::widgets::{StateStyle, Style as Coloring};
-use macroquad::color::Color;
+use macroquad::color::{Color, BLUE, DARKBLUE, GRAY, GREEN, PURPLE, RED, YELLOW};
 use macroquad::color_u8;
 use macroquad::math::{vec2, Rect};
 use macroquad::prelude::{Font, Texture2D, Vec2};
@@ -80,15 +80,38 @@ pub struct Textures {
 }
 
 pub struct Palette {
-    pub white_cells: Color,
-    pub black_cells: Color,
+    pub white_tiles: Color,
+    pub black_tiles: Color,
+    pub radar: Color,
+    pub ghost: Color,
+    pub selection: Color,
+    pub check: Color,
+    pub cursor_white: Color,
+    pub cursor_black: Color,
 }
 
+// // const SELECTION: Color = color_average(DARKBLUE, TRANSPARENT);
+// const SELECTION: Color = color_average(BLUE, GRAY);
+// // const RADAR: Color = color_average(color_average(RED, LIGHTGRAY), TRANSPARENT);
+// pub const RADAR: Color = color_average(RED, TRANSPARENT);
+// // const GHOST: Color = color_average(DARKPURPLE, TRANSPARENT);
+// const GHOST: Color = color_average(PURPLE, GRAY);
+// const CHECK: Color = color_average(RED, GRAY);
+// // const CURSOR: Color = color_average(DARKGREEN, TRANSPARENT);
+// const CURSOR_WHITE: Color = color_average_weight(color_average(GREEN, GRAY), YELLOW, 0.3);
+// const CURSOR_BLACK: Color = color_average_weight(color_average(GREEN, GRAY), DARKBLUE, 0.3);
+// // const FIGURE: Color = color_average(PINK, TRANSPARENT);
 impl Default for Palette {
     fn default() -> Self {
         Self {
-            white_cells: from_hex(0xF7FFE5),
-            black_cells: from_hex(0x181449),
+            white_tiles: from_hex(0xF7FFE5),
+            black_tiles: from_hex(0x181449),
+            radar: color_average(RED, TRANSPARENT),
+            ghost: color_average(PURPLE, GRAY),
+            selection: color_average(BLUE, GRAY),
+            check: color_average(RED, GRAY),
+            cursor_white: color_average_weight(color_average(GREEN, GRAY), YELLOW, 0.3),
+            cursor_black: color_average_weight(color_average(GREEN, GRAY), DARKBLUE, 0.3),
         }
     }
 }

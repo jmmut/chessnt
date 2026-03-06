@@ -13,17 +13,6 @@ use macroquad::color::{Color, BLUE, DARKBLUE, GRAY, GREEN, LIGHTGRAY, PURPLE, RE
 use macroquad::math::{vec2, vec3, Vec2, Vec3};
 use macroquad::models::{draw_mesh, Mesh};
 
-// const SELECTION: Color = color_average(DARKBLUE, TRANSPARENT);
-const SELECTION: Color = color_average(BLUE, GRAY);
-// const RADAR: Color = color_average(color_average(RED, LIGHTGRAY), TRANSPARENT);
-pub const RADAR: Color = color_average(RED, TRANSPARENT);
-// const GHOST: Color = color_average(DARKPURPLE, TRANSPARENT);
-const GHOST: Color = color_average(PURPLE, GRAY);
-const CHECK: Color = color_average(RED, GRAY);
-// const CURSOR: Color = color_average(DARKGREEN, TRANSPARENT);
-const CURSOR_WHITE: Color = color_average_weight(color_average(GREEN, GRAY), YELLOW, 0.3);
-const CURSOR_BLACK: Color = color_average_weight(color_average(GREEN, GRAY), DARKBLUE, 0.3);
-// const FIGURE: Color = color_average(PINK, TRANSPARENT);
 const CURSOR_HEIGHT: f32 = 0.1;
 const SELECTION_HEIGHT: f32 = CURSOR_HEIGHT * 0.5;
 const RADAR_HEIGHT: f32 = SELECTION_HEIGHT * 0.7;
@@ -311,13 +300,13 @@ impl Board {
         let mut meshes = Vec::new();
         self.draw_floor(theme);
 
-        meshes.extend(self.selection_meshes(Team::White));
-        meshes.extend(self.selection_meshes(Team::Black));
+        meshes.extend(self.selection_meshes(Team::White, theme));
+        meshes.extend(self.selection_meshes(Team::Black, theme));
         meshes.extend(self.piece_meshes(theme));
         meshes.extend(self.referee_meshes(theme));
-        meshes.extend(self.possible_moves_meshes(Team::White));
-        meshes.extend(self.possible_moves_meshes(Team::Black));
-        meshes.extend(self.checks_meshes());
+        meshes.extend(self.possible_moves_meshes(Team::White, theme));
+        meshes.extend(self.possible_moves_meshes(Team::Black, theme));
+        meshes.extend(self.checks_meshes(theme));
         meshes.extend(self.turn_light_meshes());
 
         meshes.sort_by(|a, b| depth(a).total_cmp(&depth(b)));
@@ -326,12 +315,12 @@ impl Board {
         }
     }
 
-    fn selection_meshes(&self, team: Team) -> Vec<Mesh> {
+    fn selection_meshes(&self, team: Team, theme: &Theme) -> Vec<Mesh> {
         if let Some(_selected) = self.get_selected_piece(team) {
             // meshes.extend(mesh_cursor(_selected.pos, SELECTION, SELECTION_HEIGHT));
             vec![]
         } else {
-            mesh_cursor(self.cursor(team), cursor_color(team), CURSOR_HEIGHT)
+            mesh_cursor(self.cursor(team), cursor_color(team, theme), CURSOR_HEIGHT)
         }
     }
 
@@ -353,6 +342,7 @@ impl Board {
                 piece.pos_f(),
                 self.piece_size,
                 piece.cooldown_progress(),
+                theme,
             ));
 
             meshes.push(mesh_texture_quad(
@@ -389,6 +379,7 @@ impl Board {
             self.referee.pos_c(),
             self.piece_size,
             self.referee.focus_progress(),
+            theme,
         );
         meshes.extend(bar);
 
@@ -397,23 +388,27 @@ impl Board {
         let radar_base = radar_base.into::<Vec3>() + square_offset;
         let radar_right = radar_right.into::<Vec3>() + square_offset;
         let radar_left = radar_left.into::<Vec3>() + square_offset;
-        let radar = mesh_triangle([radar_base, radar_right, radar_left], RADAR);
+        let radar = mesh_triangle([radar_base, radar_right, radar_left], theme.palette.radar);
         if self.referee.render_radar {
             meshes.push(radar);
         }
         meshes
     }
 
-    fn possible_moves_meshes(&self, team: Team) -> Vec<Mesh> {
+    fn possible_moves_meshes(&self, team: Team, theme: &Theme) -> Vec<Mesh> {
         let mut meshes = Vec::new();
         if let Some(index) = self.selected(team) {
             meshes.extend(mesh_cursor(
                 self.pieces[index].initial_pos,
-                GHOST,
+                theme.palette.ghost,
                 SELECTION_HEIGHT,
             ));
             for movement in possible_moves(self.size, &self.pieces, index) {
-                meshes.extend(mesh_cursor(movement, SELECTION, SELECTION_HEIGHT))
+                meshes.extend(mesh_cursor(
+                    movement,
+                    theme.palette.selection,
+                    SELECTION_HEIGHT,
+                ))
             }
         }
         meshes
@@ -423,21 +418,21 @@ impl Board {
         for column in 0..self.size.column() {
             for row in 0..self.size.row() {
                 let color = if (row + column) % 2 == 0 {
-                    theme.palette.black_cells
+                    theme.palette.black_tiles
                 } else {
-                    theme.palette.white_cells
+                    theme.palette.white_tiles
                 };
                 draw_mesh(&mesh_coord(Coord::new_i(column, row), color));
             }
         }
     }
 
-    fn checks_meshes(&self) -> Vec<Mesh> {
+    fn checks_meshes(&self, theme: &Theme) -> Vec<Mesh> {
         let mut meshes = Vec::new();
         for (_team, kind_index) in self.in_check() {
             meshes.extend(mesh_cursor_width(
                 self.pieces[kind_index].initial_pos,
-                CHECK,
+                theme.palette.check,
                 SELECTION_HEIGHT,
                 0.2,
             ));
@@ -461,11 +456,11 @@ impl Board {
     }
 }
 
-pub fn cursor_color(team: Team) -> Color {
+pub fn cursor_color(team: Team, theme: &Theme) -> Color {
     if team.is_white() {
-        CURSOR_WHITE
+        theme.palette.cursor_white
     } else {
-        CURSOR_BLACK
+        theme.palette.cursor_black
     }
 }
 
