@@ -102,6 +102,7 @@ pub fn new_coloring() -> Coloring {
         ..Default::default()
     }
 }
+
 const COLORING_COUNT: usize = size_of::<Coloring>() / size_of::<StateStyle>();
 const COLORING_NAMES: [&str; COLORING_COUNT] = ["at_rest", "hovered", "pressed"];
 
@@ -129,6 +130,18 @@ pub fn state_style_elem(state_style: StateStyle, index: usize) -> Color {
 }
 pub fn set_state_style(state_style: &mut StateStyle, index: usize, color: Color) {
     StateStyleUnion::set(state_style, index, color)
+}
+pub fn set_theme_coloring(
+    color: Color,
+    state_style_index: usize,
+    color_index: usize,
+    theme: &mut Theme,
+) {
+    let mut coloring = theme.coloring();
+    let mut style = coloring_elem(coloring, state_style_index);
+    set_state_style(&mut style, color_index, color);
+    set_coloring(&mut coloring, state_style_index, style);
+    theme.set_coloring(coloring);
 }
 
 #[derive(Copy, Clone)]

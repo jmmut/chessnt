@@ -1,11 +1,13 @@
 use crate::core::array_union::ArrayUnionTrait;
 use crate::core::time::Time;
 use crate::screen::theme::{
-    coloring_elem, named_coloring, named_state_style, new_coloring, set_coloring, set_state_style,
+    coloring_elem, named_coloring, named_state_style, new_coloring, set_theme_coloring,
     state_style_elem, CameraPos, Palette, Theme,
 };
 use crate::screen::ui;
-use crate::screen::ui::{render_button_dev, render_slider, render_text_dev};
+use crate::screen::ui::{
+    render_button_dev, render_button_dev_mut, render_slider, render_text_dev, rightwards,
+};
 use crate::world::board::{Board, DEFAULT_PIECE_SIZE};
 use crate::{AnyResult, INITIAL_DEV_UI};
 use juquad::widgets::anchor::Anchor;
@@ -30,12 +32,14 @@ pub enum DevUiMenu {
 
 pub struct DevUi {
     pub menu: DevUiMenu,
+    pub copied_color: Option<(String, Color)>,
 }
 
 impl DevUi {
     pub fn new() -> Self {
         Self {
             menu: INITIAL_DEV_UI,
+            copied_color: None,
         }
     }
     pub fn toggle(&mut self) {
@@ -78,12 +82,23 @@ impl DevUi {
         _rect
     }
 
-    fn navigation(&mut self, theme: &mut Theme, _rect: Rect, text: &str, menu: DevUiMenu) -> Rect {
-        let (rect, back_clicked) = render_button_dev(text, below_left(_rect), theme);
+    fn navigation(&mut self, theme: &Theme, _rect: Rect, text: &str, menu: DevUiMenu) -> Rect {
+        let mut rect = _rect;
+        self.navigation_anchor(theme, text, menu, below_left, &mut rect);
+        rect
+    }
+    fn navigation_anchor(
+        &mut self,
+        theme: &Theme,
+        text: &str,
+        menu: DevUiMenu,
+        anchor: fn(Rect) -> Anchor,
+        rect: &mut Rect,
+    ) {
+        let back_clicked = render_button_dev_mut(text, theme, anchor, rect);
         if back_clicked.is_clicked() {
             self.menu = menu;
         }
-        rect
     }
 
     fn draw_main(&mut self, theme: &mut Theme) {
@@ -167,16 +182,21 @@ impl DevUi {
     }
     fn draw_palette(&mut self, theme: &mut Theme) -> AnyResult<()> {
         // let _rect = Self::dev_ui_title(theme);
-        let mut _rect = render_text_dev("Colors (in RGBA)", Anchor::top_left(0.0, 0.0), theme);
+        let title = self.palette_title();
+        let mut rect = render_text_dev(&title, Anchor::top_left(0.0, 0.0), theme);
         for (index, (name, color)) in theme.palette.named_iter().enumerate() {
             let menu = DevUiMenu::EditWorldColor(index);
+            if let Some(color) = self.copy_paste(name, color, theme, &mut rect) {
+                theme.palette.set(index, color);
+            }
             let text = format!("{} - {}", as_hex(color), name);
-            _rect = self.navigation(theme, _rect, &text, menu);
+            let mut rect_copy = rect;
+            self.navigation_anchor(theme, &text, menu, rightwards, &mut rect_copy);
         }
 
         let (_rect, clicked) = render_button_dev(
             "Export palette (see in browser with F12)",
-            below_left(_rect),
+            below_left(rect),
             theme,
         );
         if clicked.is_clicked() {
@@ -189,6 +209,19 @@ impl DevUi {
         self.navigation(theme, _rect, "Back", DevUiMenu::Main);
         Ok(())
     }
+
+    fn palette_title(&mut self) -> String {
+        let title = format!(
+            "Colors (in RGBA){}",
+            if let Some((name, copied)) = &self.copied_color {
+                format!(" (copied {} - {})", as_hex(*copied), name)
+            } else {
+                "".to_string()
+            }
+        );
+        title
+    }
+
     fn draw_edit_world_color(&mut self, color_index: usize, theme: &mut Theme) {
         let (name, mut color) = theme.palette.named_vec()[color_index];
         let (_rect, clicked) = color_editor(theme, name, &mut color);
@@ -201,18 +234,24 @@ impl DevUi {
 
     fn draw_palette_ui(&mut self, theme: &mut Theme) -> AnyResult<()> {
         // let _rect = Self::dev_ui_title(theme);
-        let mut _rect = render_text_dev("Colors (in RGBA)", Anchor::top_left(0.0, 0.0), theme);
+        let title = self.palette_title();
+        let mut rect = render_text_dev(&title, Anchor::top_left(0.0, 0.0), theme);
         for (state_i, (name, state_style)) in named_coloring(theme.coloring()).enumerate() {
             for (color_i, (color_name, color)) in named_state_style(state_style).enumerate() {
                 let menu = DevUiMenu::EditUiColor(state_i, color_i);
-                let text = format!("{} - {}/{}", as_hex_no_space(color), name, color_name);
-                _rect = self.navigation(theme, _rect, &text, menu);
+                let full_name = format!("{}/{}", name, color_name);
+                if let Some(color) = self.copy_paste(&full_name, color, theme, &mut rect) {
+                    set_theme_coloring(color, state_i, color_i, theme);
+                }
+                let text = format!("{} - {}", as_hex(color), full_name);
+                let mut rect_copy = rect;
+                self.navigation_anchor(theme, &text, menu, rightwards, &mut rect_copy);
             }
         }
 
         let (_rect, clicked) = render_button_dev(
             "Export palette (see in browser with F12)",
-            below_left(_rect),
+            below_left(rect),
             theme,
         );
         if clicked.is_clicked() {
@@ -240,12 +279,29 @@ impl DevUi {
             let style = coloring_elem(new_coloring(), state_style_index);
             color = state_style_elem(style, color_index);
         }
-        let mut coloring = theme.coloring();
-        let mut style = coloring_elem(coloring, state_style_index);
-        set_state_style(&mut style, color_index, color);
-        set_coloring(&mut coloring, state_style_index, style);
-        theme.set_coloring(coloring);
+        set_theme_coloring(color, state_style_index, color_index, theme);
         self.navigation(theme, _rect, "Back", DevUiMenu::PaletteUi);
+    }
+
+    fn copy_paste(
+        &mut self,
+        name: &str,
+        color: Color,
+        theme: &Theme,
+        rect: &mut Rect,
+    ) -> Option<Color> {
+        if render_button_dev_mut("Copy", theme, below_left, rect).is_clicked() {
+            self.copied_color = Some((name.to_string(), color));
+        }
+        if let Some((_, copied)) = self.copied_color {
+            let mut copied_rect = rect.clone();
+            let clicked = render_button_dev_mut("Paste", theme, rightwards, &mut copied_rect);
+            *rect = rect.combine_with(copied_rect);
+            if clicked.is_clicked() {
+                return Some(copied);
+            }
+        }
+        None
     }
 }
 
@@ -299,15 +355,43 @@ pub fn palette_to_code(theme: &Theme) -> AnyResult<String> {
 }
 
 pub fn coloring_to_code(theme: &Theme) -> AnyResult<String> {
-    Ok("pub fn new_coloring() -> Coloring {
-    Coloring {
-        at_rest: StateStyle {
-            bg_color: from_hex(0x190e34),
-            text_color: from_hex(0xfafbf9),
-            border_color: from_hex(0xfafbf9),
-        },
-        ..Default::default()
+    //     Ok("pub fn new_coloring() -> Coloring {
+    //     Coloring {
+    //         at_rest: StateStyle {
+    //             bg_color: from_hex(0x190e34),
+    //             text_color: from_hex(0xfafbf9),
+    //             border_color: from_hex(0xfafbf9),
+    //         },
+    //         ..Default::default()
+    //     }
+    // }"
+    //     .to_string());
+
+    let mut message: Vec<u8> = Vec::new();
+    writeln!(
+        message,
+        "pub fn new_coloring() -> Coloring {{
+    Coloring {{"
+    )?;
+    for (style_name, style) in named_coloring(theme.coloring()) {
+        writeln!(message, "        {}: StateStyle {{", style_name)?;
+        for (color_name, color) in named_state_style(style) {
+            writeln!(
+                message,
+                "            {}: from_hex_rgba({}),",
+                color_name,
+                as_hex_no_space(color)
+            )?;
+        }
+
+        writeln!(message, "        }},")?;
     }
-}"
-    .to_string())
+    // for (name, color) in theme.palette.named_iter() {
+    // }
+    write!(
+        message,
+        "    }}
+}}"
+    )?;
+    Ok(String::from_utf8(message)?)
 }

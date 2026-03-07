@@ -51,6 +51,21 @@ pub fn render_button(text: &str, anchor: Anchor, theme: &Theme) -> (Rect, Intera
 pub fn render_button_dev(text: &str, anchor: Anchor, theme: &Theme) -> (Rect, Interaction) {
     render_button_font(text, anchor, theme, theme.font_dev(), theme.font_size_dev())
 }
+pub fn render_button_dev_mut(
+    text: &str,
+    theme: &Theme,
+    anchor: fn(Rect) -> Anchor,
+    rect: &mut Rect,
+) -> Interaction {
+    render_button_font_mut(
+        text,
+        anchor,
+        theme,
+        theme.font_dev(),
+        theme.font_size_dev(),
+        rect,
+    )
+}
 pub fn render_button_font(
     text: &str,
     anchor: Anchor,
@@ -69,6 +84,27 @@ pub fn render_button_font(
     let interaction = t.interact();
     t.render_default(&theme.coloring());
     (t.rect(), interaction)
+}
+pub fn render_button_font_mut(
+    text: &str,
+    anchor: fn(Rect) -> Anchor,
+    theme: &Theme,
+    font: Font,
+    font_size: f32,
+    rect: &mut Rect,
+) -> Interaction {
+    let mut t = Button::new_generic(
+        text,
+        anchor(*rect),
+        font_size,
+        Some(font),
+        macroquad::prelude::measure_text,
+        Box::new(InputMacroquad),
+    );
+    let interaction = t.interact();
+    t.render_default(&theme.coloring());
+    *rect = t.rect();
+    interaction
 }
 pub static mut SCALE: f32 = 13.78;
 /*
