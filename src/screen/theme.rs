@@ -11,6 +11,7 @@ use macroquad::color_u8;
 use macroquad::math::{vec2, Rect};
 use macroquad::prelude::{Font, Texture2D, Vec2};
 use std::collections::HashMap;
+use crate::core::array_union::ArrayUnion;
 
 pub struct Theme {
     pub screen: Vec2,
@@ -91,9 +92,22 @@ pub struct Textures {
     pub pieces: HashMap<(Team, Move), Texture2D>,
 }
 
-pub union ColoringUnion {
-    pub named: Coloring,
-    pub array: [StateStyle; Self::COUNT],
+
+const COLORING_COUNT: usize = size_of::<Coloring>() / size_of::<StateStyle>();
+const COLORING_NAMES: [&str; 3] = [
+    "at_rest",
+    "hovered",
+    "pressed",
+];
+
+pub type ColoringUnion = ArrayUnion<
+    Coloring,
+    StateStyle,
+    COLORING_COUNT,
+>;
+
+pub fn named_coloring(coloring: Coloring) ->  Vec<(&'static str, StateStyle)> {
+    ColoringUnion::named_list(coloring, COLORING_NAMES)
 }
 
 pub fn new_coloring() -> Coloring {
@@ -104,32 +118,6 @@ pub fn new_coloring() -> Coloring {
             border_color: from_hex(0xfafbf9),
         },
         ..Default::default()
-    }
-}
-
-impl ColoringUnion {
-    pub const COUNT: usize = size_of::<Coloring>() / size_of::<StateStyle>();
-    pub const NAMES: [&'static str; Self::COUNT] = [
-        "at_rest",
-        "hovered",
-        "pressed",
-    ];
-    pub fn list(coloring: Coloring) -> Vec<(&'static str, StateStyle)> {
-        Self::NAMES.into_iter().zip(Self::into_iter(coloring)).collect()
-    }
-    pub fn set(coloring: &mut Coloring, index: usize, state_style: StateStyle) {
-        let mut array = Self::to_array(*coloring);
-        array[index] = state_style;
-        *coloring = Self::from_array(array);
-    }
-    fn from_array(array: [StateStyle; Self::COUNT]) -> Coloring {
-        unsafe { Self {array}.named}
-    }
-    pub fn to_array(coloring: Coloring) -> [StateStyle; Self::COUNT] {
-        unsafe { Self {named: coloring}.array }
-    }
-    pub fn into_iter(coloring: Coloring) -> impl Iterator<Item = StateStyle> {
-        Self::to_array(coloring).into_iter()
     }
 }
 

@@ -1,5 +1,5 @@
 use crate::core::time::Time;
-use crate::screen::theme::{new_coloring, CameraPos, ColoringUnion, Palette, Theme};
+use crate::screen::theme::{named_coloring, new_coloring, CameraPos, ColoringUnion, Palette, Theme};
 use crate::screen::ui;
 use crate::screen::ui::{render_button_dev, render_slider, render_text_dev};
 use crate::world::board::{Board, DEFAULT_PIECE_SIZE};
@@ -203,7 +203,7 @@ impl DevUi {
     fn draw_palette_ui(&mut self, theme: &mut Theme) -> AnyResult<()> {
         // let _rect = Self::dev_ui_title(theme);
         let mut _rect = render_text_dev("Colors (in RGBA)", Anchor::top_left(0.0, 0.0), theme);
-        for (state_index, (name, state_style)) in ColoringUnion::list(theme.coloring()).iter().enumerate() {
+        for (state_index, (name, state_style)) in named_coloring(theme.coloring()).iter().enumerate() {
             // let menu = DevUiMenu::EditUiColor(state_index, 0);
             let menu = DevUiMenu::PaletteUi;
             let text = format!("{}", name);
