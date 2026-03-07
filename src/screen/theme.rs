@@ -95,6 +95,19 @@ pub struct Textures {
     pub pieces: HashMap<(Team, Move), Texture2D>,
 }
 
+pub const PALETTE_COUNT: usize = size_of::<Palette>() / size_of::<Color>();
+pub const PALETTE_NAMES: [&'static str; PALETTE_COUNT] = [
+    "tiles_white",
+    "tiles_black",
+    "cursor_white",
+    "cursor_black",
+    "radar",
+    "ghost",
+    "selection",
+    "check",
+];
+
+#[derive(Copy, Clone)]
 pub struct Palette {
     pub tiles_white: Color,
     pub tiles_black: Color,
@@ -104,6 +117,10 @@ pub struct Palette {
     pub ghost: Color,
     pub selection: Color,
     pub check: Color,
+}
+union PaletteUnion {
+    named: Palette,
+    array: [Color; PALETTE_COUNT],
 }
 
 // // const SELECTION: Color = color_average(DARKBLUE, TRANSPARENT);
@@ -134,30 +151,25 @@ impl Default for Palette {
 
 impl Palette {
     pub fn list(&self) -> Vec<(&'static str, Color)> {
-        vec![
-            ("tiles_white", self.tiles_white),
-            ("tiles_black", self.tiles_black),
-            ("cursor_white", self.cursor_white),
-            ("cursor_black", self.cursor_black),
-            ("radar", self.radar),
-            ("ghost", self.ghost),
-            ("selection", self.selection),
-            ("check", self.check),
-        ]
+        PALETTE_NAMES.into_iter().zip(self.into_iter()).collect()
     }
     pub fn set(&mut self, index: usize, color: Color) {
-        *[
-            &mut self.tiles_white,
-            &mut self.tiles_black,
-            &mut self.cursor_white,
-            &mut self.cursor_black,
-            &mut self.radar,
-            &mut self.ghost,
-            &mut self.selection,
-            &mut self.check,
-        ][index] = color;
+        let mut array = self.to_array();
+        array[index] = color;
+        *self = Self::from_array(array);
+    }
+    fn from_array(array: [Color; PALETTE_COUNT]) -> Self {
+        unsafe { PaletteUnion { array }.named }
+    }
+    pub fn to_array(self) -> [Color; PALETTE_COUNT] {
+        let palette_union = PaletteUnion { named: self };
+        unsafe { palette_union.array }
+    }
+    pub fn into_iter(self) -> impl Iterator<Item = Color> {
+        self.to_array().into_iter()
     }
 }
+
 const fn choose_scale(width: f32, height: f32, font_size: f32) -> f32 {
     let min_side = width.min(height_to_width(height, DEFAULT_ASPECT_RATIO));
     font_size
