@@ -1,5 +1,7 @@
 use crate::core::time::Time;
-use crate::screen::theme::{named_coloring, new_coloring, CameraPos, ColoringUnion, Palette, Theme};
+use crate::screen::theme::{
+    named_coloring, new_coloring, CameraPos, ColoringUnion, Palette, Theme,
+};
 use crate::screen::ui;
 use crate::screen::ui::{render_button_dev, render_slider, render_text_dev};
 use crate::world::board::{Board, DEFAULT_PIECE_SIZE};
@@ -10,6 +12,7 @@ use macroquad::math::Rect;
 use macroquad::prelude::info;
 use std::io::Write;
 use ui::below_left;
+use crate::core::array_union::ArrayUnionTrait;
 
 #[derive(Eq, PartialEq)]
 pub enum DevUiMenu {
@@ -161,9 +164,10 @@ impl DevUi {
     fn draw_palette(&mut self, theme: &mut Theme) -> AnyResult<()> {
         // let _rect = Self::dev_ui_title(theme);
         let mut _rect = render_text_dev("Colors (in RGBA)", Anchor::top_left(0.0, 0.0), theme);
-        for (index, (name, color)) in theme.palette.list().iter().enumerate() {
+        let palette = theme.palette.clone();
+        for (index, (name, color)) in palette.named_iter().enumerate() {
             let menu = DevUiMenu::EditWorldColor(index);
-            let text = format!("{} - {}", as_hex(*color), name);
+            let text = format!("{} - {}", as_hex(color), name);
             _rect = self.navigation(theme, _rect, &text, menu);
         }
 
@@ -183,7 +187,7 @@ impl DevUi {
         Ok(())
     }
     fn draw_edit_color(&mut self, color_index: usize, theme: &mut Theme) {
-        let (name, mut color) = theme.palette.list()[color_index];
+        let (name, mut color) = theme.palette.named_vec()[color_index];
         let text = format!("Edit color '{}' {}", name, as_hex(color));
         let mut _rect = render_text_dev(&text, Anchor::top_left(0.0, 0.0), theme);
         // color = Color::new(color.r * 255.0, color.g * 255.0, color.b * 255.0, color.a * 255.0);
@@ -195,7 +199,7 @@ impl DevUi {
         // color = Color::new(color.r /255.0, color.g/255.0, color.b /255.0, color.a /255.0);
         let (_rect, clicked) = render_button_dev("Reset color", below_left(_rect), theme);
         if clicked.is_clicked() {
-            (_, color) = Palette::default().list()[color_index];
+            (_, color) = Palette::default().named_vec()[color_index];
         }
         theme.palette.set(color_index, color);
         self.navigation(theme, _rect, "Back", DevUiMenu::PaletteWorld);
@@ -203,7 +207,7 @@ impl DevUi {
     fn draw_palette_ui(&mut self, theme: &mut Theme) -> AnyResult<()> {
         // let _rect = Self::dev_ui_title(theme);
         let mut _rect = render_text_dev("Colors (in RGBA)", Anchor::top_left(0.0, 0.0), theme);
-        for (state_index, (name, state_style)) in named_coloring(theme.coloring()).iter().enumerate() {
+        for (state_index, (name, state_style)) in named_coloring(theme.coloring()).enumerate() {
             // let menu = DevUiMenu::EditUiColor(state_index, 0);
             let menu = DevUiMenu::PaletteUi;
             let text = format!("{}", name);
@@ -245,7 +249,7 @@ pub fn palette_to_code(theme: &Theme) -> AnyResult<String> {
         Self {{
 "
     )?;
-    for (name, color) in theme.palette.list() {
+    for (name, color) in theme.palette.named_iter() {
         write!(
             message,
             "            {}: from_hex_rgba({}),\n",
@@ -272,5 +276,6 @@ pub fn coloring_to_code(theme: &Theme) -> AnyResult<String> {
         },
         ..Default::default()
     }
-}".to_string())
+}"
+    .to_string())
 }

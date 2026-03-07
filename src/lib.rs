@@ -5,9 +5,9 @@ use screen::theme::CameraPos;
 use screen::ui_dev::DevUiMenu;
 
 pub mod core {
+    pub mod array_union;
     pub mod coord;
     pub mod time;
-    pub mod array_union;
 }
 pub mod screen {
     pub mod anchorer;

@@ -1,3 +1,4 @@
+use crate::core::array_union::{ArrayUnion, ArrayUnionTrait, ExternalArrayUnion};
 use crate::world::moves::Move;
 use crate::world::team::Team;
 use crate::{
@@ -11,7 +12,6 @@ use macroquad::color_u8;
 use macroquad::math::{vec2, Rect};
 use macroquad::prelude::{Font, Texture2D, Vec2};
 use std::collections::HashMap;
-use crate::core::array_union::ArrayUnion;
 
 pub struct Theme {
     pub screen: Vec2,
@@ -93,23 +93,6 @@ pub struct Textures {
 }
 
 
-const COLORING_COUNT: usize = size_of::<Coloring>() / size_of::<StateStyle>();
-const COLORING_NAMES: [&str; 3] = [
-    "at_rest",
-    "hovered",
-    "pressed",
-];
-
-pub type ColoringUnion = ArrayUnion<
-    Coloring,
-    StateStyle,
-    COLORING_COUNT,
->;
-
-pub fn named_coloring(coloring: Coloring) ->  Vec<(&'static str, StateStyle)> {
-    ColoringUnion::named_list(coloring, COLORING_NAMES)
-}
-
 pub fn new_coloring() -> Coloring {
     Coloring {
         at_rest: StateStyle {
@@ -119,6 +102,14 @@ pub fn new_coloring() -> Coloring {
         },
         ..Default::default()
     }
+}
+const COLORING_COUNT: usize = size_of::<Coloring>() / size_of::<StateStyle>();
+const COLORING_NAMES: [&str; COLORING_COUNT] = ["at_rest", "hovered", "pressed"];
+
+pub type ColoringUnion = ArrayUnion<Coloring, StateStyle, COLORING_COUNT>;
+
+pub fn named_coloring(coloring: Coloring) -> impl Iterator<Item = (&'static str, StateStyle)> {
+    ColoringUnion::named_iter(coloring, COLORING_NAMES)
 }
 
 
@@ -137,22 +128,7 @@ pub struct Palette {
     pub selection: Color,
     pub check: Color,
 }
-union PaletteUnion {
-    named: Palette,
-    array: [Color; Palette::COUNT],
-}
 
-// // const SELECTION: Color = color_average(DARKBLUE, TRANSPARENT);
-// const SELECTION: Color = color_average(BLUE, GRAY);
-// // const RADAR: Color = color_average(color_average(RED, LIGHTGRAY), TRANSPARENT);
-// pub const RADAR: Color = color_average(RED, TRANSPARENT);
-// // const GHOST: Color = color_average(DARKPURPLE, TRANSPARENT);
-// const GHOST: Color = color_average(PURPLE, GRAY);
-// const CHECK: Color = color_average(RED, GRAY);
-// // const CURSOR: Color = color_average(DARKGREEN, TRANSPARENT);
-// const CURSOR_WHITE: Color = color_average_weight(color_average(GREEN, GRAY), YELLOW, 0.3);
-// const CURSOR_BLACK: Color = color_average_weight(color_average(GREEN, GRAY), DARKBLUE, 0.3);
-// // const FIGURE: Color = color_average(PINK, TRANSPARENT);
 impl Default for Palette {
     fn default() -> Self {
         Self {
@@ -171,11 +147,12 @@ impl Default for Palette {
         }
     }
 }
-
-type PaletteElement = Color;
-impl Palette {
-    pub const COUNT: usize = size_of::<Palette>() / size_of::<Color>();
-    pub const NAMES: [&'static str; Self::COUNT] = [
+impl Palette { 
+    const COUNT: usize = size_of::<Palette>() / size_of::<Color>(); 
+}
+impl ArrayUnionTrait<Palette, Color, {Palette::COUNT}> for Palette {
+    type Delegate = ArrayUnion<Palette, Color, { Palette::COUNT }>; 
+    const NAMES: [&'static str; Self::COUNT] = [
         "tiles_white",
         "tiles_black",
         "cursor_white",
@@ -190,24 +167,24 @@ impl Palette {
         "check",
     ];
 
-    pub fn list(&self) -> Vec<(&'static str, Color)> {
-        Self::NAMES.into_iter().zip(self.into_iter()).collect()
+    fn myself(&self) -> Palette {
+        *self
     }
-    pub fn set(&mut self, index: usize, color: Color) {
-        let mut array = self.to_array();
-        array[index] = color;
-        *self = Self::from_array(array);
+    fn myself_mut(&mut self) -> &mut Palette {
+        self
     }
-    fn from_array(array: [Color; Self::COUNT]) -> Self {
-        unsafe { PaletteUnion { array }.named }
-    }
-    pub fn to_array(self) -> [Color; Self::COUNT] {
-        let palette_union = PaletteUnion { named: self };
-        unsafe { palette_union.array }
-    }
-    pub fn into_iter(self) -> impl Iterator<Item = Color> {
-        self.to_array().into_iter()
-    }
+
+
+    // 
+    // fn named_iter(&self) -> impl Iterator<Item = (&'static str, Color)> {
+    //     Self::named_iter_(self)
+    // }
+    // fn named_vec(self) -> Vec<(&'static str, Color)> {
+    //     Self::named_vec_(self)
+    // }
+    // fn set(&mut self, index: usize, color: Color) {
+    //     Self::set_(self, index, color)
+    // }
 }
 
 const fn choose_scale(width: f32, height: f32, font_size: f32) -> f32 {
