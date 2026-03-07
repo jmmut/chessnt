@@ -162,7 +162,11 @@ impl DevUi {
             _rect = self.navigation(theme, _rect, &text, menu);
         }
 
-        let (_rect, clicked) = render_button_dev("Export palette", below_left(_rect), theme);
+        let (_rect, clicked) = render_button_dev(
+            "Export palette (see in browser with F12)",
+            below_left(_rect),
+            theme,
+        );
         if clicked.is_clicked() {
             info!("{}", palette_to_code(theme)?);
         }
