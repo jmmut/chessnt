@@ -20,7 +20,8 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          sudo apt-get install libx11-dev libxi-dev libgl1-mesa-dev gcc-mingw-w64 libasound2-dev
+          sudo apt-get install libx11-dev libxi-dev libgl1-mesa-dev gcc-mingw-w64 libasound2-dev libudev-dev
+
           # -L follows redirects
           # -O specifies output name
           curl -L -o butler.zip https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default

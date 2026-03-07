@@ -2,12 +2,14 @@
 name = "chessnt"
 version = "0.1.0"
 edition = "2021"
+default-run = "chessnt"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 macroquad = "=0.3.24"
 juquad = { git = "https://github.com/jmmut/juquad.git", tag = "0.14.0" }
+gamepads = { version = "0.1.7", default-features = false }
 
 [profile.release]
 strip = true
