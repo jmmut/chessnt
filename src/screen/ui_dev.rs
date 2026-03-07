@@ -1,5 +1,5 @@
 use crate::core::time::Time;
-use crate::screen::theme::{CameraPos, Palette, Theme};
+use crate::screen::theme::{new_coloring, CameraPos, ColoringUnion, Palette, Theme};
 use crate::screen::ui;
 use crate::screen::ui::{render_button_dev, render_slider, render_text_dev};
 use crate::world::board::{Board, DEFAULT_PIECE_SIZE};
@@ -17,8 +17,10 @@ pub enum DevUiMenu {
     Main,
     Camera,
     Referee,
-    Palette,
-    EditColor(usize),
+    PaletteWorld,
+    PaletteUi,
+    EditWorldColor(usize),
+    EditUiColor(usize, usize),
 }
 
 pub struct DevUi {
@@ -53,8 +55,10 @@ impl DevUi {
             DevUiMenu::Main => self.draw_main(theme),
             DevUiMenu::Camera => self.draw_camera(time, theme, board, camera),
             DevUiMenu::Referee => self.draw_referee(theme, board),
-            DevUiMenu::Palette => self.draw_palette(theme)?,
-            DevUiMenu::EditColor(index) => self.draw_edit_color(index, theme),
+            DevUiMenu::PaletteWorld => self.draw_palette(theme)?,
+            DevUiMenu::PaletteUi => self.draw_palette_ui(theme)?,
+            DevUiMenu::EditWorldColor(index) => self.draw_edit_color(index, theme),
+            DevUiMenu::EditUiColor(state_index, color_index) => todo!(),
         }
         Ok(())
     }
@@ -79,7 +83,8 @@ impl DevUi {
         let _rect = Self::dev_ui_title(theme);
         let _rect = self.navigation(theme, _rect, "Camera controls", DevUiMenu::Camera);
         let _rect = self.navigation(theme, _rect, "Inspect referee", DevUiMenu::Referee);
-        let _rect = self.navigation(theme, _rect, "Edit palette", DevUiMenu::Palette);
+        let _rect = self.navigation(theme, _rect, "Edit world palette", DevUiMenu::PaletteWorld);
+        let _rect = self.navigation(theme, _rect, "Edit ui palette", DevUiMenu::PaletteUi);
         let _rect = self.navigation(theme, _rect, "Hide Dev UI", DevUiMenu::Hidden);
     }
 
@@ -157,7 +162,7 @@ impl DevUi {
         // let _rect = Self::dev_ui_title(theme);
         let mut _rect = render_text_dev("Colors (in RGBA)", Anchor::top_left(0.0, 0.0), theme);
         for (index, (name, color)) in theme.palette.list().iter().enumerate() {
-            let menu = DevUiMenu::EditColor(index);
+            let menu = DevUiMenu::EditWorldColor(index);
             let text = format!("{} - {}", as_hex(*color), name);
             _rect = self.navigation(theme, _rect, &text, menu);
         }
@@ -193,7 +198,32 @@ impl DevUi {
             (_, color) = Palette::default().list()[color_index];
         }
         theme.palette.set(color_index, color);
-        self.navigation(theme, _rect, "Back", DevUiMenu::Palette);
+        self.navigation(theme, _rect, "Back", DevUiMenu::PaletteWorld);
+    }
+    fn draw_palette_ui(&mut self, theme: &mut Theme) -> AnyResult<()> {
+        // let _rect = Self::dev_ui_title(theme);
+        let mut _rect = render_text_dev("Colors (in RGBA)", Anchor::top_left(0.0, 0.0), theme);
+        for (state_index, (name, state_style)) in ColoringUnion::list(theme.coloring()).iter().enumerate() {
+            // let menu = DevUiMenu::EditUiColor(state_index, 0);
+            let menu = DevUiMenu::PaletteUi;
+            let text = format!("{}", name);
+            _rect = self.navigation(theme, _rect, &text, menu);
+        }
+
+        let (_rect, clicked) = render_button_dev(
+            "Export palette (see in browser with F12)",
+            below_left(_rect),
+            theme,
+        );
+        if clicked.is_clicked() {
+            info!("{}", coloring_to_code(theme)?);
+        }
+        let (_rect, clicked) = render_button_dev("Reset palette", below_left(_rect), theme);
+        if clicked.is_clicked() {
+            theme.set_coloring(new_coloring());
+        }
+        self.navigation(theme, _rect, "Back", DevUiMenu::Main);
+        Ok(())
     }
 }
 
@@ -230,4 +260,17 @@ pub fn palette_to_code(theme: &Theme) -> AnyResult<String> {
 }}"
     )?;
     Ok(String::from_utf8(message)?)
+}
+
+pub fn coloring_to_code(theme: &Theme) -> AnyResult<String> {
+    Ok("pub fn new_coloring() -> Coloring {
+    Coloring {
+        at_rest: StateStyle {
+            bg_color: from_hex(0x190e34),
+            text_color: from_hex(0xfafbf9),
+            border_color: from_hex(0xfafbf9),
+        },
+        ..Default::default()
+    }
+}".to_string())
 }

@@ -34,14 +34,7 @@ impl Theme {
                 DEFAULT_FONT_SIZE,
             ),
             fonts,
-            coloring: Coloring {
-                at_rest: StateStyle {
-                    bg_color: from_hex(0x190e34),
-                    text_color: from_hex(0xfafbf9),
-                    border_color: from_hex(0xfafbf9),
-                },
-                ..Default::default()
-            },
+            coloring: new_coloring(),
             textures,
         }
     }
@@ -73,6 +66,9 @@ impl Theme {
     pub fn coloring(&self) -> Coloring {
         self.coloring
     }
+    pub fn set_coloring(&mut self, coloring: Coloring) {
+        self.coloring = coloring;
+    }
 }
 pub struct CameraPos {
     pub y: f32,
@@ -95,21 +91,48 @@ pub struct Textures {
     pub pieces: HashMap<(Team, Move), Texture2D>,
 }
 
-pub const PALETTE_COUNT: usize = size_of::<Palette>() / size_of::<Color>();
-pub const PALETTE_NAMES: [&'static str; PALETTE_COUNT] = [
-    "tiles_white",
-    "tiles_black",
-    "cursor_white",
-    "cursor_black",
-    "mask_white",
-    "mask_black",
-    "background",
-    "spotlight",
-    "radar",
-    "ghost",
-    "selection",
-    "check",
-];
+pub union ColoringUnion {
+    pub named: Coloring,
+    pub array: [StateStyle; Self::COUNT],
+}
+
+pub fn new_coloring() -> Coloring {
+    Coloring {
+        at_rest: StateStyle {
+            bg_color: from_hex(0x190e34),
+            text_color: from_hex(0xfafbf9),
+            border_color: from_hex(0xfafbf9),
+        },
+        ..Default::default()
+    }
+}
+
+impl ColoringUnion {
+    pub const COUNT: usize = size_of::<Coloring>() / size_of::<StateStyle>();
+    pub const NAMES: [&'static str; Self::COUNT] = [
+        "at_rest",
+        "hovered",
+        "pressed",
+    ];
+    pub fn list(coloring: Coloring) -> Vec<(&'static str, StateStyle)> {
+        Self::NAMES.into_iter().zip(Self::into_iter(coloring)).collect()
+    }
+    pub fn set(coloring: &mut Coloring, index: usize, state_style: StateStyle) {
+        let mut array = Self::to_array(*coloring);
+        array[index] = state_style;
+        *coloring = Self::from_array(array);
+    }
+    fn from_array(array: [StateStyle; Self::COUNT]) -> Coloring {
+        unsafe { Self {array}.named}
+    }
+    pub fn to_array(coloring: Coloring) -> [StateStyle; Self::COUNT] {
+        unsafe { Self {named: coloring}.array }
+    }
+    pub fn into_iter(coloring: Coloring) -> impl Iterator<Item = StateStyle> {
+        Self::to_array(coloring).into_iter()
+    }
+}
+
 
 #[derive(Copy, Clone)]
 pub struct Palette {
@@ -128,7 +151,7 @@ pub struct Palette {
 }
 union PaletteUnion {
     named: Palette,
-    array: [Color; PALETTE_COUNT],
+    array: [Color; Palette::COUNT],
 }
 
 // // const SELECTION: Color = color_average(DARKBLUE, TRANSPARENT);
@@ -161,19 +184,36 @@ impl Default for Palette {
     }
 }
 
+type PaletteElement = Color;
 impl Palette {
+    pub const COUNT: usize = size_of::<Palette>() / size_of::<Color>();
+    pub const NAMES: [&'static str; Self::COUNT] = [
+        "tiles_white",
+        "tiles_black",
+        "cursor_white",
+        "cursor_black",
+        "mask_white",
+        "mask_black",
+        "background",
+        "spotlight",
+        "radar",
+        "ghost",
+        "selection",
+        "check",
+    ];
+
     pub fn list(&self) -> Vec<(&'static str, Color)> {
-        PALETTE_NAMES.into_iter().zip(self.into_iter()).collect()
+        Self::NAMES.into_iter().zip(self.into_iter()).collect()
     }
     pub fn set(&mut self, index: usize, color: Color) {
         let mut array = self.to_array();
         array[index] = color;
         *self = Self::from_array(array);
     }
-    fn from_array(array: [Color; PALETTE_COUNT]) -> Self {
+    fn from_array(array: [Color; Self::COUNT]) -> Self {
         unsafe { PaletteUnion { array }.named }
     }
-    pub fn to_array(self) -> [Color; PALETTE_COUNT] {
+    pub fn to_array(self) -> [Color; Self::COUNT] {
         let palette_union = PaletteUnion { named: self };
         unsafe { palette_union.array }
     }
