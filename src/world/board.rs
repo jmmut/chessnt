@@ -3,13 +3,13 @@ use crate::screen::render::{
     floor_corners, mesh_coord, mesh_cursor, mesh_cursor_width, mesh_figure_texture,
     mesh_progress_bar, mesh_quad, mesh_texture_quad, mesh_triangle, mesh_vertical_texture, quad,
 };
-use crate::screen::theme::{color_average, Theme};
+use crate::screen::theme::Theme;
 use crate::world::moves::{compute_attackers, possible_moves, Move};
 use crate::world::piece::Piece;
 use crate::world::referee::Referee;
 use crate::world::team::Team;
 use crate::TRANSPARENT;
-use macroquad::color::{Color, GRAY, GREEN, LIGHTGRAY, WHITE};
+use macroquad::color::{Color, WHITE};
 use macroquad::math::{vec2, vec3, Vec2, Vec3};
 use macroquad::models::{draw_mesh, Mesh};
 
@@ -309,7 +309,7 @@ impl Board {
         meshes.extend(self.possible_moves_meshes(Team::White, theme));
         meshes.extend(self.possible_moves_meshes(Team::Black, theme));
         meshes.extend(self.checks_meshes(theme));
-        meshes.extend(self.turn_light_meshes());
+        meshes.extend(self.turn_light_meshes(theme));
 
         meshes.sort_by(|a, b| depth(a).total_cmp(&depth(b)));
         for mesh in meshes {
@@ -331,7 +331,11 @@ impl Board {
         for piece in &self.pieces {
             meshes.push(mesh_figure_texture(
                 piece,
-                if piece.team.is_white() { WHITE } else { GRAY },
+                if piece.team.is_white() {
+                    theme.palette.mask_white
+                } else {
+                    theme.palette.mask_black
+                },
                 theme.textures.placeholder,
                 self.piece_size,
             ));
@@ -441,7 +445,7 @@ impl Board {
         }
         meshes
     }
-    fn turn_light_meshes(&self) -> Vec<Mesh> {
+    fn turn_light_meshes(&self, theme: &Theme) -> Vec<Mesh> {
         let z = vec3(0.0, 0.0, 1.0) * 10.0;
         let coord_00 = vec3(0.0 + self.size.column * 0.5, 4.0, 6.0);
         let slope_direction = if self.referee.turn.is_white() {
@@ -451,7 +455,7 @@ impl Board {
         };
         let xy = vec3(slope_direction, 1.0, 0.0) * 5.0;
         let corners = quad(coord_00, xy, z);
-        let mut mesh = mesh_quad(corners, color_average(GREEN, LIGHTGRAY));
+        let mut mesh = mesh_quad(corners, theme.palette.spotlight);
         mesh.vertices[0].color = TRANSPARENT;
         mesh.vertices[2].color = TRANSPARENT;
         vec![mesh]

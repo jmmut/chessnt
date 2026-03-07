@@ -6,7 +6,7 @@ use crate::{
 };
 use juquad::draw::to_rect;
 use juquad::widgets::{StateStyle, Style as Coloring};
-use macroquad::color::{Color, BLUE, DARKBLUE, GRAY, GREEN, PURPLE, RED, YELLOW};
+use macroquad::color::{Color, BLUE, DARKBLUE, GRAY, GREEN, LIGHTGRAY, PURPLE, RED, WHITE, YELLOW};
 use macroquad::color_u8;
 use macroquad::math::{vec2, Rect};
 use macroquad::prelude::{Font, Texture2D, Vec2};
@@ -101,6 +101,10 @@ pub const PALETTE_NAMES: [&'static str; PALETTE_COUNT] = [
     "tiles_black",
     "cursor_white",
     "cursor_black",
+    "mask_white",
+    "mask_black",
+    "background",
+    "spotlight",
     "radar",
     "ghost",
     "selection",
@@ -113,6 +117,10 @@ pub struct Palette {
     pub tiles_black: Color,
     pub cursor_white: Color,
     pub cursor_black: Color,
+    pub mask_white: Color,
+    pub mask_black: Color,
+    pub background: Color,
+    pub spotlight: Color,
     pub radar: Color,
     pub ghost: Color,
     pub selection: Color,
@@ -139,12 +147,16 @@ impl Default for Palette {
         Self {
             tiles_white: from_hex(0xF7FFE5),
             tiles_black: from_hex(0x181449),
+            cursor_white: color_average_weight(color_average(GREEN, GRAY), YELLOW, 0.3),
+            cursor_black: color_average_weight(color_average(GREEN, GRAY), DARKBLUE, 0.3),
+            mask_white: WHITE,
+            mask_black: GRAY,
+            background: GRAY,
+            spotlight: color_average(GREEN, LIGHTGRAY),
             radar: color_average(RED, TRANSPARENT),
             ghost: color_average(PURPLE, GRAY),
             selection: color_average(BLUE, GRAY),
             check: color_average(RED, GRAY),
-            cursor_white: color_average_weight(color_average(GREEN, GRAY), YELLOW, 0.3),
-            cursor_black: color_average_weight(color_average(GREEN, GRAY), DARKBLUE, 0.3),
         }
     }
 }

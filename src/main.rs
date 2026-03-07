@@ -11,7 +11,6 @@ use chessnt::{
 };
 use juquad::widgets::anchor::Anchor;
 use macroquad::camera::set_default_camera;
-use macroquad::color::GRAY;
 use macroquad::input::{is_key_down, is_key_pressed, KeyCode};
 use macroquad::math::{vec2, Vec2};
 use macroquad::prelude::{clear_background, next_frame, screen_height, screen_width, Conf};
@@ -49,7 +48,7 @@ async fn fallible_main() -> AnyResult<()> {
         board.tick(time.delta());
 
         set_3d_camera(&camera);
-        clear_background(GRAY);
+        clear_background(theme.palette.background);
         board.draw_world(theme);
 
         set_default_camera();
