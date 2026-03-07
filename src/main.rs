@@ -54,7 +54,7 @@ async fn fallible_main() -> AnyResult<()> {
 
         set_default_camera();
         board.draw_ui(theme);
-        dev_ui.draw(&time, theme, &mut board, &mut camera);
+        dev_ui.draw(&time, theme, &mut board, &mut camera)?;
         if is_key_pressed(KeyCode::T) {
             let anchor = Anchor::center_v(theme.screen_rect().center());
             render_title("Re-loading textures", anchor, theme);

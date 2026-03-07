@@ -131,6 +131,7 @@ impl Default for Palette {
         }
     }
 }
+
 impl Palette {
     pub fn list(&self) -> Vec<(&'static str, Color)> {
         vec![
@@ -184,6 +185,14 @@ impl Fonts {
 }
 pub const fn from_hex(hex: u32) -> Color {
     color_u8!(hex / 0x10000, hex / 0x100 % 0x100, hex % 0x100, 255)
+}
+pub const fn from_hex_rgba(hex: u32) -> Color {
+    color_u8!(
+        hex / 0x1000000,
+        hex / 0x10000 % 0x100,
+        hex / 0x100 % 0x100,
+        hex % 0x100
+    )
 }
 pub const fn color_average(color_1: Color, color_2: Color) -> Color {
     color_average_weight(color_1, color_2, 0.5)
