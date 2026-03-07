@@ -1,18 +1,20 @@
+use crate::core::array_union::ArrayUnionTrait;
 use crate::core::time::Time;
 use crate::screen::theme::{
-    named_coloring, new_coloring, CameraPos, ColoringUnion, Palette, Theme,
+    coloring_elem, named_coloring, named_state_style, new_coloring, set_coloring, set_state_style,
+    state_style_elem, CameraPos, Palette, Theme,
 };
 use crate::screen::ui;
 use crate::screen::ui::{render_button_dev, render_slider, render_text_dev};
 use crate::world::board::{Board, DEFAULT_PIECE_SIZE};
 use crate::{AnyResult, INITIAL_DEV_UI};
 use juquad::widgets::anchor::Anchor;
+use juquad::widgets::Interaction;
 use macroquad::color::Color;
 use macroquad::math::Rect;
 use macroquad::prelude::info;
 use std::io::Write;
 use ui::below_left;
-use crate::core::array_union::ArrayUnionTrait;
 
 #[derive(Eq, PartialEq)]
 pub enum DevUiMenu {
@@ -60,8 +62,10 @@ impl DevUi {
             DevUiMenu::Referee => self.draw_referee(theme, board),
             DevUiMenu::PaletteWorld => self.draw_palette(theme)?,
             DevUiMenu::PaletteUi => self.draw_palette_ui(theme)?,
-            DevUiMenu::EditWorldColor(index) => self.draw_edit_color(index, theme),
-            DevUiMenu::EditUiColor(state_index, color_index) => todo!(),
+            DevUiMenu::EditWorldColor(index) => self.draw_edit_world_color(index, theme),
+            DevUiMenu::EditUiColor(state_index, color_index) => {
+                self.draw_edit_ui_color(state_index, color_index, theme)
+            }
         }
         Ok(())
     }
@@ -164,8 +168,7 @@ impl DevUi {
     fn draw_palette(&mut self, theme: &mut Theme) -> AnyResult<()> {
         // let _rect = Self::dev_ui_title(theme);
         let mut _rect = render_text_dev("Colors (in RGBA)", Anchor::top_left(0.0, 0.0), theme);
-        let palette = theme.palette.clone();
-        for (index, (name, color)) in palette.named_iter().enumerate() {
+        for (index, (name, color)) in theme.palette.named_iter().enumerate() {
             let menu = DevUiMenu::EditWorldColor(index);
             let text = format!("{} - {}", as_hex(color), name);
             _rect = self.navigation(theme, _rect, &text, menu);
@@ -186,32 +189,25 @@ impl DevUi {
         self.navigation(theme, _rect, "Back", DevUiMenu::Main);
         Ok(())
     }
-    fn draw_edit_color(&mut self, color_index: usize, theme: &mut Theme) {
+    fn draw_edit_world_color(&mut self, color_index: usize, theme: &mut Theme) {
         let (name, mut color) = theme.palette.named_vec()[color_index];
-        let text = format!("Edit color '{}' {}", name, as_hex(color));
-        let mut _rect = render_text_dev(&text, Anchor::top_left(0.0, 0.0), theme);
-        // color = Color::new(color.r * 255.0, color.g * 255.0, color.b * 255.0, color.a * 255.0);
-        _rect = render_slider("Red  ", _rect, theme, &mut color.r, 0.0, 1.0);
-        _rect = render_slider("Green", _rect, theme, &mut color.g, 0.0, 1.0);
-        _rect = render_slider("Blue ", _rect, theme, &mut color.b, 0.0, 1.0);
-        _rect = render_slider("Alpha", _rect, theme, &mut color.a, 0.0, 1.0);
-
-        // color = Color::new(color.r /255.0, color.g/255.0, color.b /255.0, color.a /255.0);
-        let (_rect, clicked) = render_button_dev("Reset color", below_left(_rect), theme);
+        let (_rect, clicked) = color_editor(theme, name, &mut color);
         if clicked.is_clicked() {
             (_, color) = Palette::default().named_vec()[color_index];
         }
         theme.palette.set(color_index, color);
         self.navigation(theme, _rect, "Back", DevUiMenu::PaletteWorld);
     }
+
     fn draw_palette_ui(&mut self, theme: &mut Theme) -> AnyResult<()> {
         // let _rect = Self::dev_ui_title(theme);
         let mut _rect = render_text_dev("Colors (in RGBA)", Anchor::top_left(0.0, 0.0), theme);
-        for (state_index, (name, state_style)) in named_coloring(theme.coloring()).enumerate() {
-            // let menu = DevUiMenu::EditUiColor(state_index, 0);
-            let menu = DevUiMenu::PaletteUi;
-            let text = format!("{}", name);
-            _rect = self.navigation(theme, _rect, &text, menu);
+        for (state_i, (name, state_style)) in named_coloring(theme.coloring()).enumerate() {
+            for (color_i, (color_name, color)) in named_state_style(state_style).enumerate() {
+                let menu = DevUiMenu::EditUiColor(state_i, color_i);
+                let text = format!("{} - {}/{}", as_hex_no_space(color), name, color_name);
+                _rect = self.navigation(theme, _rect, &text, menu);
+            }
         }
 
         let (_rect, clicked) = render_button_dev(
@@ -229,6 +225,42 @@ impl DevUi {
         self.navigation(theme, _rect, "Back", DevUiMenu::Main);
         Ok(())
     }
+    fn draw_edit_ui_color(
+        &mut self,
+        state_style_index: usize,
+        color_index: usize,
+        theme: &mut Theme,
+    ) {
+        let (name, state_style) = named_coloring(theme.coloring())
+            .nth(state_style_index)
+            .unwrap();
+        let (color_name, mut color) = named_state_style(state_style).nth(color_index).unwrap();
+        let (_rect, clicked) = color_editor(theme, &format!("{}/{}", name, color_name), &mut color);
+        if clicked.is_clicked() {
+            let style = coloring_elem(new_coloring(), state_style_index);
+            color = state_style_elem(style, color_index);
+        }
+        let mut coloring = theme.coloring();
+        let mut style = coloring_elem(coloring, state_style_index);
+        set_state_style(&mut style, color_index, color);
+        set_coloring(&mut coloring, state_style_index, style);
+        theme.set_coloring(coloring);
+        self.navigation(theme, _rect, "Back", DevUiMenu::PaletteUi);
+    }
+}
+
+fn color_editor(theme: &mut Theme, name: &str, color: &mut Color) -> (Rect, Interaction) {
+    let text = format!("Edit color '{}' {}", name, as_hex(*color));
+    let mut _rect = render_text_dev(&text, Anchor::top_left(0.0, 0.0), theme);
+    // color = Color::new(color.r * 255.0, color.g * 255.0, color.b * 255.0, color.a * 255.0);
+    _rect = render_slider("Red  ", _rect, theme, &mut color.r, 0.0, 1.0);
+    _rect = render_slider("Green", _rect, theme, &mut color.g, 0.0, 1.0);
+    _rect = render_slider("Blue ", _rect, theme, &mut color.b, 0.0, 1.0);
+    _rect = render_slider("Alpha", _rect, theme, &mut color.a, 0.0, 1.0);
+
+    // color = Color::new(color.r /255.0, color.g/255.0, color.b /255.0, color.a /255.0);
+    let (_rect, clicked) = render_button_dev("Reset color", below_left(_rect), theme);
+    (_rect, clicked)
 }
 
 pub fn as_hex(color: Color) -> String {

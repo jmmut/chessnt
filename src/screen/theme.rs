@@ -92,7 +92,6 @@ pub struct Textures {
     pub pieces: HashMap<(Team, Move), Texture2D>,
 }
 
-
 pub fn new_coloring() -> Coloring {
     Coloring {
         at_rest: StateStyle {
@@ -111,7 +110,26 @@ pub type ColoringUnion = ArrayUnion<Coloring, StateStyle, COLORING_COUNT>;
 pub fn named_coloring(coloring: Coloring) -> impl Iterator<Item = (&'static str, StateStyle)> {
     ColoringUnion::named_iter(coloring, COLORING_NAMES)
 }
+pub fn coloring_elem(coloring: Coloring, index: usize) -> StateStyle {
+    ColoringUnion::array(coloring)[index]
+}
+pub fn set_coloring(coloring: &mut Coloring, index: usize, color: StateStyle) {
+    ColoringUnion::set(coloring, index, color)
+}
 
+const STATE_STYLE_COUNT: usize = size_of::<StateStyle>() / size_of::<Color>();
+const STATE_STYLE_NAMES: [&str; COLORING_COUNT] = ["bg_color", "text_color", "border_color"];
+pub type StateStyleUnion = ArrayUnion<StateStyle, Color, STATE_STYLE_COUNT>;
+
+pub fn named_state_style(state_style: StateStyle) -> impl Iterator<Item = (&'static str, Color)> {
+    StateStyleUnion::named_iter(state_style, STATE_STYLE_NAMES)
+}
+pub fn state_style_elem(state_style: StateStyle, index: usize) -> Color {
+    StateStyleUnion::array(state_style)[index]
+}
+pub fn set_state_style(state_style: &mut StateStyle, index: usize, color: Color) {
+    StateStyleUnion::set(state_style, index, color)
+}
 
 #[derive(Copy, Clone)]
 pub struct Palette {
@@ -147,11 +165,11 @@ impl Default for Palette {
         }
     }
 }
-impl Palette { 
-    const COUNT: usize = size_of::<Palette>() / size_of::<Color>(); 
+impl Palette {
+    const COUNT: usize = size_of::<Palette>() / size_of::<Color>();
 }
-impl ArrayUnionTrait<Palette, Color, {Palette::COUNT}> for Palette {
-    type Delegate = ArrayUnion<Palette, Color, { Palette::COUNT }>; 
+impl ArrayUnionTrait<Palette, Color, { Palette::COUNT }> for Palette {
+    type Delegate = ArrayUnion<Palette, Color, { Palette::COUNT }>;
     const NAMES: [&'static str; Self::COUNT] = [
         "tiles_white",
         "tiles_black",
@@ -167,24 +185,12 @@ impl ArrayUnionTrait<Palette, Color, {Palette::COUNT}> for Palette {
         "check",
     ];
 
-    fn myself(&self) -> Palette {
-        *self
+    fn myself(self) -> Palette {
+        self
     }
     fn myself_mut(&mut self) -> &mut Palette {
         self
     }
-
-
-    // 
-    // fn named_iter(&self) -> impl Iterator<Item = (&'static str, Color)> {
-    //     Self::named_iter_(self)
-    // }
-    // fn named_vec(self) -> Vec<(&'static str, Color)> {
-    //     Self::named_vec_(self)
-    // }
-    // fn set(&mut self, index: usize, color: Color) {
-    //     Self::set_(self, index, color)
-    // }
 }
 
 const fn choose_scale(width: f32, height: f32, font_size: f32) -> f32 {

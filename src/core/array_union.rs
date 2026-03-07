@@ -1,33 +1,41 @@
-use std::mem::transmute;
-use macroquad::color::Color;
-
 pub union ArrayUnion<Container: Copy, Element: Copy, const COUNT: usize> {
     pub named: Container,
     pub array: [Element; COUNT],
 }
 
-pub trait ArrayUnionTrait<C: Copy + ArrayUnionTrait<C, E, COUNT>, E: Copy, const COUNT: usize> {
+pub trait ArrayUnionTrait<C: Copy + ArrayUnionTrait<C, E, COUNT>, E: Copy, const COUNT: usize>:
+    Sized
+{
     type Delegate: ExternalArrayUnion<C, E, COUNT>;
     const NAMES: [&'static str; COUNT];
-    
-    fn myself(&self) -> C;
+
+    fn myself(self) -> C;
     fn myself_mut(&mut self) -> &mut C;
-    
-    fn named_iter(&self) -> impl Iterator<Item = (&'static str, E)> {Self::named_iter_(Self::myself(self))}
-    fn named_iter_(container: C)-> impl Iterator<Item = (&'static str, E)> {
-        Self::Delegate::named_iter(container, Self::NAMES)
+
+    fn array(self) -> [E; COUNT] {
+        Self::Delegate::array(Self::myself(self))
     }
-    fn named_vec(&self) -> Vec<(&'static str, E)> {Self::named_vec_(Self::myself(self))}
-    fn named_vec_(container: C) -> Vec<(&'static str, E)> {
-        Self::Delegate::named_vec(container, Self::NAMES)
+
+    fn named_vec(self) -> Vec<(&'static str, E)> {
+        Self::Delegate::named_vec(Self::myself(self), Self::NAMES)
     }
-    fn set(&mut self, index: usize, element: E) {Self::set_(Self::myself_mut(self), index, element)}
-    fn set_(container: &mut C, index: usize, element: E) {
-        Self::Delegate::set(container, index, element)
+    fn vec(self) -> Vec<E> {
+        Self::Delegate::vec(Self::myself(self))
+    }
+    fn set(&mut self, index: usize, element: E) {
+        Self::Delegate::set(Self::myself_mut(self), index, element)
+    }
+    fn iter(self) -> impl Iterator<Item = E> {
+        Self::Delegate::iter(Self::myself(self))
+    }
+    fn named_iter(self) -> impl Iterator<Item = (&'static str, E)> {
+        Self::Delegate::named_iter(Self::myself(self), Self::NAMES)
     }
 }
 
-impl<Container: Copy, Element: Copy, const COUNT: usize> ExternalArrayUnion<Container, Element, COUNT> for ArrayUnion<Container, Element, COUNT> {
+impl<Container: Copy, Element: Copy, const COUNT: usize>
+    ExternalArrayUnion<Container, Element, COUNT> for ArrayUnion<Container, Element, COUNT>
+{
     fn container(array: [Element; COUNT]) -> Container {
         unsafe { Self { array }.named }
     }
@@ -35,10 +43,10 @@ impl<Container: Copy, Element: Copy, const COUNT: usize> ExternalArrayUnion<Cont
         unsafe { Self { named: container }.array }
     }
 }
-pub trait ExternalArrayUnion<Container: Copy, Element: Copy, const COUNT: usize>  {
+pub trait ExternalArrayUnion<Container: Copy, Element: Copy, const COUNT: usize> {
     fn container(array: [Element; COUNT]) -> Container;
     fn array(container: Container) -> [Element; COUNT];
-    
+
     fn named_vec(container: Container, names: [&str; COUNT]) -> Vec<(&str, Element)> {
         Self::named_iter(container, names).collect()
     }
