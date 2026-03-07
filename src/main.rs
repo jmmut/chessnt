@@ -1,4 +1,5 @@
 use chessnt::core::coord::Coord;
+use chessnt::core::input::Gamepads;
 use chessnt::core::time::Time;
 use chessnt::screen::theme::{CameraPos, Fonts, Textures, Theme};
 use chessnt::screen::ui::{render_title, SCALE};
@@ -35,14 +36,16 @@ async fn fallible_main() -> AnyResult<()> {
     let theme = &mut theme_owned;
     let mut camera = CameraPos::default();
     let mut board = Board::new_chess(Coord::new_i(6, 4), Coord::new_i(2, 4));
+    let mut gamepads = Gamepads::new();
     let mut dev_ui = DevUi::new();
     let mut time = Time::new();
     loop {
         time.tick();
+        gamepads.tick();
         let screen = vec2(screen_width(), screen_height());
         theme.update_screen_size(screen);
 
-        if handle_inputs_shoud_exit(&mut board, &mut dev_ui) {
+        if handle_inputs_shoud_exit(&mut board, &mut gamepads, &mut dev_ui) {
             return Ok(());
         }
         board.tick(time.delta());
@@ -86,12 +89,16 @@ async fn load_textures() -> AnyResult<Textures> {
     Ok(textures)
 }
 
-fn handle_inputs_shoud_exit(board: &mut Board, dev_ui: &mut DevUi) -> bool {
+fn handle_inputs_shoud_exit(
+    board: &mut Board,
+    gamepads: &mut Gamepads,
+    dev_ui: &mut DevUi,
+) -> bool {
     if is_key_pressed(KeyCode::Slash) || is_key_pressed(KeyCode::KpDivide) {
         dev_ui.toggle();
     }
 
-    move_cursor_or_piece(board);
+    move_cursor_or_piece(board, gamepads);
 
     select(board, &[KeyCode::Space], Team::Black);
     select(board, &[KeyCode::KpEnter, KeyCode::Enter], Team::White);
@@ -124,7 +131,7 @@ struct Directions {
     up: KeyCode,
     down: KeyCode,
 }
-fn move_cursor_or_piece(board: &mut Board) {
+fn move_cursor_or_piece(board: &mut Board, gamepads: &mut Gamepads) {
     const WASD: Directions = Directions {
         up: KeyCode::W,
         down: KeyCode::S,
@@ -139,6 +146,8 @@ fn move_cursor_or_piece(board: &mut Board) {
     };
     move_cursor_or_piece_team(board, Team::White, ARROWS);
     move_cursor_or_piece_team(board, Team::Black, WASD);
+
+    gamepads.move_cursor_or_piece(board);
 }
 
 fn move_cursor_or_piece_team(board: &mut Board, team: Team, directions: Directions) {
@@ -158,7 +167,7 @@ fn move_cursor_or_piece_team(board: &mut Board, team: Team, directions: Directio
             delta += Coord::new_f(0.0, 0.1);
         }
         if delta != Coord::new_i(0, 0) {
-            delta = delta.into::<Vec2>().normalize().into();
+            delta = delta.normalize();
             delta *= max;
             board.move_cursor_rel(delta, team);
         }
@@ -181,11 +190,7 @@ fn move_cursor_or_piece_team(board: &mut Board, team: Team, directions: Directio
 fn select(board: &mut Board, keys: &[KeyCode], team: Team) {
     for key in keys {
         if is_key_pressed(*key) {
-            if board.is_selected(team) {
-                board.deselect(team);
-            } else {
-                board.select(team);
-            }
+            board.toggle_select(team);
         }
     }
 }

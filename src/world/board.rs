@@ -197,6 +197,13 @@ impl Board {
     pub fn is_selected(&self, team: Team) -> bool {
         self.selected(team).is_some()
     }
+    pub fn toggle_select(&mut self, team: Team) {
+        if self.is_selected(team) {
+            self.deselect(team);
+        } else {
+            self.select(team);
+        }
+    }
     fn selected(&self, team: Team) -> Option<PieceIndex> {
         if team == Team::White {
             self.selected_white
