@@ -1,6 +1,8 @@
 /target
 /.idea/
 untracked/
+/chessnt_html/
+/wasm.zip
 
 # for reference images that dictate the design of visual features
 /assets/refs
