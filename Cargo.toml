@@ -7,8 +7,9 @@ default-run = "chessnt"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-macroquad = "=0.3.24"
-juquad = { git = "https://github.com/jmmut/juquad.git", tag = "0.14.0" }
+macroquad = "=0.4.14"
+#juquad = { git = "https://github.com/jmmut/juquad.git", tag = "0.14.0" }
+juquad = { path = "../juquad/" }
 gamepads = { version = "=0.1.7", default-features = false }
 web-sys = { version = "=0.3.91", features = ["Clipboard"] }
 

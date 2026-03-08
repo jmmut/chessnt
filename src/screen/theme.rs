@@ -46,14 +46,14 @@ impl Theme {
     pub fn screen_rect(&self) -> Rect {
         to_rect(vec2(0.0, 0.0), self.screen)
     }
-    pub fn font(&self) -> Font {
-        self.fonts.text
+    pub fn font(&self) -> &Font {
+        &self.fonts.text
     }
-    pub fn font_title(&self) -> Font {
-        self.fonts.titles
+    pub fn font_title(&self) -> &Font {
+        &self.fonts.titles
     }
-    pub fn font_dev(&self) -> Font {
-        self.fonts.dev
+    pub fn font_dev(&self) -> &Font {
+        &self.fonts.dev
     }
     pub fn font_size(&self) -> f32 {
         self.font_size

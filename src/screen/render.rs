@@ -3,7 +3,7 @@ use crate::screen::theme::Theme;
 use crate::world::piece::Piece;
 use crate::world::referee::texture_pos_to_v3;
 use macroquad::color::Color;
-use macroquad::math::{vec2, vec3, Vec2, Vec3};
+use macroquad::math::{vec2, vec3, Vec2, Vec3, Vec4};
 use macroquad::models::{Mesh, Vertex};
 use macroquad::prelude::Texture2D;
 
@@ -98,7 +98,8 @@ pub fn mesh_quad(corners: [Vec3; 4], color: Color) -> Mesh {
         let vertex = Vertex {
             position,
             uv: vec2(0.0, 0.0),
-            color,
+            color: color.into(),
+            normal: Vec4::default(),
         };
         vertices.push(vertex);
     }
@@ -131,7 +132,8 @@ pub fn mesh_texture_quad(
         let vertex = Vertex {
             position,
             uv,
-            color,
+            color: color.into(),
+            normal: Vec4::default(),
         };
         vertices.push(vertex);
     }
@@ -148,7 +150,8 @@ pub fn mesh_triangle(corners: [Vec3; 3], color: Color) -> Mesh {
         vertices.push(Vertex {
             position: corner,
             uv: Default::default(),
-            color,
+            color: color.into(),
+            normal: Vec4::default(),
         });
     }
 

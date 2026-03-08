@@ -24,7 +24,7 @@ pub fn render_title(text: &str, anchor: Anchor, theme: &Theme) -> Rect {
 pub fn render_text_dev(text: &str, anchor: Anchor, theme: &Theme) -> Rect {
     render_text_font_size(text, anchor, theme, theme.font_dev(), theme.font_size_dev())
 }
-pub fn render_text_font(text: &str, anchor: Anchor, theme: &Theme, font: Font) -> Rect {
+pub fn render_text_font(text: &str, anchor: Anchor, theme: &Theme, font: &Font) -> Rect {
     render_text_font_size(text, anchor, theme, font, theme.font_size())
 }
 pub fn render_text_no_font(text: &str, anchor: Anchor, font_size: f32, coloring: Coloring) -> Rect {
@@ -43,7 +43,7 @@ pub fn render_text_font_size(
     text: &str,
     anchor: Anchor,
     theme: &Theme,
-    font: Font,
+    font: &Font,
     font_size: f32,
 ) -> Rect {
     let t = TextRect::new_generic(
@@ -82,7 +82,7 @@ pub fn render_button_font(
     text: &str,
     anchor: Anchor,
     theme: &Theme,
-    font: Font,
+    font: &Font,
     font_size: f32,
 ) -> (Rect, Interaction) {
     let mut t = Button::new_generic(
@@ -101,7 +101,7 @@ pub fn render_button_font_mut(
     text: &str,
     anchor: fn(Rect) -> Anchor,
     theme: &Theme,
-    font: Font,
+    font: &Font,
     font_size: f32,
     rect: &mut Rect,
 ) -> Interaction {
@@ -183,16 +183,16 @@ pub fn draw_text(
     y: f32,
     font_size: f32,
     style: &StateStyle,
-    font: Option<Font>,
+    font: Option<&Font>,
 ) {
     let params = TextParams {
-        font: font.unwrap_or(Font::default()),
+        font,
         font_size: font_size as u16,
         color: style.text_color,
         font_scale: 1.0,
         ..TextParams::default()
     };
-    macroquad::text::draw_text_ex(text, x, y, params)
+    macroquad::text::draw_text_ex(text, x, y, params);
 }
 
 pub fn render_slider(

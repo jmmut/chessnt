@@ -343,7 +343,7 @@ impl Board {
                 } else {
                     theme.palette.mask_black
                 },
-                theme.textures.placeholder,
+                theme.textures.placeholder.clone(),
                 self.piece_size,
             ));
             // meshes.push(to_mesh(
@@ -361,7 +361,7 @@ impl Board {
             meshes.push(mesh_texture_quad(
                 floor_corners(piece.pos_i(), FLOOR_PIECE_HEIGHT, 1.0),
                 WHITE,
-                Some(theme.textures.pieces[&(piece.team, piece.moveset[0])]),
+                Some(theme.textures.pieces[&(piece.team, piece.moveset[0])].clone()),
                 piece.team.is_white(),
                 true,
             ));
@@ -382,7 +382,7 @@ impl Board {
         let mesh = mesh_vertical_texture(
             coord_00,
             WHITE,
-            Some(theme.textures.placeholder),
+            Some(theme.textures.placeholder.clone()),
             looking_leftwards,
             self.piece_size,
         );
@@ -463,8 +463,8 @@ impl Board {
         let xy = vec3(slope_direction, 1.0, 0.0) * 5.0;
         let corners = quad(coord_00, xy, z);
         let mut mesh = mesh_quad(corners, theme.palette.spotlight);
-        mesh.vertices[0].color = TRANSPARENT;
-        mesh.vertices[2].color = TRANSPARENT;
+        mesh.vertices[0].color = TRANSPARENT.into();
+        mesh.vertices[2].color = TRANSPARENT.into();
         vec![mesh]
     }
 }
