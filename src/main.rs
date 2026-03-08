@@ -1,14 +1,15 @@
 use chessnt::core::coord::Coord;
 use chessnt::core::input::Gamepads;
 use chessnt::core::time::Time;
-use chessnt::screen::theme::{CameraPos, Fonts, Textures, Theme};
-use chessnt::screen::ui::{render_title, SCALE};
+use chessnt::screen::theme::{new_coloring, CameraPos, Fonts, Textures, Theme};
+use chessnt::screen::ui::{render_text_no_font, render_title, SCALE};
 use chessnt::screen::ui_dev::DevUi;
 use chessnt::world::board::Board;
 use chessnt::world::moves::Move;
 use chessnt::world::team::Team;
 use chessnt::{
-    set_3d_camera, AnyResult, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_TITLE, DEFAULT_WINDOW_WIDTH,
+    set_3d_camera, AnyResult, DEFAULT_FONT_SIZE, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_TITLE,
+    DEFAULT_WINDOW_WIDTH,
 };
 use juquad::widgets::anchor::Anchor;
 use macroquad::camera::set_default_camera;
@@ -26,6 +27,15 @@ async fn main() {
 }
 
 async fn fallible_main() -> AnyResult<()> {
+    let screen = vec2(screen_width(), screen_height());
+    println!("{}", screen);
+    render_text_no_font(
+        "Loading...",
+        Anchor::center_v(screen * 0.5),
+        DEFAULT_FONT_SIZE * 2.0,
+        new_coloring(),
+    );
+    next_frame().await;
     let textures = load_textures().await?;
     let fonts = Fonts {
         titles: load_ttf_font("assets/fonts/LilitaOne-Regular.ttf").await?,

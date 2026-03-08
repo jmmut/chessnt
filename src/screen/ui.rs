@@ -5,7 +5,7 @@ use juquad::lazy::{Interactable, Renderable, Style, WidgetTrait};
 use juquad::widgets::anchor::{Anchor, Horizontal, Vertical};
 use juquad::widgets::button::Button;
 use juquad::widgets::text::TextRect;
-use juquad::widgets::{Interaction, StateStyle, Widget};
+use juquad::widgets::{Interaction, StateStyle, Style as Coloring, Widget};
 use macroquad::math::Rect;
 use macroquad::prelude::{Font, TextParams};
 
@@ -26,6 +26,18 @@ pub fn render_text_dev(text: &str, anchor: Anchor, theme: &Theme) -> Rect {
 }
 pub fn render_text_font(text: &str, anchor: Anchor, theme: &Theme, font: Font) -> Rect {
     render_text_font_size(text, anchor, theme, font, theme.font_size())
+}
+pub fn render_text_no_font(text: &str, anchor: Anchor, font_size: f32, coloring: Coloring) -> Rect {
+    let t = TextRect::new_generic(
+        text,
+        anchor,
+        font_size,
+        None,
+        macroquad::prelude::measure_text,
+    );
+    draw_rect(t.rect(), coloring.at_rest.bg_color);
+    t.render_default(&coloring.at_rest);
+    t.rect()
 }
 pub fn render_text_font_size(
     text: &str,
