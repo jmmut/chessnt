@@ -14,7 +14,7 @@ use chessnt::{
 use juquad::widgets::anchor::Anchor;
 use macroquad::camera::set_default_camera;
 use macroquad::input::{is_key_down, is_key_pressed, KeyCode};
-use macroquad::math::{vec2, Vec2};
+use macroquad::math::vec2;
 use macroquad::prelude::{clear_background, next_frame, screen_height, screen_width, Conf};
 use macroquad::prelude::{load_texture, load_ttf_font};
 use std::collections::HashMap;

@@ -2,8 +2,7 @@ use crate::core::coord::Coord;
 use crate::world::board::Board;
 use crate::world::team::Team;
 use gamepads::{Button, Gamepad};
-use macroquad::input::{is_key_down, is_key_pressed};
-use macroquad::math::{vec2, Vec2};
+use macroquad::math::vec2;
 
 pub struct Gamepads {
     pub ids: Vec<(gamepads::GamepadId, Team)>,
@@ -23,7 +22,7 @@ impl Gamepads {
         let mut blacks = 0;
         let mut new_ids = Vec::new();
         for pad in self.pads.all() {
-            if let Some((id, team)) = self.ids.iter().find(|(e, _)| *e == pad.id()) {
+            if let Some((_id, team)) = self.ids.iter().find(|(e, _)| *e == pad.id()) {
                 if team.is_white() {
                     whites += 1;
                 } else {

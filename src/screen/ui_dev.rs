@@ -1,9 +1,8 @@
 use crate::core::array_union::ArrayUnionTrait;
-use crate::core::clipboard;
 use crate::core::clipboard::Clipboard;
 use crate::core::time::Time;
 use crate::screen::theme::{
-    coloring_elem, from_hex, named_coloring, named_state_style, new_coloring, set_theme_coloring,
+    coloring_elem, named_coloring, named_state_style, new_coloring, set_theme_coloring,
     state_style_elem, CameraPos, Palette, Theme,
 };
 use crate::screen::ui;
