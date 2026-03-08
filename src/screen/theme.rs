@@ -97,7 +97,7 @@ pub fn new_coloring() -> Coloring {
         at_rest: StateStyle {
             bg_color: from_hex_rgba(0x190E34FF),
             text_color: from_hex_rgba(0xFAFBF9FF),
-            border_color: from_hex_rgba(0xFAFBF9FF),
+            border_color: from_hex_rgba(0x879FDEFF),
         },
         hovered: StateStyle {
             bg_color: from_hex_rgba(0x9AB8E7FF),

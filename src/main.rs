@@ -28,7 +28,6 @@ async fn main() {
 
 async fn fallible_main() -> AnyResult<()> {
     let screen = vec2(screen_width(), screen_height());
-    println!("{}", screen);
     render_text_no_font(
         "Loading...",
         Anchor::center_v(screen * 0.5),

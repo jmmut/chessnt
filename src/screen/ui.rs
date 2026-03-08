@@ -53,8 +53,8 @@ pub fn render_text_font_size(
         Some(font),
         macroquad::prelude::measure_text,
     );
-    draw_rect(t.rect(), theme.coloring().at_rest.bg_color);
-    t.render_default(&theme.coloring().at_rest);
+    draw_rect(t.rect(), theme.coloring().pressed.bg_color);
+    t.render_default(&theme.coloring().pressed);
     t.rect()
 }
 pub fn render_button(text: &str, anchor: Anchor, theme: &Theme) -> (Rect, Interaction) {
