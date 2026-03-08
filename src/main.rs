@@ -104,7 +104,10 @@ fn handle_inputs_shoud_exit(
     gamepads: &mut Gamepads,
     dev_ui: &mut DevUi,
 ) -> bool {
-    if is_key_pressed(KeyCode::Slash) || is_key_pressed(KeyCode::KpDivide) {
+    if is_key_pressed(KeyCode::Slash)
+        || is_key_pressed(KeyCode::KpDivide)
+        || is_key_pressed(KeyCode::LeftBracket)
+    {
         dev_ui.toggle();
     }
 

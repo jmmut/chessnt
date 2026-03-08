@@ -360,6 +360,8 @@ pub fn parse_hex_color<S: AsRef<str>>(text: S) -> Option<Color> {
     let text = text.as_ref().to_lowercase();
     let view = if text.starts_with("0x") {
         &text[2..]
+    } else if text.starts_with("#") {
+        &text[1..]
     } else {
         &text
     };
@@ -503,5 +505,6 @@ mod tests {
         assert_eq!(reformat("112233FF"), Some("0x112233FF".to_string()));
         assert_eq!(reformat("abc"), Some("0xAABBCCFF".to_string()));
         assert_eq!(reformat("abcd"), Some("0xAABBCCDD".to_string()));
+        assert_eq!(reformat("#D9D7E8"), Some("0xD9D7E8FF".to_string()));
     }
 }

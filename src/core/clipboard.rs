@@ -1,6 +1,5 @@
 use crate::AnyResult;
 use macroquad::miniquad;
-use std::fmt::Display;
 // #[cfg(not(target_arch = "wasm32"))]
 // pub struct Clipboard {
 //     context: clipboard_rs::ClipboardContext,
@@ -125,6 +124,6 @@ impl Clipboard {
 // impl clipboard_rs::ClipboardHandler for Clipboard {
 //     fn on_clipboard_change(&mut self) {}
 // }
-fn anyhow<T, E: Display>(result: Result<T, E>) -> AnyResult<T> {
-    result.map_err(|e| e.to_string().into())
-}
+// fn anyhow<T, E: Display>(result: Result<T, E>) -> AnyResult<T> {
+//     result.map_err(|e| e.to_string().into())
+// }
