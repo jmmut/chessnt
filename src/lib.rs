@@ -6,6 +6,7 @@ use screen::ui_dev::DevUiMenu;
 
 pub mod core {
     pub mod array_union;
+    pub mod clipboard;
     pub mod coord;
     pub mod input;
     pub mod time;

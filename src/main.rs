@@ -47,7 +47,7 @@ async fn fallible_main() -> AnyResult<()> {
     let mut camera = CameraPos::default();
     let mut board = Board::new_chess(Coord::new_i(6, 4), Coord::new_i(2, 4));
     let mut gamepads = Gamepads::new();
-    let mut dev_ui = DevUi::new();
+    let mut dev_ui = DevUi::new()?;
     let mut time = Time::new();
     loop {
         time.tick();

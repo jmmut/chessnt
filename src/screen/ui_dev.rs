@@ -1,7 +1,9 @@
 use crate::core::array_union::ArrayUnionTrait;
+use crate::core::clipboard;
+use crate::core::clipboard::Clipboard;
 use crate::core::time::Time;
 use crate::screen::theme::{
-    coloring_elem, named_coloring, named_state_style, new_coloring, set_theme_coloring,
+    coloring_elem, from_hex, named_coloring, named_state_style, new_coloring, set_theme_coloring,
     state_style_elem, CameraPos, Palette, Theme,
 };
 use crate::screen::ui;
@@ -32,15 +34,17 @@ pub enum DevUiMenu {
 
 pub struct DevUi {
     pub menu: DevUiMenu,
-    pub copied_color: Option<(String, Color)>,
+    pub copied_color_name: Option<(String, Color)>,
+    pub clipboard: Clipboard,
 }
 
 impl DevUi {
-    pub fn new() -> Self {
-        Self {
+    pub fn new() -> AnyResult<Self> {
+        Ok(Self {
             menu: INITIAL_DEV_UI,
-            copied_color: None,
-        }
+            copied_color_name: None,
+            clipboard: Clipboard::new()?,
+        })
     }
     pub fn toggle(&mut self) {
         self.menu = if self.show() {
@@ -66,9 +70,9 @@ impl DevUi {
             DevUiMenu::Referee => self.draw_referee(theme, board),
             DevUiMenu::PaletteWorld => self.draw_palette(theme)?,
             DevUiMenu::PaletteUi => self.draw_palette_ui(theme)?,
-            DevUiMenu::EditWorldColor(index) => self.draw_edit_world_color(index, theme),
+            DevUiMenu::EditWorldColor(index) => self.draw_edit_world_color(index, theme)?,
             DevUiMenu::EditUiColor(state_index, color_index) => {
-                self.draw_edit_ui_color(state_index, color_index, theme)
+                self.draw_edit_ui_color(state_index, color_index, theme)?
             }
         }
         Ok(())
@@ -181,12 +185,13 @@ impl DevUi {
         self.navigation(theme, _rect, "Back", DevUiMenu::Main);
     }
     fn draw_palette(&mut self, theme: &mut Theme) -> AnyResult<()> {
+        self.clipboard.maybe_refresh()?;
         // let _rect = Self::dev_ui_title(theme);
-        let title = self.palette_title();
+        let title = self.palette_title()?;
         let mut rect = render_text_dev(&title, Anchor::top_left(0.0, 0.0), theme);
         for (index, (name, color)) in theme.palette.named_iter().enumerate() {
             let menu = DevUiMenu::EditWorldColor(index);
-            if let Some(color) = self.copy_paste(name, color, theme, &mut rect) {
+            if let Some(color) = self.copy_paste(name, color, theme, &mut rect)? {
                 theme.palette.set(index, color);
             }
             let text = format!("{} - {}", as_hex(color), name);
@@ -195,12 +200,14 @@ impl DevUi {
         }
 
         let (_rect, clicked) = render_button_dev(
-            "Export palette (see in browser with F12)",
+            "Copy palette source code to clipboard",
             below_left(rect),
             theme,
         );
         if clicked.is_clicked() {
-            info!("{}", palette_to_code(theme)?);
+            let code = palette_to_code(theme)?;
+            info!("{}", code);
+            self.clipboard.copy(code)?;
         }
         let (_rect, clicked) = render_button_dev("Reset palette", below_left(_rect), theme);
         if clicked.is_clicked() {
@@ -210,19 +217,30 @@ impl DevUi {
         Ok(())
     }
 
-    fn palette_title(&mut self) -> String {
+    fn palette_title(&mut self) -> AnyResult<String> {
         let title = format!(
             "Colors (in RGBA){}",
-            if let Some((name, copied)) = &self.copied_color {
-                format!(" (copied {} - {})", as_hex(*copied), name)
+            if let Some(copied) = self.clipboard.paste().and_then(parse_hex_color) {
+                let color_string = as_hex(copied);
+                if let Some((name, old_color)) = self.copied_color_name.as_ref() {
+                    if *old_color == copied {
+                        format!(" (copied {} - {})", color_string, name)
+                    } else {
+                        self.copied_color_name = None;
+                        format!(" (copied {})", color_string)
+                    }
+                } else {
+                    format!(" (copied {})", color_string)
+                }
             } else {
                 "".to_string()
             }
         );
-        title
+        Ok(title)
     }
 
-    fn draw_edit_world_color(&mut self, color_index: usize, theme: &mut Theme) {
+    fn draw_edit_world_color(&mut self, color_index: usize, theme: &mut Theme) -> AnyResult<()> {
+        self.clipboard.maybe_refresh()?;
         let (name, mut color) = theme.palette.named_vec()[color_index];
         let (_rect, clicked) = color_editor(theme, name, &mut color);
         if clicked.is_clicked() {
@@ -230,17 +248,19 @@ impl DevUi {
         }
         theme.palette.set(color_index, color);
         self.navigation(theme, _rect, "Back", DevUiMenu::PaletteWorld);
+        Ok(())
     }
 
     fn draw_palette_ui(&mut self, theme: &mut Theme) -> AnyResult<()> {
+        self.clipboard.maybe_refresh()?;
         // let _rect = Self::dev_ui_title(theme);
-        let title = self.palette_title();
+        let title = self.palette_title()?;
         let mut rect = render_text_dev(&title, Anchor::top_left(0.0, 0.0), theme);
         for (state_i, (name, state_style)) in named_coloring(theme.coloring()).enumerate() {
             for (color_i, (color_name, color)) in named_state_style(state_style).enumerate() {
                 let menu = DevUiMenu::EditUiColor(state_i, color_i);
                 let full_name = format!("{}/{}", name, color_name);
-                if let Some(color) = self.copy_paste(&full_name, color, theme, &mut rect) {
+                if let Some(color) = self.copy_paste(&full_name, color, theme, &mut rect)? {
                     set_theme_coloring(color, state_i, color_i, theme);
                 }
                 let text = format!("{} - {}", as_hex(color), full_name);
@@ -250,13 +270,15 @@ impl DevUi {
         }
 
         let (_rect, clicked) = render_button_dev(
-            "Export palette (see in browser with F12)",
+            "Copy palette source code to clipboard",
             below_left(rect),
             theme,
         );
         if clicked.is_clicked() {
-            info!("{}", coloring_to_code(theme)?);
-        }
+            let code = coloring_to_code(theme)?;
+            info!("{}", code);
+            self.clipboard.copy(code)?;
+        };
         let (_rect, clicked) = render_button_dev("Reset palette", below_left(_rect), theme);
         if clicked.is_clicked() {
             theme.set_coloring(new_coloring());
@@ -269,7 +291,8 @@ impl DevUi {
         state_style_index: usize,
         color_index: usize,
         theme: &mut Theme,
-    ) {
+    ) -> AnyResult<()> {
+        self.clipboard.maybe_refresh()?;
         let (name, state_style) = named_coloring(theme.coloring())
             .nth(state_style_index)
             .unwrap();
@@ -281,6 +304,7 @@ impl DevUi {
         }
         set_theme_coloring(color, state_style_index, color_index, theme);
         self.navigation(theme, _rect, "Back", DevUiMenu::PaletteUi);
+        Ok(())
     }
 
     fn copy_paste(
@@ -289,19 +313,25 @@ impl DevUi {
         color: Color,
         theme: &Theme,
         rect: &mut Rect,
-    ) -> Option<Color> {
+    ) -> AnyResult<Option<Color>> {
         if render_button_dev_mut("Copy", theme, below_left, rect).is_clicked() {
-            self.copied_color = Some((name.to_string(), color));
+            let color_string = as_hex_no_space(color);
+            self.copied_color_name =
+                Some((name.to_string(), parse_hex_color(&color_string).unwrap()));
+            self.clipboard.copy(color_string)?;
         }
-        if let Some((_, copied)) = self.copied_color {
+
+        if let Some(copied) = self.clipboard.paste().and_then(parse_hex_color) {
             let mut copied_rect = rect.clone();
             let clicked = render_button_dev_mut("Paste", theme, rightwards, &mut copied_rect);
             *rect = rect.combine_with(copied_rect);
             if clicked.is_clicked() {
-                return Some(copied);
+                return Ok(Some(copied));
             }
+        } else {
+            self.copied_color_name = None;
         }
-        None
+        Ok(None)
     }
 }
 
@@ -327,12 +357,70 @@ pub fn as_hex_no_space(color: Color) -> String {
     let [r, g, b, a]: [u8; 4] = color.into();
     format!("0x{:0>2X}{:0>2X}{:0>2X}{:0>2X}", r, g, b, a)
 }
+pub fn parse_hex_color<S: AsRef<str>>(text: S) -> Option<Color> {
+    let text = text.as_ref().to_lowercase();
+    let view = if text.starts_with("0x") {
+        &text[2..]
+    } else {
+        &text
+    };
+    if view.len() == 8 {
+        component_strings_to_color([&view[0..2], &view[2..4], &view[4..6], &view[6..8]])
+    } else if view.len() == 6 {
+        component_strings_to_color([&view[0..2], &view[2..4], &view[4..6], "ff"])
+    } else if view.len() == 4 {
+        let array = [d(view, 0)?, d(view, 1)?, d(view, 2)?, d(view, 3)?];
+        Some(array.into())
+    } else if view.len() == 3 {
+        let array = [d(view, 0)?, d(view, 1)?, d(view, 2)?, 0xff];
+        Some(array.into())
+    } else {
+        None
+    }
+}
+
+fn d(view: &str, index: usize) -> Option<u8> {
+    Some(duplicate_hex_digit(hex_value(view.as_bytes()[index])?))
+}
+
+pub fn component_strings_to_color(components_str: [&str; 4]) -> Option<Color> {
+    let mut components = [0u8; 4];
+    for (i, part) in components_str.iter().enumerate() {
+        components[i] = parse_hex_u8(part)?
+    }
+    Some(components.into())
+}
+pub fn duplicate_hex_digit(value: u8) -> u8 {
+    value * 16 + value
+}
+pub fn hex_value(byte: u8) -> Option<u8> {
+    if byte >= b'0' && byte <= b'9' {
+        Some(byte - b'0')
+    } else if byte >= b'a' && byte <= b'f' {
+        Some(byte - b'a' + 10)
+    } else {
+        None
+    }
+}
+/// assumes the str is in lowercase
+pub fn parse_hex_u8(text: &str) -> Option<u8> {
+    if text.bytes().count() <= 2 {
+        let mut accum: u8 = 0;
+        for byte in text.bytes() {
+            accum *= 16;
+            accum += hex_value(byte)?;
+        }
+        Some(accum)
+    } else {
+        None
+    }
+}
 
 pub fn palette_to_code(theme: &Theme) -> AnyResult<String> {
     let mut message: Vec<u8> = Vec::new();
     write!(
         message,
-        "impl Default for Palette {{
+        "\nimpl Default for Palette {{
     fn default() -> Self {{
         Self {{
 "
@@ -370,7 +458,7 @@ pub fn coloring_to_code(theme: &Theme) -> AnyResult<String> {
     let mut message: Vec<u8> = Vec::new();
     writeln!(
         message,
-        "pub fn new_coloring() -> Coloring {{
+        "\npub fn new_coloring() -> Coloring {{
     Coloring {{"
     )?;
     for (style_name, style) in named_coloring(theme.coloring()) {
@@ -394,4 +482,27 @@ pub fn coloring_to_code(theme: &Theme) -> AnyResult<String> {
 }}"
     )?;
     Ok(String::from_utf8(message)?)
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_hex() {
+        fn reformat(s: &str) -> Option<String> {
+            if let Some(parsed) = parse_hex_color(s) {
+                Some(as_hex_no_space(parsed))
+            } else {
+                None
+            }
+        }
+        assert_eq!(reformat(""), None);
+        assert_eq!(reformat("nocolor"), None);
+        assert_eq!(reformat("0x112233FF"), Some("0x112233FF".to_string()));
+        assert_eq!(reformat("0x112233"), Some("0x112233FF".to_string()));
+        assert_eq!(reformat("112233"), Some("0x112233FF".to_string()));
+        assert_eq!(reformat("112233FF"), Some("0x112233FF".to_string()));
+        assert_eq!(reformat("abc"), Some("0xAABBCCFF".to_string()));
+        assert_eq!(reformat("abcd"), Some("0xAABBCCDD".to_string()));
+    }
 }

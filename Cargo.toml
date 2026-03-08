@@ -9,7 +9,9 @@ default-run = "chessnt"
 [dependencies]
 macroquad = "=0.3.24"
 juquad = { git = "https://github.com/jmmut/juquad.git", tag = "0.14.0" }
-gamepads = { version = "0.1.7", default-features = false }
+gamepads = { version = "=0.1.7", default-features = false }
+web-sys = { version = "=0.3.91", features = ["Clipboard"] }
+clipboard-rs = "=0.3.3"
 
 [profile.release]
 strip = true
