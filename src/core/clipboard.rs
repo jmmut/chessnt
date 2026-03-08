@@ -1,6 +1,6 @@
 use crate::AnyResult;
-use std::fmt::Display;
 use macroquad::miniquad;
+use std::fmt::Display;
 // #[cfg(not(target_arch = "wasm32"))]
 // pub struct Clipboard {
 //     context: clipboard_rs::ClipboardContext,
@@ -101,29 +101,22 @@ impl Clipboard {
         self.cached.as_ref()
     }
     pub fn maybe_refresh(&mut self) -> AnyResult<()> {
-        // self.count += 1;
-        // if self.count > 20 {
-        //     self.count = 0;
-        //     // let start = Instant::now();
-        //     let result = self.refresh();
-        //     // println!(
-        //     //     "refresh clipboard: elapsed: {}ms",
-        //     //     (Instant::now() - start).as_millis()
-        //     // );
-        //     result
-        // } else {
-        //     Ok(())
-        // }
-        Ok(())
+        self.count += 1;
+        if self.count > 20 {
+            self.count = 0;
+            // let start = Instant::now();
+            let result = self.refresh();
+            // println!(
+            //     "refresh clipboard: elapsed: {}ms",
+            //     (Instant::now() - start).as_millis()
+            // );
+            result
+        } else {
+            Ok(())
+        }
     }
     pub fn refresh(&mut self) -> AnyResult<()> {
-        // use clipboard_rs::Clipboard;
-        // let text = anyhow(self.context.get_text())?;
-        // if text.len() == 0 {
-        //     self.cached = None;
-        // } else {
-        //     self.cached = Some(text)
-        // };
+        self.cached = miniquad::window::clipboard_get();
         Ok(())
     }
 }
