@@ -95,19 +95,19 @@ pub struct Textures {
 pub fn new_coloring() -> Coloring {
     Coloring {
         at_rest: StateStyle {
-            bg_color: from_hex_rgba(0x190E34FF),
-            text_color: from_hex_rgba(0xFAFBF9FF),
-            border_color: from_hex_rgba(0x879FDEFF),
+            bg_color: from_hex_rgba(0xA8AAA1FF),
+            text_color: from_hex_rgba(0x181449FF),
+            border_color: from_hex_rgba(0x190E34FF),
         },
         hovered: StateStyle {
-            bg_color: from_hex_rgba(0x9AB8E7FF),
+            bg_color: from_hex_rgba(0xE0DCD3FF),
             text_color: from_hex_rgba(0x190E34FF),
-            border_color: from_hex_rgba(0x879FDEFF),
+            border_color: from_hex_rgba(0xA8AAA1FF),
         },
         pressed: StateStyle {
-            bg_color: from_hex_rgba(0x090E4BFF),
-            text_color: from_hex_rgba(0x9AB8E7FF),
-            border_color: from_hex_rgba(0x9AB8E7FF),
+            bg_color: from_hex_rgba(0x181449FF),
+            text_color: from_hex_rgba(0xFAFBF9FF),
+            border_color: from_hex_rgba(0x090E4BFF),
         },
     }
 }
