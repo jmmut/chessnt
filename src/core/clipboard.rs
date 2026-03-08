@@ -92,7 +92,7 @@ impl Clipboard {
 
     pub fn copy(&mut self, text: String) -> AnyResult<()> {
         self.cached = Some(text.clone());
-        miniquad::window::clipboard_set(&text);
+        // miniquad::window::clipboard_set(&text); // doesn't work in linux nor wasm
         Ok(())
     }
 
@@ -115,7 +115,7 @@ impl Clipboard {
         }
     }
     pub fn refresh(&mut self) -> AnyResult<()> {
-        self.cached = miniquad::window::clipboard_get();
+        // self.cached = miniquad::window::clipboard_get(); // doesn't work in wasm
         Ok(())
     }
 }

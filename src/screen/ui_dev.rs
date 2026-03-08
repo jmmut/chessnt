@@ -199,7 +199,7 @@ impl DevUi {
         }
 
         let (_rect, clicked) = render_button_dev(
-            "Copy palette source code to clipboard",
+            "Export world palette source code (F12 in the browser to see)",
             below_left(rect),
             theme,
         );
@@ -269,7 +269,7 @@ impl DevUi {
         }
 
         let (_rect, clicked) = render_button_dev(
-            "Copy palette source code to clipboard",
+            "Export ui palette source code (F12 in the browser to see)",
             below_left(rect),
             theme,
         );
