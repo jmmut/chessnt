@@ -1,6 +1,6 @@
 use crate::AnyResult;
 use std::fmt::Display;
-
+use macroquad::miniquad;
 // #[cfg(not(target_arch = "wasm32"))]
 // pub struct Clipboard {
 //     context: clipboard_rs::ClipboardContext,
@@ -93,8 +93,7 @@ impl Clipboard {
 
     pub fn copy(&mut self, text: String) -> AnyResult<()> {
         self.cached = Some(text.clone());
-        let cp = web_sys::Clipboard::from(web_sys::wasm_bindgen::JsValue::null());
-        let _p = web_sys::Clipboard::write_text(&cp, &text);
+        miniquad::window::clipboard_set(&text);
         Ok(())
     }
 
