@@ -39,7 +39,7 @@ async fn fallible_main() -> AnyResult<()> {
     let fonts = Fonts {
         titles: load_ttf_font("assets/fonts/LilitaOne-Regular.ttf").await?,
         text: load_ttf_font("assets/fonts/TitilliumWeb-SemiBold.ttf").await?,
-        dev: load_ttf_font("assets/fonts/JetBrainsMono-Regular.ttf").await?,
+        dev: load_ttf_font("assets/fonts/JetBrainsMono-Medium.ttf").await?,
     };
     let mut theme_owned = Theme::new(textures, fonts);
     let theme = &mut theme_owned;
