@@ -95,7 +95,7 @@ pub struct Textures {
 pub fn new_coloring() -> Coloring {
     Coloring {
         at_rest: StateStyle {
-            bg_color: from_hex_rgba(0xA8AAA1FF),
+            bg_color: from_hex_rgba(0xA8AAA1D4),
             text_color: from_hex_rgba(0x181449FF),
             border_color: from_hex_rgba(0x190E34FF),
         },
@@ -105,7 +105,7 @@ pub fn new_coloring() -> Coloring {
             border_color: from_hex_rgba(0xA8AAA1FF),
         },
         pressed: StateStyle {
-            bg_color: from_hex_rgba(0x181449FF),
+            bg_color: from_hex_rgba(0x181449D4),
             text_color: from_hex_rgba(0xFAFBF9FF),
             border_color: from_hex_rgba(0x090E4BFF),
         },
