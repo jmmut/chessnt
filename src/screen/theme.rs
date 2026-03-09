@@ -98,12 +98,19 @@ pub struct Textures {
     pub pieces: HashMap<(Team, Move), Texture2D>,
 }
 
+pub fn new_text_coloring() -> StateStyle {
+    StateStyle {
+        bg_color: from_hex_rgba(0x181449FF),
+        text_color: from_hex_rgba(0xFAFBF9FF),
+        border_color: from_hex_rgba(0x090E4BFF),
+    }
+}
 pub fn new_button_coloring() -> Coloring {
     Coloring {
         at_rest: StateStyle {
-            bg_color: from_hex_rgba(0xA8AAA1FF),
-            text_color: from_hex_rgba(0x181449FF),
-            border_color: from_hex_rgba(0x190E34FF),
+            bg_color: from_hex_rgba(0x434367FF),
+            text_color: from_hex_rgba(0xFAFBF9FF),
+            border_color: from_hex_rgba(0x090E4BFF),
         },
         hovered: StateStyle {
             bg_color: from_hex_rgba(0xE0DCD3FF),
@@ -115,13 +122,6 @@ pub fn new_button_coloring() -> Coloring {
             text_color: from_hex_rgba(0xFAFBF9FF),
             border_color: from_hex_rgba(0x090E4BFF),
         },
-    }
-}
-pub fn new_text_coloring() -> StateStyle {
-    StateStyle {
-        bg_color: from_hex_rgba(0x181449FF),
-        text_color: from_hex_rgba(0xFAFBF9FF),
-        border_color: from_hex_rgba(0x090E4BFF),
     }
 }
 pub fn new_coloring() -> AllColoring {
