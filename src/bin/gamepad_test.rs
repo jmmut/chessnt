@@ -14,7 +14,6 @@ async fn main() {
     let mut players: Vec<Player> = Vec::new();
 
     let mut pads = gamepads::Gamepads::new();
-    let mut fullscreen = false;
 
     loop {
         pads.poll();

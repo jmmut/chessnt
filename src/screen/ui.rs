@@ -5,7 +5,7 @@ use juquad::lazy::{Interactable, Renderable, Style, WidgetTrait};
 use juquad::widgets::anchor::{Anchor, Horizontal, Vertical};
 use juquad::widgets::button::Button;
 use juquad::widgets::text::TextRect;
-use juquad::widgets::{Interaction, StateStyle, Style as Coloring, Widget};
+use juquad::widgets::{Interaction, StateStyle, Widget};
 use macroquad::math::Rect;
 use macroquad::prelude::{Font, TextParams};
 

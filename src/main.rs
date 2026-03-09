@@ -1,7 +1,7 @@
 use chessnt::core::coord::Coord;
 use chessnt::core::input::Gamepads;
 use chessnt::core::time::Time;
-use chessnt::screen::theme::{new_coloring, new_text_coloring, CameraPos, Fonts, Textures, Theme};
+use chessnt::screen::theme::{new_text_coloring, CameraPos, Fonts, Textures, Theme};
 use chessnt::screen::ui::{render_text_no_font, render_title, SCALE};
 use chessnt::screen::ui_dev::DevUi;
 use chessnt::world::board::Board;
