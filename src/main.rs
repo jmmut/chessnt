@@ -1,7 +1,7 @@
 use chessnt::core::coord::Coord;
 use chessnt::core::input::Gamepads;
 use chessnt::core::time::Time;
-use chessnt::screen::theme::{new_coloring, CameraPos, Fonts, Textures, Theme};
+use chessnt::screen::theme::{new_coloring, new_text_coloring, CameraPos, Fonts, Textures, Theme};
 use chessnt::screen::ui::{render_text_no_font, render_title, SCALE};
 use chessnt::screen::ui_dev::DevUi;
 use chessnt::world::board::Board;
@@ -32,7 +32,7 @@ async fn fallible_main() -> AnyResult<()> {
         "Loading...",
         Anchor::center_v(screen * 0.5),
         DEFAULT_FONT_SIZE * 2.0,
-        new_coloring(),
+        new_text_coloring(),
     );
     next_frame().await;
     let textures = load_textures().await?;

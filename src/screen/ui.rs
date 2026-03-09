@@ -27,7 +27,12 @@ pub fn render_text_dev(text: &str, anchor: Anchor, theme: &Theme) -> Rect {
 pub fn render_text_font(text: &str, anchor: Anchor, theme: &Theme, font: &Font) -> Rect {
     render_text_font_size(text, anchor, theme, font, theme.font_size())
 }
-pub fn render_text_no_font(text: &str, anchor: Anchor, font_size: f32, coloring: Coloring) -> Rect {
+pub fn render_text_no_font(
+    text: &str,
+    anchor: Anchor,
+    font_size: f32,
+    coloring: StateStyle,
+) -> Rect {
     let t = TextRect::new_generic(
         text,
         anchor,
@@ -35,8 +40,8 @@ pub fn render_text_no_font(text: &str, anchor: Anchor, font_size: f32, coloring:
         None,
         macroquad::prelude::measure_text,
     );
-    draw_rect(t.rect(), coloring.at_rest.bg_color);
-    t.render_default(&coloring.at_rest);
+    draw_rect(t.rect(), coloring.bg_color);
+    t.render_default(&coloring);
     t.rect()
 }
 pub fn render_text_font_size(
@@ -53,8 +58,8 @@ pub fn render_text_font_size(
         Some(font),
         macroquad::prelude::measure_text,
     );
-    draw_rect(t.rect(), theme.coloring().pressed.bg_color);
-    t.render_default(&theme.coloring().pressed);
+    draw_rect(t.rect(), theme.coloring().text_coloring.bg_color);
+    t.render_default(&theme.coloring().text_coloring);
     t.rect()
 }
 pub fn render_button(text: &str, anchor: Anchor, theme: &Theme) -> (Rect, Interaction) {
@@ -94,7 +99,7 @@ pub fn render_button_font(
         Box::new(InputMacroquad),
     );
     let interaction = t.interact();
-    t.render_default(&theme.coloring());
+    t.render_default(&theme.button_coloring());
     (t.rect(), interaction)
 }
 pub fn render_button_font_mut(
@@ -114,7 +119,7 @@ pub fn render_button_font_mut(
         Box::new(InputMacroquad),
     );
     let interaction = t.interact();
-    t.render_default(&theme.coloring());
+    t.render_default(&theme.button_coloring());
     *rect = t.rect();
     interaction
 }
@@ -209,7 +214,7 @@ pub fn render_slider(
         theme,
     );
     let mut style = Style::default();
-    style.coloring = theme.coloring();
+    style.coloring = theme.button_coloring();
     let mut slider = juquad::lazy::slider::Slider::new(style, min, max, *value);
     slider.set_pos(rightwards(new_rect).get_top_left_pixel(slider.size()));
     *value = *(slider

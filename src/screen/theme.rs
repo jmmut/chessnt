@@ -19,7 +19,7 @@ pub struct Theme {
     base_font_size: f32,
     font_size: f32,
     fonts: Fonts,
-    coloring: Coloring,
+    coloring: AllColoring,
     pub textures: Textures,
 }
 
@@ -64,10 +64,16 @@ impl Theme {
     pub fn font_size_dev(&self) -> f32 {
         self.font_size * 0.92
     }
-    pub fn coloring(&self) -> Coloring {
+    pub fn button_coloring(&self) -> Coloring {
+        self.coloring.button_coloring
+    }
+    pub fn set_button_coloring(&mut self, coloring: Coloring) {
+        self.coloring.button_coloring = coloring;
+    }
+    pub fn coloring(&self) -> AllColoring {
         self.coloring
     }
-    pub fn set_coloring(&mut self, coloring: Coloring) {
+    pub fn set_coloring(&mut self, coloring: AllColoring) {
         self.coloring = coloring;
     }
 }
@@ -92,10 +98,10 @@ pub struct Textures {
     pub pieces: HashMap<(Team, Move), Texture2D>,
 }
 
-pub fn new_coloring() -> Coloring {
+pub fn new_button_coloring() -> Coloring {
     Coloring {
         at_rest: StateStyle {
-            bg_color: from_hex_rgba(0xA8AAA1D4),
+            bg_color: from_hex_rgba(0xA8AAA1FF),
             text_color: from_hex_rgba(0x181449FF),
             border_color: from_hex_rgba(0x190E34FF),
         },
@@ -105,30 +111,49 @@ pub fn new_coloring() -> Coloring {
             border_color: from_hex_rgba(0xA8AAA1FF),
         },
         pressed: StateStyle {
-            bg_color: from_hex_rgba(0x181449D4),
+            bg_color: from_hex_rgba(0x181449FF),
             text_color: from_hex_rgba(0xFAFBF9FF),
             border_color: from_hex_rgba(0x090E4BFF),
         },
     }
 }
+pub fn new_text_coloring() -> StateStyle {
+    StateStyle {
+        bg_color: from_hex_rgba(0x181449FF),
+        text_color: from_hex_rgba(0xFAFBF9FF),
+        border_color: from_hex_rgba(0x090E4BFF),
+    }
+}
+pub fn new_coloring() -> AllColoring {
+    AllColoring {
+        text_coloring: new_text_coloring(),
+        button_coloring: new_button_coloring(),
+    }
+}
 
-const COLORING_COUNT: usize = size_of::<Coloring>() / size_of::<StateStyle>();
-const COLORING_NAMES: [&str; COLORING_COUNT] = ["at_rest", "hovered", "pressed"];
+#[derive(Copy, Clone)]
+pub struct AllColoring {
+    pub text_coloring: StateStyle,
+    pub button_coloring: Coloring,
+}
 
-pub type ColoringUnion = ArrayUnion<Coloring, StateStyle, COLORING_COUNT>;
+const COLORING_COUNT: usize = size_of::<AllColoring>() / size_of::<StateStyle>();
+const COLORING_NAMES: [&str; COLORING_COUNT] = ["text", "at_rest", "hovered", "pressed"];
 
-pub fn named_coloring(coloring: Coloring) -> impl Iterator<Item = (&'static str, StateStyle)> {
+pub type ColoringUnion = ArrayUnion<AllColoring, StateStyle, COLORING_COUNT>;
+
+pub fn named_coloring(coloring: AllColoring) -> impl Iterator<Item = (&'static str, StateStyle)> {
     ColoringUnion::named_iter(coloring, COLORING_NAMES)
 }
-pub fn coloring_elem(coloring: Coloring, index: usize) -> StateStyle {
+pub fn coloring_elem(coloring: AllColoring, index: usize) -> StateStyle {
     ColoringUnion::array(coloring)[index]
 }
-pub fn set_coloring(coloring: &mut Coloring, index: usize, color: StateStyle) {
+pub fn set_coloring(coloring: &mut AllColoring, index: usize, color: StateStyle) {
     ColoringUnion::set(coloring, index, color)
 }
 
 const STATE_STYLE_COUNT: usize = size_of::<StateStyle>() / size_of::<Color>();
-const STATE_STYLE_NAMES: [&str; COLORING_COUNT] = ["bg_color", "text_color", "border_color"];
+const STATE_STYLE_NAMES: [&str; STATE_STYLE_COUNT] = ["bg_color", "text_color", "border_color"];
 pub type StateStyleUnion = ArrayUnion<StateStyle, Color, STATE_STYLE_COUNT>;
 
 pub fn named_state_style(state_style: StateStyle) -> impl Iterator<Item = (&'static str, Color)> {
