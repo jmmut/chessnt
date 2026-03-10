@@ -9,29 +9,38 @@ use juquad::widgets::{Interaction, StateStyle, Widget};
 use macroquad::math::Rect;
 use macroquad::prelude::{Font, TextParams};
 
-pub fn render_text(text: &str, anchor: Anchor, theme: &Theme) -> Rect {
-    render_text_font(text, anchor, theme, theme.font())
+pub fn render_text(text: &str, theme: &Theme, anchor: Anchor) -> Rect {
+    render_text_font(text, theme, theme.font(), anchor)
 }
-pub fn render_title(text: &str, anchor: Anchor, theme: &Theme) -> Rect {
+pub fn render_title(text: &str, theme: &Theme, anchor: Anchor) -> Rect {
     render_text_font_size(
         text,
-        anchor,
         theme,
         theme.font_title(),
         theme.font_size_title(),
+        anchor,
     )
 }
-pub fn render_text_dev(text: &str, anchor: Anchor, theme: &Theme) -> Rect {
-    render_text_font_size(text, anchor, theme, theme.font_dev(), theme.font_size_dev())
+pub fn render_text_dev(text: &str, theme: &Theme, anchor: Anchor) -> Rect {
+    render_text_font_size(text, theme, theme.font_dev(), theme.font_size_dev(), anchor)
 }
-pub fn render_text_font(text: &str, anchor: Anchor, theme: &Theme, font: &Font) -> Rect {
-    render_text_font_size(text, anchor, theme, font, theme.font_size())
+pub fn render_text_dev_mut(text: &str, theme: &Theme, anchor: fn(Rect) -> Anchor, rect: &mut Rect) {
+    *rect = render_text_font_size(
+        text,
+        theme,
+        theme.font_dev(),
+        theme.font_size_dev(),
+        anchor(*rect),
+    );
+}
+pub fn render_text_font(text: &str, theme: &Theme, font: &Font, anchor: Anchor) -> Rect {
+    render_text_font_size(text, theme, font, theme.font_size(), anchor)
 }
 pub fn render_text_no_font(
     text: &str,
-    anchor: Anchor,
     font_size: f32,
     coloring: StateStyle,
+    anchor: Anchor,
 ) -> Rect {
     let t = TextRect::new_generic(
         text,
@@ -46,10 +55,10 @@ pub fn render_text_no_font(
 }
 pub fn render_text_font_size(
     text: &str,
-    anchor: Anchor,
     theme: &Theme,
     font: &Font,
     font_size: f32,
+    anchor: Anchor,
 ) -> Rect {
     let t = TextRect::new_generic(
         text,
@@ -62,11 +71,22 @@ pub fn render_text_font_size(
     t.render_default(&theme.coloring().text_coloring);
     t.rect()
 }
-pub fn render_button(text: &str, anchor: Anchor, theme: &Theme) -> (Rect, Interaction) {
-    render_button_font(text, anchor, theme, theme.font(), theme.font_size())
+
+pub fn measure_title(text: &str, theme: &Theme, anchor: Anchor) -> TextRect {
+    TextRect::new_generic(
+        text,
+        anchor,
+        theme.font_size_title(),
+        Some(theme.font_title()),
+        macroquad::prelude::measure_text,
+    )
 }
-pub fn render_button_dev(text: &str, anchor: Anchor, theme: &Theme) -> (Rect, Interaction) {
-    render_button_font(text, anchor, theme, theme.font_dev(), theme.font_size_dev())
+
+pub fn render_button(text: &str, theme: &Theme, anchor: Anchor) -> (Rect, Interaction) {
+    render_button_font(text, theme, theme.font(), theme.font_size(), anchor)
+}
+pub fn render_button_dev(text: &str, theme: &Theme, anchor: Anchor) -> (Rect, Interaction) {
+    render_button_font(text, theme, theme.font_dev(), theme.font_size_dev(), anchor)
 }
 pub fn render_button_dev_mut(
     text: &str,
@@ -76,19 +96,19 @@ pub fn render_button_dev_mut(
 ) -> Interaction {
     render_button_font_mut(
         text,
-        anchor,
         theme,
         theme.font_dev(),
         theme.font_size_dev(),
+        anchor,
         rect,
     )
 }
 pub fn render_button_font(
     text: &str,
-    anchor: Anchor,
     theme: &Theme,
     font: &Font,
     font_size: f32,
+    anchor: Anchor,
 ) -> (Rect, Interaction) {
     let mut t = Button::new_generic(
         text,
@@ -104,10 +124,10 @@ pub fn render_button_font(
 }
 pub fn render_button_font_mut(
     text: &str,
-    anchor: fn(Rect) -> Anchor,
     theme: &Theme,
     font: &Font,
     font_size: f32,
+    anchor: fn(Rect) -> Anchor,
     rect: &mut Rect,
 ) -> Interaction {
     let mut t = Button::new_generic(
@@ -123,6 +143,18 @@ pub fn render_button_font_mut(
     *rect = t.rect();
     interaction
 }
+
+pub fn measure_button(text: &str, theme: &Theme, anchor: Anchor) -> Button {
+    Button::new_generic(
+        text,
+        anchor,
+        theme.font_size(),
+        Some(theme.font()),
+        macroquad::prelude::measure_text,
+        Box::new(InputMacroquad),
+    )
+}
+
 pub static mut SCALE: f32 = 13.78;
 /*
 pub fn render_text_3d(text: &str, anchor: Anchor, z: f32, theme: &Theme) -> Mesh {
@@ -179,6 +211,9 @@ pub fn render_text_3d(text: &str, anchor: Anchor, z: f32, theme: &Theme) -> Mesh
 pub fn below_left(rect: Rect) -> Anchor {
     Anchor::below(rect, Horizontal::Left, 0.0)
 }
+pub fn below_center(rect: Rect) -> Anchor {
+    Anchor::below(rect, Horizontal::Center, 0.0)
+}
 pub fn rightwards(rect: Rect) -> Anchor {
     Anchor::rightwards(rect, Vertical::Center, 0.0)
 }
@@ -202,17 +237,25 @@ pub fn draw_text(
 
 pub fn render_slider(
     text: &str,
-    rect: Rect,
     theme: &Theme,
-    value: &mut f32,
     min: f32,
     max: f32,
-) -> Rect {
-    let new_rect = render_text_dev(
-        &format!("{}: {:0>5.2}", text, value),
-        below_left(rect),
-        theme,
-    );
+    value: &mut f32,
+    rect: &mut Rect,
+) {
+    render_slider_mut(text, theme, min, max, value, below_left, rect)
+}
+
+pub fn render_slider_mut(
+    text: &str,
+    theme: &Theme,
+    min: f32,
+    max: f32,
+    value: &mut f32,
+    anchor: fn(Rect) -> Anchor,
+    rect: &mut Rect,
+) {
+    let new_rect = render_text_dev(&format!("{}: {:0>5.2}", text, value), theme, anchor(*rect));
     let mut style = Style::default();
     style.coloring = theme.button_coloring();
     let mut slider = juquad::lazy::slider::Slider::new(style, min, max, *value);
@@ -225,5 +268,5 @@ pub fn render_slider(
         .downcast::<f32>()
         .unwrap());
     slider.render_interactive(Interaction::None);
-    new_rect
+    *rect = slider.rect().combine_with(new_rect);
 }

@@ -7,7 +7,8 @@ use crate::screen::theme::{
 };
 use crate::screen::ui;
 use crate::screen::ui::{
-    render_button_dev, render_button_dev_mut, render_slider, render_text_dev, rightwards,
+    render_button_dev, render_button_dev_mut, render_slider, render_text_dev, render_text_dev_mut,
+    rightwards,
 };
 use crate::world::board::{Board, DEFAULT_PIECE_SIZE};
 use crate::{AnyResult, INITIAL_DEV_UI};
@@ -77,18 +78,16 @@ impl DevUi {
         Ok(())
     }
     fn dev_ui_title(theme: &mut Theme) -> Rect {
-        let _rect = render_text_dev(
+        render_text_dev(
             "DEV UI (toggle with '/')",
-            Anchor::top_left(0.0, 0.0),
             theme,
-        );
-        _rect
+            Anchor::top_left(0.0, 0.0),
+        )
     }
 
-    fn navigation(&mut self, theme: &Theme, _rect: Rect, text: &str, menu: DevUiMenu) -> Rect {
-        let mut rect = _rect;
-        self.navigation_anchor(theme, text, menu, below_left, &mut rect);
-        rect
+    fn navigation(&mut self, theme: &Theme, text: &str, menu: DevUiMenu, rect: &mut Rect) -> Rect {
+        self.navigation_anchor(theme, text, menu, below_left, rect);
+        *rect
     }
     fn navigation_anchor(
         &mut self,
@@ -105,12 +104,12 @@ impl DevUi {
     }
 
     fn draw_main(&mut self, theme: &mut Theme) {
-        let _rect = Self::dev_ui_title(theme);
-        let _rect = self.navigation(theme, _rect, "Camera controls", DevUiMenu::Camera);
-        let _rect = self.navigation(theme, _rect, "Inspect referee", DevUiMenu::Referee);
-        let _rect = self.navigation(theme, _rect, "Edit world palette", DevUiMenu::PaletteWorld);
-        let _rect = self.navigation(theme, _rect, "Edit ui palette", DevUiMenu::PaletteUi);
-        let _rect = self.navigation(theme, _rect, "Hide Dev UI", DevUiMenu::Hidden);
+        let rect = &mut Self::dev_ui_title(theme);
+        self.navigation(theme, "Camera controls", DevUiMenu::Camera, rect);
+        self.navigation(theme, "Inspect referee", DevUiMenu::Referee, rect);
+        self.navigation(theme, "Edit world palette", DevUiMenu::PaletteWorld, rect);
+        self.navigation(theme, "Edit ui palette", DevUiMenu::PaletteUi, rect);
+        self.navigation(theme, "Hide Dev UI", DevUiMenu::Hidden, rect);
     }
 
     fn draw_camera(
@@ -120,74 +119,76 @@ impl DevUi {
         board: &mut Board,
         camera: &mut CameraPos,
     ) {
-        let _rect = Self::dev_ui_title(theme);
+        let rect = &mut Self::dev_ui_title(theme);
         // let text = "You can move the green cursor with your keyboard arrows";
         // let rect = render_text(text, below_left(rect), theme);
         // let rect = render_text("Toggle dev UI with '/'", below_left(rect), theme);
         let text = format!("FPS: {:.1}", time.fps());
-        let _rect = render_text_dev(&text, below_left(_rect), theme);
+        render_text_dev_mut(&text, theme, below_left, rect);
         // let text = format!("scale: {}", unsafe { SCALE });
         // let _rect = render_text(&text, below_left(_rect), theme);
 
         let _rect = render_slider(
             "Texture size X",
-            _rect,
             theme,
-            &mut board.piece_size.x,
             0.1,
             2.0,
+            &mut board.piece_size.x,
+            rect,
         );
         let _rect = render_slider(
             "Texture size Y",
-            _rect,
             theme,
-            &mut board.piece_size.y,
             0.1,
             2.0,
+            &mut board.piece_size.y,
+            rect,
         );
-        let (_rect, clicked) = render_button_dev("Reset texture size", below_left(_rect), theme);
+        let clicked = render_button_dev_mut("Reset texture size", theme, below_left, rect);
         if clicked.is_clicked() {
             board.piece_size = DEFAULT_PIECE_SIZE;
         }
-        let _rect = render_slider("Camera Y", _rect, theme, &mut camera.y, 0.0, 100.0);
-        let _rect = render_slider("Camera Z", _rect, theme, &mut camera.z, 0.0, 100.0);
-        let _rect = render_slider("Camera Width", _rect, theme, &mut camera.fovy, 43.5, 47.5);
-        let _rect = render_slider(
+        render_slider("Camera Y", theme, 0.0, 100.0, &mut camera.y, rect);
+        render_slider("Camera Z", theme, 0.0, 100.0, &mut camera.z, rect);
+        render_slider("Camera Width", theme, 43.5, 47.5, &mut camera.fovy, rect);
+        render_slider(
             "Camera target Y",
-            _rect,
             theme,
-            &mut camera.target_y,
             -5.0,
             10.0,
+            &mut camera.target_y,
+            rect,
         );
-        let (_rect, clicked) = render_button_dev("Reset camera", below_left(_rect), theme);
+        let clicked = render_button_dev_mut("Reset camera", theme, below_left, rect);
         if clicked.is_clicked() {
             *camera = CameraPos::default();
         }
 
-        self.navigation(theme, _rect, "Back", DevUiMenu::Main);
+        self.navigation(theme, "Back", DevUiMenu::Main, rect);
     }
 
     fn draw_referee(&mut self, theme: &mut Theme, board: &mut Board) {
-        let _rect = Self::dev_ui_title(theme);
+        let rect = &mut Self::dev_ui_title(theme);
         let dir = board.referee.dir_c();
-        let _rect = render_text_dev(
+        render_text_dev_mut(
             &format!("Referee dir: {:0>5.2} {:0>5.2}", dir.column, dir.row),
-            below_left(_rect),
             theme,
+            below_left,
+            rect,
         );
-        let _rect = render_text_dev(
+        render_text_dev_mut(
             &format!("trip time: {:0>5.2}", board.referee.trip_time),
-            below_left(_rect),
             theme,
+            below_left,
+            rect,
         );
-        self.navigation(theme, _rect, "Back", DevUiMenu::Main);
+        self.navigation(theme, "Back", DevUiMenu::Main, rect);
     }
     fn draw_palette(&mut self, theme: &mut Theme) -> AnyResult<()> {
         self.clipboard.maybe_refresh()?;
         // let _rect = Self::dev_ui_title(theme);
         let title = self.palette_title()?;
-        let mut rect = render_text_dev(&title, Anchor::top_left(0.0, 0.0), theme);
+        let mut rect = render_text_dev(&title, theme, Anchor::top_left(0.0, 0.0));
         for (index, (name, color)) in theme.palette.named_iter().enumerate() {
             let menu = DevUiMenu::EditWorldColor(index);
             if let Some(color) = self.copy_paste(name, color, theme, &mut rect)? {
@@ -200,19 +201,19 @@ impl DevUi {
 
         let (_rect, clicked) = render_button_dev(
             "Export world palette source code (F12 in the browser to see)",
-            below_left(rect),
             theme,
+            below_left(rect),
         );
         if clicked.is_clicked() {
             let code = palette_to_code(theme)?;
             info!("{}", code);
             self.clipboard.copy(code)?;
         }
-        let (_rect, clicked) = render_button_dev("Reset palette", below_left(_rect), theme);
+        let (mut _rect, clicked) = render_button_dev("Reset palette", theme, below_left(_rect));
         if clicked.is_clicked() {
             theme.palette = Palette::default();
         }
-        self.navigation(theme, _rect, "Back", DevUiMenu::Main);
+        self.navigation(theme, "Back", DevUiMenu::Main, &mut _rect);
         Ok(())
     }
 
@@ -241,12 +242,12 @@ impl DevUi {
     fn draw_edit_world_color(&mut self, color_index: usize, theme: &mut Theme) -> AnyResult<()> {
         self.clipboard.maybe_refresh()?;
         let (name, mut color) = theme.palette.named_vec()[color_index];
-        let (_rect, clicked) = color_editor(theme, name, &mut color);
-        if clicked.is_clicked() {
+        let rect = &mut Rect::default();
+        if color_editor(theme, name, rect, &mut color).is_clicked() {
             (_, color) = Palette::default().named_vec()[color_index];
         }
         theme.palette.set(color_index, color);
-        self.navigation(theme, _rect, "Back", DevUiMenu::PaletteWorld);
+        self.navigation(theme, "Back", DevUiMenu::PaletteWorld, rect);
         Ok(())
     }
 
@@ -254,7 +255,7 @@ impl DevUi {
         self.clipboard.maybe_refresh()?;
         // let _rect = Self::dev_ui_title(theme);
         let title = self.palette_title()?;
-        let mut rect = render_text_dev(&title, Anchor::top_left(0.0, 0.0), theme);
+        let mut rect = render_text_dev(&title, theme, Anchor::top_left(0.0, 0.0));
         for (state_i, (name, state_style)) in named_coloring(theme.coloring()).enumerate() {
             for (color_i, (color_name, color)) in named_state_style(state_style).enumerate() {
                 let menu = DevUiMenu::EditUiColor(state_i, color_i);
@@ -268,21 +269,20 @@ impl DevUi {
             }
         }
 
-        let (_rect, clicked) = render_button_dev(
+        let (mut _rect, clicked) = render_button_dev(
             "Export ui palette source code (F12 in the browser to see)",
-            below_left(rect),
             theme,
+            below_left(rect),
         );
         if clicked.is_clicked() {
             let code = coloring_to_code(theme)?;
             info!("{}", code);
             self.clipboard.copy(code)?;
         };
-        let (_rect, clicked) = render_button_dev("Reset palette", below_left(_rect), theme);
-        if clicked.is_clicked() {
+        if render_button_dev_mut("Reset palette", theme, below_left, &mut rect).is_clicked() {
             theme.set_coloring(new_coloring());
         }
-        self.navigation(theme, _rect, "Back", DevUiMenu::Main);
+        self.navigation(theme, "Back", DevUiMenu::Main, &mut rect);
         Ok(())
     }
     fn draw_edit_ui_color(
@@ -296,13 +296,14 @@ impl DevUi {
             .nth(state_style_index)
             .unwrap();
         let (color_name, mut color) = named_state_style(state_style).nth(color_index).unwrap();
-        let (_rect, clicked) = color_editor(theme, &format!("{}/{}", name, color_name), &mut color);
-        if clicked.is_clicked() {
+        let rect = &mut Rect::default();
+        let combined_name = format!("{}/{}", name, color_name);
+        if color_editor(theme, &combined_name, rect, &mut color).is_clicked() {
             let style = coloring_elem(new_coloring(), state_style_index);
             color = state_style_elem(style, color_index);
         }
         set_theme_coloring(color, state_style_index, color_index, theme);
-        self.navigation(theme, _rect, "Back", DevUiMenu::PaletteUi);
+        self.navigation(theme, "Back", DevUiMenu::PaletteUi, rect);
         Ok(())
     }
 
@@ -334,18 +335,17 @@ impl DevUi {
     }
 }
 
-fn color_editor(theme: &mut Theme, name: &str, color: &mut Color) -> (Rect, Interaction) {
+fn color_editor(theme: &mut Theme, name: &str, rect: &mut Rect, color: &mut Color) -> Interaction {
     let text = format!("Edit color '{}' {}", name, as_hex(*color));
-    let mut _rect = render_text_dev(&text, Anchor::top_left(0.0, 0.0), theme);
+    render_text_dev_mut(&text, theme, below_left, rect);
     // color = Color::new(color.r * 255.0, color.g * 255.0, color.b * 255.0, color.a * 255.0);
-    _rect = render_slider("Red  ", _rect, theme, &mut color.r, 0.0, 1.0);
-    _rect = render_slider("Green", _rect, theme, &mut color.g, 0.0, 1.0);
-    _rect = render_slider("Blue ", _rect, theme, &mut color.b, 0.0, 1.0);
-    _rect = render_slider("Alpha", _rect, theme, &mut color.a, 0.0, 1.0);
+    render_slider("Red  ", theme, 0.0, 1.0, &mut color.r, rect);
+    render_slider("Green", theme, 0.0, 1.0, &mut color.g, rect);
+    render_slider("Blue ", theme, 0.0, 1.0, &mut color.b, rect);
+    render_slider("Alpha", theme, 0.0, 1.0, &mut color.a, rect);
 
     // color = Color::new(color.r /255.0, color.g/255.0, color.b /255.0, color.a /255.0);
-    let (_rect, clicked) = render_button_dev("Reset color", below_left(_rect), theme);
-    (_rect, clicked)
+    render_button_dev_mut("Reset color", theme, below_left, rect)
 }
 
 pub fn as_hex(color: Color) -> String {

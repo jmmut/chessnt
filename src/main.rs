@@ -30,9 +30,9 @@ async fn fallible_main() -> AnyResult<()> {
     let screen = vec2(screen_width(), screen_height());
     render_text_no_font(
         "Loading...",
-        Anchor::center_v(screen * 0.5),
         DEFAULT_FONT_SIZE * 2.0,
         new_text_coloring(),
+        Anchor::center_v(screen * 0.5),
     );
     next_frame().await;
     let textures = load_textures().await?;
@@ -68,7 +68,7 @@ async fn fallible_main() -> AnyResult<()> {
         dev_ui.draw(&time, theme, &mut board, &mut camera)?;
         if is_key_pressed(KeyCode::T) {
             let anchor = Anchor::center_v(theme.screen_rect().center());
-            render_title("Re-loading textures", anchor, theme);
+            render_title("Re-loading textures", theme, anchor);
             next_frame().await;
             theme.textures = load_textures().await?;
         }

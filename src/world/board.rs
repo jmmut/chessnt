@@ -29,6 +29,7 @@ pub struct Board {
     pieces: Vec<Piece>,
     pub referee: Referee,
     pub piece_size: Vec2,
+    pub winning_team: Option<Team>,
 }
 
 pub const DEFAULT_PIECE_SIZE: Vec2 = vec2(0.3, 1.0);
@@ -44,6 +45,7 @@ impl Board {
             pieces,
             piece_size: DEFAULT_PIECE_SIZE,
             referee: Referee::new(),
+            winning_team: None,
         }
     }
     pub fn new_chess(cursor_white: Coord, cursor_black: Coord) -> Self {
@@ -245,6 +247,10 @@ impl Board {
         self.force_deselect(selected_i, Team::Black);
         self.force_deselect(selected_i, Team::White);
         self.pieces[selected_i].alive = false;
+        if self.pieces[selected_i].moveset.contains(&Move::King) {
+            self.winning_team = Some(self.pieces[selected_i].team.opposite());
+        }
+
         let column = self.pieces[selected_i].pos_i().column();
         self.pieces[selected_i].set_pos_and_initial(Coord::new_i(column, -2));
         while self.overlapping_pieces(selected_i).len() > 0 {
