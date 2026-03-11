@@ -1,4 +1,5 @@
 use crate::AnyResult;
+use macroquad::miniquad;
 // #[cfg(not(target_arch = "wasm32"))]
 // pub struct Clipboard {
 //     context: clipboard_rs::ClipboardContext,
@@ -12,7 +13,9 @@ use crate::AnyResult;
 pub struct Clipboard {
     cached: Option<String>,
     count: usize,
+    pub enabled: bool,
 }
+
 /*
 #[cfg(not(target_arch = "wasm32"))]
 impl Clipboard {
@@ -78,6 +81,7 @@ impl Clipboard {
         let clipboard = Self {
             cached: None,
             count: 0,
+            enabled: false,
         };
         // let mut watcher = ClipboardWatcherContext::new().unwrap();
         // let watcher_shutdown = watcher.add_handler(clipboard).get_shutdown_channel();
@@ -91,7 +95,9 @@ impl Clipboard {
 
     pub fn copy(&mut self, text: String) -> AnyResult<()> {
         self.cached = Some(text.clone());
-        // miniquad::window::clipboard_set(&text); // doesn't work in linux nor wasm
+        if self.enabled {
+            miniquad::window::clipboard_set(&text); // doesn't work in linux nor wasm
+        }
         Ok(())
     }
 
@@ -114,7 +120,9 @@ impl Clipboard {
         }
     }
     pub fn refresh(&mut self) -> AnyResult<()> {
-        // self.cached = miniquad::window::clipboard_get(); // doesn't work in wasm
+        if self.enabled {
+            self.cached = miniquad::window::clipboard_get(); // doesn't work in wasm
+        }
         Ok(())
     }
 }

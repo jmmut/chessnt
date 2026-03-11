@@ -135,9 +135,17 @@ impl DevUi {
             &mut camera.target_y,
             rect,
         );
-        let clicked = render_button_dev_mut("Reset camera", theme, below_left, rect);
-        if clicked.is_clicked() {
+        if render_button_dev_mut("Reset camera", theme, below_left, rect).is_clicked() {
             *camera = CameraPos::default();
+        }
+        let action = if self.clipboard.enabled {
+            "Disable"
+        } else {
+            "Enable"
+        };
+        let text = format!("{} OS/Web clipboard", action);
+        if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
+            self.clipboard.enabled = !self.clipboard.enabled;
         }
 
         self.navigation(theme, "Back", DevUiMenu::Main, rect);
