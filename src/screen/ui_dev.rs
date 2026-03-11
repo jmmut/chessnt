@@ -215,8 +215,11 @@ impl DevUi {
     fn draw_palette(&mut self, theme: &mut Theme) -> AnyResult<()> {
         self.clipboard.maybe_refresh()?;
         // let _rect = Self::dev_ui_title(theme);
-        let title = self.palette_title()?;
+        let (title, copied_color) = self.palette_title()?;
         let mut rect = render_text_dev(&title, theme, Anchor::top_left(0.0, 0.0));
+        if let Some(color) = copied_color {
+            draw_color_rect(color, &mut rect);
+        }
         for (index, (name, color)) in theme.palette.named_iter().enumerate() {
             if let Some(color) = self.copy_paste(name, color, theme, &mut rect)? {
                 theme.palette.set(index, color);
@@ -241,26 +244,28 @@ impl DevUi {
         Ok(())
     }
 
-    fn palette_title(&mut self) -> AnyResult<String> {
-        let title = format!(
-            "Colors (in RGBA){}",
-            if let Some(copied) = self.clipboard.paste().and_then(parse_hex_color) {
-                let color_string = as_hex(copied);
-                if let Some((name, old_color)) = self.copied_color_name.as_ref() {
-                    if *old_color == copied {
-                        format!(" (copied {} - {})", color_string, name)
-                    } else {
-                        self.copied_color_name = None;
-                        format!(" (copied {})", color_string)
-                    }
+    fn palette_title(&mut self) -> AnyResult<(String, Option<Color>)> {
+        let (title, color) = if let Some(copied) = self.clipboard.paste().and_then(parse_hex_color)
+        {
+            let color_string = as_hex(copied);
+            if let Some((name, old_color)) = self.copied_color_name.as_ref() {
+                if *old_color == copied {
+                    (
+                        format!(" (copied {} - {})", color_string, name),
+                        Some(copied),
+                    )
                 } else {
-                    format!(" (copied {})", color_string)
+                    self.copied_color_name = None;
+                    (format!(" (copied {})", color_string), Some(copied))
                 }
             } else {
-                "".to_string()
+                (format!(" (copied {})", color_string), Some(copied))
             }
-        );
-        Ok(title)
+        } else {
+            ("".to_string(), None)
+        };
+        let title = format!("Colors (in RGBA){}", title);
+        Ok((title, color))
     }
 
     fn draw_edit_world_color(&mut self, color_index: usize, theme: &mut Theme) -> AnyResult<()> {
@@ -278,8 +283,11 @@ impl DevUi {
     fn draw_palette_ui(&mut self, theme: &mut Theme) -> AnyResult<()> {
         self.clipboard.maybe_refresh()?;
         // let _rect = Self::dev_ui_title(theme);
-        let title = self.palette_title()?;
+        let (title, copied_color) = self.palette_title()?;
         let mut rect = render_text_dev(&title, theme, Anchor::top_left(0.0, 0.0));
+        if let Some(color) = copied_color {
+            draw_color_rect(color, &mut rect);
+        }
         for (state_i, (name, state_style)) in named_coloring(theme.coloring()).enumerate() {
             for (color_i, (color_name, color)) in named_state_style(state_style).enumerate() {
                 let full_name = format!("{}/{}", name, color_name);
@@ -361,6 +369,7 @@ fn draw_color_rect(color: Color, previous_rect: &mut Rect) {
     let size = Vec2::splat(previous_rect.h);
     let rect = anchor.get_rect(size);
     draw_rect(rect, color);
+    // juquad::draw::draw_rect_lines(rect, 2.0, macroquad::color::BLACK);
     *previous_rect = rect.combine_with(*previous_rect);
 }
 
