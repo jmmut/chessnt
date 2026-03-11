@@ -7,15 +7,15 @@ use crate::screen::theme::{
 };
 use crate::screen::ui;
 use crate::screen::ui::{
-    render_button_dev, render_button_dev_mut, render_slider, render_text_dev, render_text_dev_mut,
-    rightwards,
+    render_button_dev_mut, render_slider, render_text_dev, render_text_dev_mut, rightwards,
 };
 use crate::world::board::{Board, DEFAULT_PIECE_SIZE};
 use crate::{AnyResult, INITIAL_DEV_UI};
+use juquad::draw::draw_rect;
 use juquad::widgets::anchor::Anchor;
 use juquad::widgets::Interaction;
 use macroquad::color::Color;
-use macroquad::math::Rect;
+use macroquad::math::{Rect, Vec2};
 use macroquad::prelude::info;
 use std::io::Write;
 use ui::below_left;
@@ -190,30 +190,26 @@ impl DevUi {
         let title = self.palette_title()?;
         let mut rect = render_text_dev(&title, theme, Anchor::top_left(0.0, 0.0));
         for (index, (name, color)) in theme.palette.named_iter().enumerate() {
-            let menu = DevUiMenu::EditWorldColor(index);
             if let Some(color) = self.copy_paste(name, color, theme, &mut rect)? {
                 theme.palette.set(index, color);
             }
+            draw_color_rect(color, &mut rect);
             let text = format!("{} - {}", as_hex(color), name);
+            let menu = DevUiMenu::EditWorldColor(index);
             let mut rect_copy = rect;
             self.navigation_anchor(theme, &text, menu, rightwards, &mut rect_copy);
         }
 
-        let (_rect, clicked) = render_button_dev(
-            "Export world palette source code (F12 in the browser to see)",
-            theme,
-            below_left(rect),
-        );
-        if clicked.is_clicked() {
+        let text = "Export world palette source code (F12 in the browser to see)";
+        if render_button_dev_mut(text, theme, below_left, &mut rect).is_clicked() {
             let code = palette_to_code(theme)?;
             info!("{}", code);
             self.clipboard.copy(code)?;
         }
-        let (mut _rect, clicked) = render_button_dev("Reset palette", theme, below_left(_rect));
-        if clicked.is_clicked() {
+        if render_button_dev_mut("Reset palette", theme, below_left, &mut rect).is_clicked() {
             theme.palette = Palette::default();
         }
-        self.navigation(theme, "Back", DevUiMenu::Main, &mut _rect);
+        self.navigation(theme, "Back", DevUiMenu::Main, &mut rect);
         Ok(())
     }
 
@@ -258,23 +254,20 @@ impl DevUi {
         let mut rect = render_text_dev(&title, theme, Anchor::top_left(0.0, 0.0));
         for (state_i, (name, state_style)) in named_coloring(theme.coloring()).enumerate() {
             for (color_i, (color_name, color)) in named_state_style(state_style).enumerate() {
-                let menu = DevUiMenu::EditUiColor(state_i, color_i);
                 let full_name = format!("{}/{}", name, color_name);
                 if let Some(color) = self.copy_paste(&full_name, color, theme, &mut rect)? {
                     set_theme_coloring(color, state_i, color_i, theme);
                 }
+                draw_color_rect(color, &mut rect);
                 let text = format!("{} - {}", as_hex(color), full_name);
+                let menu = DevUiMenu::EditUiColor(state_i, color_i);
                 let mut rect_copy = rect;
                 self.navigation_anchor(theme, &text, menu, rightwards, &mut rect_copy);
             }
         }
 
-        let (mut _rect, clicked) = render_button_dev(
-            "Export ui palette source code (F12 in the browser to see)",
-            theme,
-            below_left(rect),
-        );
-        if clicked.is_clicked() {
+        let text = "Export ui palette source code (F12 in the browser to see)";
+        if render_button_dev_mut(text, theme, below_left, &mut rect).is_clicked() {
             let code = coloring_to_code(theme)?;
             info!("{}", code);
             self.clipboard.copy(code)?;
@@ -335,9 +328,18 @@ impl DevUi {
     }
 }
 
+fn draw_color_rect(color: Color, previous_rect: &mut Rect) {
+    let anchor = rightwards(*previous_rect);
+    let size = Vec2::splat(previous_rect.h);
+    let rect = anchor.get_rect(size);
+    draw_rect(rect, color);
+    *previous_rect = rect.combine_with(*previous_rect);
+}
+
 fn color_editor(theme: &mut Theme, name: &str, rect: &mut Rect, color: &mut Color) -> Interaction {
     let text = format!("Edit color '{}' {}", name, as_hex(*color));
     render_text_dev_mut(&text, theme, below_left, rect);
+    draw_color_rect(*color, rect);
     // color = Color::new(color.r * 255.0, color.g * 255.0, color.b * 255.0, color.a * 255.0);
     render_slider("Red  ", theme, 0.0, 1.0, &mut color.r, rect);
     render_slider("Green", theme, 0.0, 1.0, &mut color.g, rect);
