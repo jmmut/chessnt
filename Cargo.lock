@@ -308,8 +308,8 @@ dependencies = [
 
 [[package]]
 name = "juquad"
-version = "0.15.0"
-source = "git+https://github.com/jmmut/juquad.git?tag=0.15.0#a8bc74d7a49530c2b770829ebd7c73664f1ac290"
+version = "0.16.0"
+source = "git+https://github.com/jmmut/juquad.git?tag=0.16.0#e164a9196a167c909ae77f51f63dc328e57a1e21"
 dependencies = [
  "macroquad",
 ]

@@ -6,7 +6,10 @@ use crate::{
     DEFAULT_WINDOW_WIDTH, TRANSPARENT,
 };
 use juquad::draw::to_rect;
-use juquad::widgets::{StateStyle, Style as Coloring};
+use juquad::elm::style::Style;
+use juquad::lazy::{Margin, Pad, Size};
+use juquad::widgets::anchor::{Horizontal, Layout, Vertical};
+use juquad::widgets::{StateColor, StateStyle, Style as Coloring};
 use macroquad::color::{Color, BLUE, DARKBLUE, GRAY, GREEN, LIGHTGRAY, PURPLE, RED, WHITE, YELLOW};
 use macroquad::color_u8;
 use macroquad::math::{vec2, Rect};
@@ -64,17 +67,62 @@ impl Theme {
     pub fn font_size_dev(&self) -> f32 {
         self.font_size * 0.92
     }
+    pub fn coloring(&self) -> AllColoring {
+        self.coloring
+    }
     pub fn button_coloring(&self) -> Coloring {
         self.coloring.button_coloring
+    }
+    fn text_all_coloring(&self) -> Coloring {
+        let coloring = self.coloring();
+        Coloring {
+            at_rest: coloring.text_coloring,
+            ..coloring.button_coloring
+        }
+    }
+    pub fn set_coloring(&mut self, coloring: AllColoring) {
+        self.coloring = coloring;
     }
     pub fn set_button_coloring(&mut self, coloring: Coloring) {
         self.coloring.button_coloring = coloring;
     }
-    pub fn coloring(&self) -> AllColoring {
-        self.coloring
+    pub fn title_style(&self) -> Style {
+        Style {
+            font_size: self.font_size_title(),
+            font: Some(self.font_title().clone()),
+            coloring: self.text_all_coloring(),
+            ..self.button_style()
+        }
     }
-    pub fn set_coloring(&mut self, coloring: AllColoring) {
-        self.coloring = coloring;
+
+    pub fn container_style(&self) -> Style {
+        let coloring = self.coloring();
+        Style {
+            pad: Pad::new(self.font_size() * 1.0, self.font_size() * 1.0),
+            margin: Margin::new(self.font_size() * 1.0, self.font_size() * 1.0),
+            border: 4.0,
+            coloring: Coloring {
+                at_rest: StateColor {
+                    border_color: coloring.button_coloring.at_rest.bg_color,
+                    ..coloring.text_coloring
+                },
+                ..coloring.button_coloring
+            },
+            layout: Layout::vertical(Vertical::Bottom, Horizontal::Center),
+            ..Style::default()
+        }
+    }
+    pub fn button_style(&self) -> Style {
+        Style {
+            pad: Pad::new(self.font_size() * 1.5, self.font_size() * 0.7),
+            margin: Margin::new(self.font_size() * 1.0, self.font_size() * 1.0),
+            border: 1.0,
+            layout: Layout::vertical(Vertical::Bottom, Horizontal::Center),
+            font_size: self.font_size(),
+            font: Some(self.font().clone()),
+            size: Size::Grow,
+            coloring: self.coloring().button_coloring,
+        }
     }
 }
 pub struct CameraPos {
@@ -253,6 +301,9 @@ const fn choose_scale(width: f32, height: f32, font_size: f32) -> f32 {
 }
 
 pub fn margin(theme: &Theme) -> Vec2 {
+    Vec2::splat(theme.font_size() * 2.0)
+}
+pub fn pad(theme: &Theme) -> Vec2 {
     Vec2::splat(theme.font_size() * 2.0)
 }
 pub struct Fonts {
