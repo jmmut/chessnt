@@ -11,9 +11,16 @@ use juquad::elm::widget::compute_layout;
 use juquad::widgets::anchor::{Anchor, Horizontal, Layout, Vertical};
 use macroquad::math::Rect;
 
+#[derive(Copy, Clone)]
+pub enum Message {
+    Exit,
+    Restart,
+    ReloadTextures,
+}
+
 impl Board {
     /// assumes default camera is enabled
-    pub fn draw_ui(&self, theme: &Theme) {
+    pub fn draw_ui(&self, theme: &Theme) -> Vec<Message> {
         let screen = theme.screen_rect();
         let layout_center = Layout::vertical(Vertical::Bottom, Horizontal::Center);
         let _rect = inside_initial(theme, screen, layout_center);
@@ -32,7 +39,9 @@ impl Board {
             self.draw_check(anchor, team, theme);
         }
         if let Some(won) = self.winning_team {
-            draw_game_finished(won, theme);
+            draw_game_finished(won, theme)
+        } else {
+            Vec::new()
         }
     }
 
@@ -77,16 +86,12 @@ impl Board {
 }
 
 /// returns if the user clicked "Restart"
-fn draw_game_finished(won: Team, theme: &Theme) -> bool {
+fn draw_game_finished(won: Team, theme: &Theme) -> Vec<Message> {
     let layout = Layout::vertical(Vertical::Bottom, Horizontal::Center);
     let container_style = theme.container_style();
     let title_style = theme.title_style();
     let button_style = theme.button_style();
 
-    #[derive(Copy, Clone)]
-    enum Message {
-        Restart,
-    }
     let mut ui = Container::new(
         container_style,
         vec![
@@ -99,5 +104,5 @@ fn draw_game_finished(won: Team, theme: &Theme) -> bool {
     compute_layout(&mut *ui, panel, layout);
     let messages = ui.interact();
     ui.render();
-    messages.len() > 0
+    messages
 }

@@ -9,6 +9,7 @@ use crate::screen::ui;
 use crate::screen::ui::{
     render_button_dev_mut, render_slider, render_text_dev, render_text_dev_mut, rightwards,
 };
+use crate::screen::ui_board::Message;
 use crate::world::board::{Board, DEFAULT_PIECE_SIZE};
 use crate::{AnyResult, INITIAL_DEV_UI};
 use juquad::draw::draw_rect;
@@ -63,11 +64,11 @@ impl DevUi {
         theme: &mut Theme,
         board: &mut Board,
         camera: &mut CameraPos,
-    ) -> AnyResult<bool> {
+    ) -> AnyResult<Vec<Message>> {
         match self.menu {
             DevUiMenu::Hidden => {}
             DevUiMenu::Main => self.draw_main(theme),
-            DevUiMenu::Screen => self.draw_screen(time, theme, board, camera),
+            DevUiMenu::Screen => self.draw_screen(time, theme, camera),
             DevUiMenu::Board => return Ok(self.draw_characters(theme, board)),
             DevUiMenu::PaletteWorld => self.draw_palette(theme)?,
             DevUiMenu::PaletteUi => self.draw_palette_ui(theme)?,
@@ -76,7 +77,7 @@ impl DevUi {
                 self.draw_edit_ui_color(state_index, color_index, theme)?
             }
         }
-        Ok(false)
+        Ok(Vec::new())
     }
     fn dev_ui_title(theme: &mut Theme) -> Rect {
         render_text_dev(
@@ -113,13 +114,7 @@ impl DevUi {
         self.navigation(theme, "Hide Dev UI", DevUiMenu::Hidden, rect);
     }
 
-    fn draw_screen(
-        &mut self,
-        time: &Time,
-        theme: &mut Theme,
-        board: &mut Board,
-        camera: &mut CameraPos,
-    ) {
+    fn draw_screen(&mut self, time: &Time, theme: &mut Theme, camera: &mut CameraPos) {
         let rect = &mut Self::dev_ui_title(theme);
         // let text = "You can move the green cursor with your keyboard arrows";
         // let rect = render_text(text, below_left(rect), theme);
@@ -148,7 +143,7 @@ impl DevUi {
         self.navigation(theme, "Back", DevUiMenu::Main, rect);
     }
 
-    fn draw_characters(&mut self, theme: &mut Theme, board: &mut Board) -> bool {
+    fn draw_characters(&mut self, theme: &mut Theme, board: &mut Board) -> Vec<Message> {
         let rect = &mut Self::dev_ui_title(theme);
 
         let _rect = render_slider(
@@ -170,8 +165,10 @@ impl DevUi {
         if render_button_dev_mut("Reset texture size", theme, below_left, rect).is_clicked() {
             board.piece_size = DEFAULT_PIECE_SIZE;
         }
-        let should_reload_textures =
-            render_button_dev_mut("Reload textures (T)", theme, below_left, rect).is_clicked();
+        let mut messages = Vec::new();
+        if render_button_dev_mut("Reload textures (T)", theme, below_left, rect).is_clicked() {
+            messages.push(Message::ReloadTextures);
+        }
 
         let dir = board.referee.dir_c();
         let text = format!("Referee dir: {:0>5.2} {:0>5.2}", dir.column, dir.row);
@@ -205,7 +202,7 @@ impl DevUi {
         }
 
         self.navigation(theme, "Back", DevUiMenu::Main, rect);
-        should_reload_textures
+        messages
     }
     fn draw_palette(&mut self, theme: &mut Theme) -> AnyResult<()> {
         self.clipboard.maybe_refresh()?;

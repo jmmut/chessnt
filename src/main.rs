@@ -3,6 +3,7 @@ use chessnt::core::input::Gamepads;
 use chessnt::core::time::Time;
 use chessnt::screen::theme::{new_text_coloring, CameraPos, Fonts, Textures, Theme};
 use chessnt::screen::ui::{render_text_no_font, render_title, SCALE};
+use chessnt::screen::ui_board::Message;
 use chessnt::screen::ui_dev::DevUi;
 use chessnt::world::board::Board;
 use chessnt::world::moves::Move;
@@ -54,9 +55,7 @@ async fn fallible_main() -> AnyResult<()> {
         let screen = vec2(screen_width(), screen_height());
         theme.update_screen_size(screen);
 
-        if handle_inputs_shoud_exit(&mut board, &mut gamepads, &mut dev_ui) {
-            return Ok(());
-        }
+        let mut messages = handle_inputs_shoud_exit(&mut board, &mut gamepads, &mut dev_ui);
         board.tick(time.delta());
 
         set_3d_camera(&camera);
@@ -64,16 +63,39 @@ async fn fallible_main() -> AnyResult<()> {
         board.draw_world(theme);
 
         set_default_camera();
-        board.draw_ui(theme);
-        let should_reload_textures = dev_ui.draw(&time, theme, &mut board, &mut camera)?;
-        if is_key_pressed(KeyCode::T) || should_reload_textures {
-            let anchor = Anchor::center_v(theme.screen_rect().center());
-            render_title("Re-loading textures", theme, anchor);
-            next_frame().await;
-            theme.textures = load_textures().await?;
+        messages.extend(board.draw_ui(theme));
+        messages.extend(dev_ui.draw(&time, theme, &mut board, &mut camera)?);
+        if handle_ui_actions(messages, &mut board, theme).await? {
+            break;
         }
         next_frame().await
     }
+    Ok(())
+}
+
+async fn handle_ui_actions(
+    messages: Vec<Message>,
+    board: &mut Board,
+    theme: &mut Theme,
+) -> AnyResult<bool> {
+    let mut should_exit = false;
+    for message in messages {
+        match message {
+            Message::Exit => {
+                should_exit = true;
+            }
+            Message::Restart => {
+                board.reset();
+            }
+            Message::ReloadTextures => {
+                let anchor = Anchor::center_v(theme.screen_rect().center());
+                render_title("Re-loading textures", theme, anchor);
+                next_frame().await;
+                theme.textures = load_textures().await?;
+            }
+        }
+    }
+    Ok(should_exit)
 }
 
 async fn load_textures() -> AnyResult<Textures> {
@@ -102,7 +124,7 @@ fn handle_inputs_shoud_exit(
     board: &mut Board,
     gamepads: &mut Gamepads,
     dev_ui: &mut DevUi,
-) -> bool {
+) -> Vec<Message> {
     if is_key_pressed(KeyCode::Slash)
         || is_key_pressed(KeyCode::KpDivide)
         || is_key_pressed(KeyCode::LeftBracket)
@@ -134,7 +156,14 @@ fn handle_inputs_shoud_exit(
     if is_key_pressed(KeyCode::O) {
         board.referee.render_radar = !board.referee.render_radar;
     }
-    is_key_pressed(KeyCode::Escape)
+    let mut messages = Vec::new();
+    if is_key_pressed(KeyCode::Escape) {
+        messages.push(Message::Exit);
+    }
+    if is_key_pressed(KeyCode::T) {
+        messages.push(Message::ReloadTextures);
+    }
+    messages
 }
 
 struct Directions {
