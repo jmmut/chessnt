@@ -24,8 +24,8 @@ use ui::below_left;
 pub enum DevUiMenu {
     Hidden,
     Main,
-    Camera,
-    Referee,
+    Screen,
+    Board,
     PaletteWorld,
     PaletteUi,
     EditWorldColor(usize),
@@ -56,18 +56,19 @@ impl DevUi {
     pub fn show(&self) -> bool {
         self.menu != DevUiMenu::Hidden
     }
+    /// returns true if textures should be reloaded
     pub fn draw(
         &mut self,
         time: &Time,
         theme: &mut Theme,
         board: &mut Board,
         camera: &mut CameraPos,
-    ) -> AnyResult<()> {
+    ) -> AnyResult<bool> {
         match self.menu {
             DevUiMenu::Hidden => {}
             DevUiMenu::Main => self.draw_main(theme),
-            DevUiMenu::Camera => self.draw_camera(time, theme, board, camera),
-            DevUiMenu::Referee => self.draw_referee(theme, board),
+            DevUiMenu::Screen => self.draw_screen(time, theme, board, camera),
+            DevUiMenu::Board => return Ok(self.draw_characters(theme, board)),
             DevUiMenu::PaletteWorld => self.draw_palette(theme)?,
             DevUiMenu::PaletteUi => self.draw_palette_ui(theme)?,
             DevUiMenu::EditWorldColor(index) => self.draw_edit_world_color(index, theme)?,
@@ -75,7 +76,7 @@ impl DevUi {
                 self.draw_edit_ui_color(state_index, color_index, theme)?
             }
         }
-        Ok(())
+        Ok(false)
     }
     fn dev_ui_title(theme: &mut Theme) -> Rect {
         render_text_dev(
@@ -105,14 +106,14 @@ impl DevUi {
 
     fn draw_main(&mut self, theme: &mut Theme) {
         let rect = &mut Self::dev_ui_title(theme);
-        self.navigation(theme, "Camera controls", DevUiMenu::Camera, rect);
-        self.navigation(theme, "Inspect referee", DevUiMenu::Referee, rect);
+        self.navigation(theme, "Screen", DevUiMenu::Screen, rect);
+        self.navigation(theme, "Board & Characters", DevUiMenu::Board, rect);
         self.navigation(theme, "Edit world palette", DevUiMenu::PaletteWorld, rect);
         self.navigation(theme, "Edit ui palette", DevUiMenu::PaletteUi, rect);
         self.navigation(theme, "Hide Dev UI", DevUiMenu::Hidden, rect);
     }
 
-    fn draw_camera(
+    fn draw_screen(
         &mut self,
         time: &Time,
         theme: &mut Theme,
@@ -128,26 +129,6 @@ impl DevUi {
         // let text = format!("scale: {}", unsafe { SCALE });
         // let _rect = render_text(&text, below_left(_rect), theme);
 
-        let _rect = render_slider(
-            "Texture size X",
-            theme,
-            0.1,
-            2.0,
-            &mut board.piece_size.x,
-            rect,
-        );
-        let _rect = render_slider(
-            "Texture size Y",
-            theme,
-            0.1,
-            2.0,
-            &mut board.piece_size.y,
-            rect,
-        );
-        let clicked = render_button_dev_mut("Reset texture size", theme, below_left, rect);
-        if clicked.is_clicked() {
-            board.piece_size = DEFAULT_PIECE_SIZE;
-        }
         render_slider("Camera Y", theme, 0.0, 100.0, &mut camera.y, rect);
         render_slider("Camera Z", theme, 0.0, 100.0, &mut camera.z, rect);
         render_slider("Camera Width", theme, 43.5, 47.5, &mut camera.fovy, rect);
@@ -167,22 +148,64 @@ impl DevUi {
         self.navigation(theme, "Back", DevUiMenu::Main, rect);
     }
 
-    fn draw_referee(&mut self, theme: &mut Theme, board: &mut Board) {
+    fn draw_characters(&mut self, theme: &mut Theme, board: &mut Board) -> bool {
         let rect = &mut Self::dev_ui_title(theme);
+
+        let _rect = render_slider(
+            "Texture size X",
+            theme,
+            0.1,
+            2.0,
+            &mut board.piece_size.x,
+            rect,
+        );
+        let _rect = render_slider(
+            "Texture size Y",
+            theme,
+            0.1,
+            2.0,
+            &mut board.piece_size.y,
+            rect,
+        );
+        if render_button_dev_mut("Reset texture size", theme, below_left, rect).is_clicked() {
+            board.piece_size = DEFAULT_PIECE_SIZE;
+        }
+        let should_reload_textures =
+            render_button_dev_mut("Reload textures (T)", theme, below_left, rect).is_clicked();
+
         let dir = board.referee.dir_c();
-        render_text_dev_mut(
-            &format!("Referee dir: {:0>5.2} {:0>5.2}", dir.column, dir.row),
-            theme,
-            below_left,
-            rect,
-        );
-        render_text_dev_mut(
-            &format!("trip time: {:0>5.2}", board.referee.trip_time),
-            theme,
-            below_left,
-            rect,
-        );
+        let text = format!("Referee dir: {:0>5.2} {:0>5.2}", dir.column, dir.row);
+        render_text_dev_mut(&text, theme, below_left, rect);
+
+        let text = format!("Referee trip time: {:0>5.2}", board.referee.trip_time);
+        render_text_dev_mut(&text, theme, below_left, rect);
+
+        let action = if board.referee.render_radar {
+            "Hide"
+        } else {
+            "Show"
+        };
+        let text = format!("{} referee's radar (O)", action);
+        if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
+            board.referee.render_radar = !board.referee.render_radar;
+        }
+        let action = if board.referee.referee_paused {
+            "Resume"
+        } else {
+            "Pause"
+        };
+        let text = format!("{} referee's movement (P)", action);
+        if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
+            board.referee.referee_paused = !board.referee.referee_paused;
+        }
+
+        let text = "Reset board (R)";
+        if render_button_dev_mut(text, theme, below_left, rect).is_clicked() {
+            board.reset()
+        }
+
         self.navigation(theme, "Back", DevUiMenu::Main, rect);
+        should_reload_textures
     }
     fn draw_palette(&mut self, theme: &mut Theme) -> AnyResult<()> {
         self.clipboard.maybe_refresh()?;

@@ -255,11 +255,11 @@ pub fn render_slider_mut(
     anchor: fn(Rect) -> Anchor,
     rect: &mut Rect,
 ) {
-    let new_rect = render_text_dev(&format!("{}: {:0>5.2}", text, value), theme, anchor(*rect));
+    let text_rect = render_text_dev(&format!("{}: {:0>5.2}", text, value), theme, anchor(*rect));
     let mut style = Style::default();
     style.coloring = theme.button_coloring();
     let mut slider = juquad::lazy::slider::Slider::new(style, min, max, *value);
-    slider.set_pos(rightwards(new_rect).get_top_left_pixel(slider.size()));
+    slider.set_pos(rightwards(text_rect).get_top_left_pixel(slider.size()));
     *value = *(slider
         .interact()
         .into_iter()
@@ -268,5 +268,5 @@ pub fn render_slider_mut(
         .downcast::<f32>()
         .unwrap());
     slider.render_interactive(Interaction::None);
-    *rect = slider.rect().combine_with(new_rect);
+    *rect = slider.rect().combine_with(text_rect);
 }
