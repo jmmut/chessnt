@@ -61,10 +61,10 @@ impl Board {
         ];
         let mut pieces = Vec::new();
         for (row, movement) in &back_column {
-            pieces.push(Piece::new(Coord::new_i(7, *row), *movement, Team::White));
-            pieces.push(Piece::new(Coord::new_i(0, *row), *movement, Team::Black));
-            pieces.push(Piece::new(Coord::new_i(6, *row), Move::Pawn, Team::White));
-            pieces.push(Piece::new(Coord::new_i(1, *row), Move::Pawn, Team::Black));
+            pieces.push(Piece::new(Coord::new_i(7, *row), Team::White, *movement));
+            pieces.push(Piece::new(Coord::new_i(0, *row), Team::Black, *movement));
+            pieces.push(Piece::new(Coord::new_i(6, *row), Team::White, Move::Pawn));
+            pieces.push(Piece::new(Coord::new_i(1, *row), Team::Black, Move::Pawn));
         }
         let size = Coord::new_i(8, 8);
         Self::new(cursor_white, cursor_black, size, pieces)
@@ -492,6 +492,7 @@ fn depth(mesh: &Mesh) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::world::moves::tests::parse_board_cursor;
     use crate::world::piece::PieceMock;
 
     fn pieces_at(pos: Coord, pieces: &[Piece]) -> Vec<&Piece> {
@@ -502,6 +503,13 @@ mod tests {
             }
         }
         found
+    }
+
+    fn build_board(text: &str) -> Board {
+        let (size, pieces, white_cursor, black_cursor) = parse_board_cursor(text);
+        let mut board = Board::new(white_cursor, black_cursor, size, pieces);
+        board.set_all_seeing_referee(true);
+        board
     }
 
     #[test]
@@ -522,15 +530,8 @@ mod tests {
     }
     #[test]
     fn test_deselect_when_killed() {
-        let pos_left = Coord::new_i(0, 0);
-        let pos_right = Coord::new_i(1, 0);
-        let size = Coord::new_i(2, 1);
-        let pieces = vec![
-            Piece::new(pos_left, Move::Queen, Team::White),
-            Piece::new(pos_right, Move::Rook, Team::Black),
-        ];
-        let mut board = Board::new(pos_left, pos_right, size, pieces.clone());
-        board.set_all_seeing_referee(true);
+        let mut board = build_board("wqO brX");
+        let pos_right = board.cursor_black;
 
         board.select(Team::White);
         board.select(Team::Black);
@@ -555,16 +556,13 @@ mod tests {
     }
 
     fn rook_bishop_3_3() -> (Coord, Coord, Board) {
-        let pos_left = Coord::new_i(0, 0);
-        let pos_right = Coord::new_i(2, 0);
-        let size = Coord::new_i(3, 3);
-        let pieces = vec![
-            Piece::new(pos_left, Move::Rook, Team::White),
-            Piece::new(pos_right, Move::Bishop, Team::Black),
-        ];
-        let mut board = Board::new(pos_left, pos_right, size, pieces);
-        board.set_all_seeing_referee(true);
-        (pos_left, pos_right, board)
+        #[rustfmt::skip]
+        let board = build_board("
+            wrO --- bbX
+            --- --- ---
+            --- --- ---
+        ");
+        (board.cursor_white, board.cursor_black, board)
     }
 
     #[test]

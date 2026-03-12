@@ -59,7 +59,7 @@ impl PieceMock {
 }
 impl From<PieceMock> for Piece {
     fn from(value: PieceMock) -> Self {
-        let mut piece = Self::new(value.pos, Move::Pawn, value.team);
+        let mut piece = Self::new(value.pos, value.team, Move::Pawn);
         piece.initial_pos = value.initial_pos;
         piece.moveset = value.moveset;
         if let Some(moved) = value.moved {
@@ -86,7 +86,7 @@ impl From<&Piece> for PieceMock {
     }
 }
 impl Piece {
-    pub fn new(pos: Coord, movement: Move, team: Team) -> Self {
+    pub fn new(pos: Coord, team: Team, movement: Move) -> Self {
         Self {
             initial_pos: pos,
             pos,
