@@ -16,6 +16,7 @@ pub enum Message {
     Exit,
     Restart,
     ReloadTextures,
+    ToggleBot,
 }
 
 impl Board {

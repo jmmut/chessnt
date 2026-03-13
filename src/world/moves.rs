@@ -229,7 +229,7 @@ fn add_direction(
     }
 }
 
-fn inside(pos: Coord, board_size: Coord) -> bool {
+pub fn inside(pos: Coord, board_size: Coord) -> bool {
     pos.column >= 0.0
         && pos.column < board_size.column
         && pos.row >= 0.0

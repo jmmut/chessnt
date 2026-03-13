@@ -209,6 +209,10 @@ impl DevUi {
             board.reset()
         }
 
+        if render_button_dev_mut(&format!("{} bot", action), theme, below_left, rect).is_clicked() {
+            messages.push(Message::ToggleBot);
+        }
+
         self.navigation(theme, "Back", DevUiMenu::Main, rect);
         messages
     }

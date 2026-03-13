@@ -21,6 +21,7 @@ pub mod screen {
 }
 pub mod world {
     pub mod board;
+    pub mod bot;
     pub mod moves;
     pub mod piece;
     pub mod referee;

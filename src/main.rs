@@ -6,6 +6,7 @@ use chessnt::screen::ui::{render_text_no_font, render_title, SCALE};
 use chessnt::screen::ui_board::Message;
 use chessnt::screen::ui_dev::DevUi;
 use chessnt::world::board::Board;
+use chessnt::world::bot::Bot;
 use chessnt::world::moves::Move;
 use chessnt::world::team::Team;
 use chessnt::{
@@ -42,10 +43,11 @@ async fn fallible_main() -> AnyResult<()> {
         text: load_ttf_font("assets/fonts/TitilliumWeb-SemiBold.ttf").await?,
         dev: load_ttf_font("assets/fonts/JetBrainsMono-Medium.ttf").await?,
     };
-    let mut theme_owned = Theme::new(textures, fonts);
-    let theme = &mut theme_owned;
+    let mut theme = Theme::new(textures, fonts);
     let mut camera = CameraPos::default();
     let mut board = Board::new_chess(Coord::new_i(6, 4), Coord::new_i(2, 4));
+    let mut bot = Bot::new(Team::Black);
+    let mut bot_enabled = false;
     let mut gamepads = Gamepads::new();
     let mut dev_ui = DevUi::new()?;
     let mut time = Time::new();
@@ -57,15 +59,18 @@ async fn fallible_main() -> AnyResult<()> {
 
         let mut messages = handle_inputs_shoud_exit(&mut board, &mut gamepads, &mut dev_ui);
         board.tick(time.delta());
+        if bot_enabled {
+            bot.tick(time.delta(), &mut board)
+        }
 
         set_3d_camera(&camera);
         clear_background(theme.palette.background);
-        board.draw_world(theme);
+        board.draw_world(&theme);
 
         set_default_camera();
-        messages.extend(board.draw_ui(theme));
-        messages.extend(dev_ui.draw(&time, theme, &mut board, &mut camera)?);
-        if handle_ui_actions(messages, &mut board, theme).await? {
+        messages.extend(board.draw_ui(&theme));
+        messages.extend(dev_ui.draw(&time, &mut theme, &mut board, &mut camera)?);
+        if handle_ui_actions(messages, &mut board, &mut bot_enabled, &mut theme).await? {
             break;
         }
         next_frame().await
@@ -76,6 +81,7 @@ async fn fallible_main() -> AnyResult<()> {
 async fn handle_ui_actions(
     messages: Vec<Message>,
     board: &mut Board,
+    bot_enabled: &mut bool,
     theme: &mut Theme,
 ) -> AnyResult<bool> {
     let mut should_exit = false;
@@ -92,6 +98,9 @@ async fn handle_ui_actions(
                 render_title("Re-loading textures", theme, anchor);
                 next_frame().await;
                 theme.textures = load_textures().await?;
+            }
+            Message::ToggleBot => {
+                *bot_enabled = !*bot_enabled;
             }
         }
     }
@@ -163,6 +172,9 @@ fn handle_inputs_shoud_exit(
     if is_key_pressed(KeyCode::T) {
         messages.push(Message::ReloadTextures);
     }
+    if is_key_pressed(KeyCode::B) {
+        messages.push(Message::ToggleBot);
+    }
     messages
 }
 
@@ -192,7 +204,7 @@ fn move_cursor_or_piece(board: &mut Board, gamepads: &mut Gamepads) {
 }
 
 fn move_cursor_or_piece_team(board: &mut Board, team: Team, directions: Directions) {
-    let max = 0.05;
+    let max = 0.05; // TODO: make dependent on frame delay?
     if board.is_selected(team) {
         let mut delta = Coord::new_f(0.0, 0.0);
         if is_key_down(directions.right) {

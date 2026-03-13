@@ -4,7 +4,7 @@ use crate::screen::render::{
     mesh_progress_bar, mesh_quad, mesh_texture_quad, mesh_triangle, mesh_vertical_texture, quad,
 };
 use crate::screen::theme::Theme;
-use crate::world::moves::{compute_attackers, possible_moves, Move};
+use crate::world::moves::{compute_attackers, inside, possible_moves, Move};
 use crate::world::piece::Piece;
 use crate::world::referee::Referee;
 use crate::world::team::Team;
@@ -70,7 +70,7 @@ impl Board {
         Self::new(cursor_white, cursor_black, size, pieces)
     }
     pub fn reset(&mut self) {
-        *self = Self::new_chess(self.cursor_white, self.cursor_black);
+        *self = Self::new_chess(self.cursor_white.round(), self.cursor_black.round());
     }
     pub fn set_all_seeing_referee(&mut self, value: bool) {
         self.referee.set_all_seeing(value)
@@ -80,6 +80,9 @@ impl Board {
         for piece in &mut self.pieces {
             piece.tick(delta_s);
         }
+    }
+    pub fn size(&self) -> Coord {
+        self.size
     }
     fn get_selected_piece(&self, team: Team) -> Option<&Piece> {
         if let Some(index) = self.selected(team) {
@@ -149,13 +152,19 @@ impl Board {
                 let referee_saw = self.referee.saw_any_piece(&self.pieces, vec![selected_i]);
                 let rounded_overlap_initial = self.pieces[overlap_i].pos_initial_i();
                 let overlap_team = self.pieces[overlap_i].team;
-                let enemy = overlap_team != self.pieces[selected_i].team;
+                let selected_team = self.pieces[selected_i].team;
+                let enemy = overlap_team != selected_team;
                 if enemy {
-                    if moves.contains(&rounded_overlap_initial) && referee_saw {
-                        // self.
-                        self.kill(overlap_i);
-                        self.pieces[selected_i].set_pos_and_initial(rounded_overlap_initial);
-                        self.referee.turn.toggle();
+                    if referee_saw {
+                        if moves.contains(&rounded_overlap_initial)
+                            && self.referee.turn == selected_team
+                        {
+                            self.kill(overlap_i);
+                            self.pieces[selected_i].set_pos_and_initial(rounded_overlap_initial);
+                            self.referee.turn.toggle();
+                        } else {
+                            self.kill(selected_i);
+                        }
                     } else {
                         self.pieces[selected_i].set_pos_and_initial(initial);
                     }
@@ -181,12 +190,18 @@ impl Board {
                 if referee_saw {
                     if initial_pos == rounded_pos {
                         // grabbed and dropped in the same place: ok for both teams
+                    } else if !self.pieces[selected_i].alive {
+                        self.kill(selected_i);
                     } else if !moves.contains(&rounded_pos) {
                         self.kill(selected_i);
                     } else if self.referee.turn != self.pieces[selected_i].team {
                         self.kill(selected_i);
                     } else {
                         self.referee.turn.toggle();
+                    }
+                } else {
+                    if inside(self.pieces[selected_i].pos_i(), self.size) {
+                        self.pieces[selected_i].alive = true;
                     }
                 }
             }
@@ -206,7 +221,7 @@ impl Board {
             self.select(team);
         }
     }
-    fn selected(&self, team: Team) -> Option<PieceIndex> {
+    pub fn selected(&self, team: Team) -> Option<PieceIndex> {
         if team == Team::White {
             self.selected_white
         } else {
@@ -255,6 +270,7 @@ impl Board {
         self.pieces[selected_i].set_pos_and_initial(Coord::new_i(column, -2));
         while self.overlapping_pieces(selected_i).len() > 0 {
             self.pieces[selected_i].move_rel(Coord::new_i(0, -1));
+            self.pieces[selected_i].initial_pos = self.pieces[selected_i].pos_f();
         }
     }
 
