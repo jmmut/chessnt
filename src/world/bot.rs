@@ -1,8 +1,9 @@
 use crate::core::coord::Coord;
-use crate::world::board::{Board, PieceIndex};
+use crate::world::board::{other_pieces_at, Board, PieceIndex};
 use crate::world::moves::possible_moves;
 use crate::world::piece::Piece;
 use crate::world::team::Team;
+use macroquad::math::Vec2;
 
 pub const WAIT_CURSOR: i32 = 20;
 
@@ -33,7 +34,7 @@ impl Bot {
     pub fn tick(&mut self, _delta_s: f64, board: &mut Board) {
         match self.plan {
             Plan::None => {
-                if let Some((piece_index, _piece, destination)) = self.any_movement(board) {
+                if let Some((piece_index, _piece, destination)) = self.choose_target(board) {
                     if let Some(index) = board.selected(self.team) {
                         if index == piece_index {
                             self.plan = Plan::Move {
@@ -114,16 +115,60 @@ impl Bot {
                     if selected == piece_index {
                         let max = 0.05;
                         let cursor_pos = board.cursor(self.team);
-                        if cursor_pos.round() == destination.round() {
-                            board.deselect(self.team);
-                            self.plan = Plan::None;
+                        if close_to_center_of(cursor_pos, destination) {
+                            // at destination. should deselect now or wait?
+                            let others = other_pieces_at(destination, selected, board.pieces());
+                            if others.len() > 1 {
+                                panic!(
+                                    "unsupported for several pieces ({}) to own a tile {:?}",
+                                    others.len(),
+                                    destination
+                                );
+                            }
+                            if let Some(other) = others.first() {
+                                // there's another piece at destination
+                                if board.pieces()[*other].team == self.team {
+                                    panic!("swapping pieces of bot's team is unsupported");
+                                }
+                                // the other piece is from the enemy team
+                                if board.referee.turn == self.team {
+                                    // allowed to kill
+
+                                    if board.referee.saw_piece(board.pieces(), selected) {
+                                        board.deselect(self.team);
+                                        self.plan = Plan::None;
+                                    } else {
+                                        // wait until referee sees and allows me to kill
+                                    }
+                                } else {
+                                    // should wait until it's my turn
+                                }
+                            } else {
+                                // no other piece at destination
+                                if board.referee.turn == self.team {
+                                    // allowed to move
+                                    board.deselect(self.team);
+                                    self.plan = Plan::None;
+                                } else {
+                                    // not our turn
+                                    if board.referee.saw_piece(board.pieces(), selected) {
+                                        // should wait until referee doesn't see us
+                                    } else {
+                                        // forbidden movement but referee doesn't see
+                                        board.deselect(self.team);
+                                        self.plan = Plan::None;
+                                    }
+                                }
+                            }
                         } else {
+                            // selected but not in destination, need to move
                             let diff = destination - cursor_pos;
                             let diff = diff.normalize();
                             let diff = diff * max;
                             board.move_cursor_rel(diff, self.team);
                         }
                     } else {
+                        // selected wrong piece
                         board.deselect(self.team);
                         self.plan = Plan::Select {
                             piece_index,
@@ -132,6 +177,7 @@ impl Bot {
                         };
                     }
                 } else {
+                    // have no piece selected
                     self.plan = Plan::Select {
                         piece_index,
                         destination,
@@ -142,7 +188,7 @@ impl Bot {
         }
     }
 
-    fn any_movement<'a>(&self, board: &'a Board) -> Option<(usize, &'a Piece, Coord)> {
+    fn choose_target<'a>(&self, board: &'a Board) -> Option<(usize, &'a Piece, Coord)> {
         for (i, piece) in board.pieces().iter().enumerate() {
             if piece.team == self.team {
                 let moves = possible_moves(board.size(), board.pieces(), i);
@@ -153,4 +199,11 @@ impl Bot {
         }
         None
     }
+}
+
+fn close_to_center_of(cursor_pos: Coord, destination: Coord) -> bool {
+    (cursor_pos - destination.round())
+        .into::<Vec2>()
+        .length_squared()
+        < 0.1
 }

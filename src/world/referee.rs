@@ -1,39 +1,11 @@
 use crate::core::coord::Coord;
+use crate::core::interpolation;
+use crate::core::interpolation::Interpolation;
+use crate::world::board::PieceIndex;
 use crate::world::piece::Piece;
 use crate::world::team::Team;
 use crate::COLUMNS;
 use macroquad::math::{vec2, vec3, Vec2, Vec3};
-use std::ops::{Add, Mul};
-
-pub struct Interpolation<T> {
-    start: T,
-    end: T,
-}
-impl<T: Mul<f32, Output = T> + Add<f32, Output = T> + Add<T, Output = T> + Copy> Interpolation<T> {
-    pub fn new(start: T, end: T) -> Self {
-        Self { start, end }
-    }
-    /// Note that you can compound interpolation transformations like:
-    /// `interp.at(smooth(quadratic(t)))`
-    pub fn at(&self, t: f32) -> T {
-        let t = t.clamp(0.0, 1.0);
-        (self.start * (1.0 - t)) + (self.end * t)
-    }
-}
-
-#[allow(unused)]
-fn linear_raw(start: Coord, end: Coord, t: f32) -> Coord {
-    let t = t.clamp(0.0, 1.0);
-    (start * (1.0 - t)) + (end * t)
-}
-fn smooth(t: f32) -> f32 {
-    Interpolation::new(t * t, 1.0 - (1.0 - t) * (1.0 - t)).at(t)
-}
-
-#[allow(unused)]
-fn quadratic(t: f32) -> f32 {
-    Interpolation::new(0.0, t * t).at(t)
-}
 
 pub struct Referee {
     position: Vec2,
@@ -97,7 +69,9 @@ impl Referee {
                 self.prev_position = self.position;
                 self.position = self
                     .interpolation
-                    .at(smooth((self.interpolation_s / self.trip_time) as f32))
+                    .at(interpolation::smooth(
+                        (self.interpolation_s / self.trip_time) as f32,
+                    ))
                     .into();
                 let y = 1.0;
                 let x = (self.position.x - self.prev_position.x) / delta_s as f32
@@ -105,8 +79,9 @@ impl Referee {
                     * 0.4;
                 let dir_end = vec2(x, y);
                 if let Some(radar_start) = self.radar_start {
-                    self.direction = Interpolation::new(radar_start, dir_end)
-                        .at(smooth((self.interpolation_s / self.trip_time) as f32));
+                    self.direction = Interpolation::new(radar_start, dir_end).at(
+                        interpolation::smooth((self.interpolation_s / self.trip_time) as f32),
+                    );
                 } else {
                     self.direction = dir_end;
                 }
@@ -193,7 +168,7 @@ impl Referee {
     pub fn set_all_seeing(&mut self, value: bool) {
         self.all_seeing = value;
     }
-    pub fn saw_any_piece(&self, pieces: &Vec<Piece>, indexes: Vec<usize>) -> bool {
+    pub fn saw_any_piece(&self, pieces: &Vec<Piece>, indexes: Vec<PieceIndex>) -> bool {
         if self.all_seeing {
             true
         } else {
@@ -202,6 +177,9 @@ impl Referee {
                 .iter()
                 .any(|index| triangle_contains(radar, pieces[*index].pos_f()))
         }
+    }
+    pub fn saw_piece(&self, pieces: &Vec<Piece>, piece_index: PieceIndex) -> bool {
+        self.saw_any_piece(pieces, vec![piece_index])
     }
     pub fn focus_progress(&self) -> Option<f64> {
         if let Some(focused) = self.focused {

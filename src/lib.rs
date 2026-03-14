@@ -9,6 +9,7 @@ pub mod core {
     pub mod clipboard;
     pub mod coord;
     pub mod input;
+    pub mod interpolation;
     pub mod time;
 }
 pub mod screen {
