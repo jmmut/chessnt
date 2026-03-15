@@ -31,3 +31,49 @@ impl Display for Team {
         }
     }
 }
+
+pub struct OneForEachTeam<T> {
+    white: T,
+    black: T,
+}
+
+impl<T> OneForEachTeam<T> {
+    pub fn new(white: T, black: T) -> Self {
+        Self { white, black }
+    }
+    pub fn new_from_factory(factory: fn(Team) -> T) -> Self {
+        Self {
+            white: factory(Team::White),
+            black: factory(Team::Black),
+        }
+    }
+    pub fn get(&self, team: Team) -> &T {
+        if team.is_white() {
+            &self.white
+        } else {
+            &self.black
+        }
+    }
+    pub fn get_mut(&mut self, team: Team) -> &mut T {
+        if team.is_white() {
+            &mut self.white
+        } else {
+            &mut self.black
+        }
+    }
+    pub fn iter(&self) -> impl IntoIterator<Item = &T> {
+        [&self.white, &self.black]
+    }
+    pub fn team_iter(&self) -> impl IntoIterator<Item = (Team, &T)> {
+        [(Team::White, &self.white), (Team::Black, &self.black)]
+    }
+    pub fn iter_mut(&mut self) -> impl IntoIterator<Item = &mut T> {
+        [&mut self.white, &mut self.black]
+    }
+    pub fn team_iter_mut(&mut self) -> impl IntoIterator<Item = (Team, &mut T)> {
+        [
+            (Team::White, &mut self.white),
+            (Team::Black, &mut self.black),
+        ]
+    }
+}

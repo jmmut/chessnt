@@ -97,7 +97,7 @@ async fn handle_ui_actions(
                 theme.textures = load_textures().await?;
             }
             Message::ToggleBot(team) => {
-                bots.toggle(team);
+                bots.bots.get_mut(team).toggle();
             }
         }
     }

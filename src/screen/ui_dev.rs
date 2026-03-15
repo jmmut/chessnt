@@ -12,7 +12,7 @@ use crate::screen::ui::{
 use crate::screen::ui_board::Message;
 use crate::world::board::{Board, DEFAULT_PIECE_SIZE};
 use crate::world::bot::Bots;
-use crate::world::team::Team;
+use crate::world::team::OneForEachTeam;
 use crate::{AnyResult, INITIAL_DEV_UI};
 use juquad::draw::draw_rect;
 use juquad::widgets::anchor::Anchor;
@@ -209,15 +209,13 @@ impl DevUi {
             board.reset()
         }
 
-        let action = pause_or_resume(bots.is_enabled(Team::Black));
-        let text = &format!("{} black bot (B)", action);
-        if render_button_dev_mut(text, theme, below_left, rect).is_clicked() {
-            messages.push(Message::ToggleBot(Team::Black));
-        }
-        let action = pause_or_resume(bots.is_enabled(Team::White));
-        let text = &format!("{} white bot (V)", action);
-        if render_button_dev_mut(text, theme, below_left, rect).is_clicked() {
-            messages.push(Message::ToggleBot(Team::White));
+        let description = OneForEachTeam::new("white bot (V)", "black bot (B)");
+        for (team, bot) in bots.bots.team_iter_mut() {
+            let action = pause_or_resume(bot.enabled);
+            let text = &format!("{} {}", action, description.get(team));
+            if render_button_dev_mut(text, theme, below_left, rect).is_clicked() {
+                bot.toggle();
+            }
         }
 
         self.navigation(theme, "Back", DevUiMenu::Main, rect);

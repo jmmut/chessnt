@@ -7,7 +7,7 @@ use crate::screen::theme::Theme;
 use crate::world::moves::{compute_attackers, inside, possible_moves, Move};
 use crate::world::piece::Piece;
 use crate::world::referee::Referee;
-use crate::world::team::Team;
+use crate::world::team::{OneForEachTeam, Team};
 use crate::TRANSPARENT;
 use macroquad::color::{Color, WHITE};
 use macroquad::math::{vec2, vec3, Vec2, Vec3};
@@ -21,10 +21,8 @@ const FLOOR_PIECE_HEIGHT: f32 = RADAR_HEIGHT * 0.2;
 pub type PieceIndex = usize;
 
 pub struct Board {
-    cursor_white: Coord,
-    cursor_black: Coord,
-    selected_white: Option<PieceIndex>,
-    selected_black: Option<PieceIndex>,
+    cursor: OneForEachTeam<Coord>,
+    selected: OneForEachTeam<Option<PieceIndex>>,
     size: Coord,
     pieces: Vec<Piece>,
     pub referee: Referee,
@@ -37,10 +35,8 @@ pub const DEFAULT_PIECE_SIZE: Vec2 = vec2(0.3, 1.0);
 impl Board {
     pub fn new(cursor_white: Coord, cursor_black: Coord, size: Coord, pieces: Vec<Piece>) -> Self {
         Self {
-            cursor_white,
-            cursor_black,
-            selected_white: None,
-            selected_black: None,
+            cursor: OneForEachTeam::new(cursor_white, cursor_black),
+            selected: OneForEachTeam::new(None, None),
             size,
             pieces,
             piece_size: DEFAULT_PIECE_SIZE,
@@ -70,7 +66,10 @@ impl Board {
         Self::new(cursor_white, cursor_black, size, pieces)
     }
     pub fn reset(&mut self) {
-        *self = Self::new_chess(self.cursor_white.round(), self.cursor_black.round());
+        *self = Self::new_chess(
+            self.cursor.get(Team::White).round(),
+            self.cursor.get(Team::Black).round(),
+        );
     }
     pub fn set_all_seeing_referee(&mut self, value: bool) {
         self.referee.set_all_seeing(value)
@@ -222,32 +221,16 @@ impl Board {
         }
     }
     pub fn selected(&self, team: Team) -> Option<PieceIndex> {
-        if team == Team::White {
-            self.selected_white
-        } else {
-            self.selected_black
-        }
+        *self.selected.get(team)
     }
     fn selected_mut(&mut self, team: Team) -> &mut Option<PieceIndex> {
-        if team == Team::White {
-            &mut self.selected_white
-        } else {
-            &mut self.selected_black
-        }
+        self.selected.get_mut(team)
     }
     pub fn cursor(&self, team: Team) -> Coord {
-        if team == Team::White {
-            self.cursor_white
-        } else {
-            self.cursor_black
-        }
+        *self.cursor.get(team)
     }
     fn cursor_mut(&mut self, team: Team) -> &mut Coord {
-        if team == Team::White {
-            &mut self.cursor_white
-        } else {
-            &mut self.cursor_black
-        }
+        self.cursor.get_mut(team)
     }
 
     fn force_deselect(&mut self, selected_i: PieceIndex, team: Team) {
@@ -547,7 +530,7 @@ mod tests {
     #[test]
     fn test_deselect_when_killed() {
         let mut board = build_board("wqO brX");
-        let pos_right = board.cursor_black;
+        let pos_right = board.cursor(Team::Black);
 
         board.select(Team::White);
         board.select(Team::Black);
@@ -578,7 +561,7 @@ mod tests {
             --- --- ---
             --- --- ---
         ");
-        (board.cursor_white, board.cursor_black, board)
+        (board.cursor(Team::White), board.cursor(Team::Black), board)
     }
 
     #[test]

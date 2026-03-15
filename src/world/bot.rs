@@ -2,70 +2,41 @@ use crate::core::coord::Coord;
 use crate::world::board::{other_pieces_at, Board, PieceIndex};
 use crate::world::moves::possible_moves;
 use crate::world::piece::Piece;
-use crate::world::team::Team;
+use crate::world::team::{OneForEachTeam, Team};
 use macroquad::math::Vec2;
 
 pub const WAIT_CURSOR: i32 = 20;
 
+pub struct BotHandler {
+    pub bot: Bot,
+    pub enabled: bool,
+}
+impl BotHandler {
+    pub fn new(bot: Bot, enabled: bool) -> Self {
+        Self { bot, enabled }
+    }
+    pub fn new_team(team: Team) -> Self {
+        Self::new(Bot::new(team), false)
+    }
+    pub fn toggle(&mut self) {
+        self.enabled = !self.enabled;
+    }
+}
 pub struct Bots {
-    white_bot: Bot,
-    black_bot: Bot,
-    white_bot_enabled: bool,
-    black_bot_enabled: bool,
+    pub bots: OneForEachTeam<BotHandler>,
 }
 
 impl Bots {
     pub fn new() -> Self {
-        Self::new_with(Bot::new(Team::White), false, Bot::new(Team::Black), false)
-    }
-    pub fn new_with(
-        white_bot: Bot,
-        white_bot_enabled: bool,
-        black_bot: Bot,
-        black_bot_enabled: bool,
-    ) -> Self {
         Self {
-            white_bot,
-            black_bot,
-            white_bot_enabled,
-            black_bot_enabled,
+            bots: OneForEachTeam::new_from_factory(BotHandler::new_team),
         }
     }
     pub fn tick(&mut self, delta_s: f64, board: &mut Board) {
-        let bots = self;
-        if bots.is_enabled(Team::White) {
-            bots.get_mut(Team::White).tick(delta_s, board)
-        }
-        if bots.is_enabled(Team::Black) {
-            bots.get_mut(Team::Black).tick(delta_s, board)
-        }
-    }
-    pub fn get(&self, team: Team) -> &Bot {
-        if team.is_white() {
-            &self.white_bot
-        } else {
-            &self.black_bot
-        }
-    }
-    pub fn get_mut(&mut self, team: Team) -> &mut Bot {
-        if team.is_white() {
-            &mut self.white_bot
-        } else {
-            &mut self.black_bot
-        }
-    }
-    pub fn is_enabled(&self, team: Team) -> bool {
-        if team.is_white() {
-            self.white_bot_enabled
-        } else {
-            self.black_bot_enabled
-        }
-    }
-    pub fn toggle(&mut self, team: Team) {
-        if team.is_white() {
-            self.white_bot_enabled = !self.white_bot_enabled;
-        } else {
-            self.black_bot_enabled = !self.black_bot_enabled;
+        for bot_handler in self.bots.iter_mut() {
+            if bot_handler.enabled {
+                bot_handler.bot.tick(delta_s, board)
+            }
         }
     }
 }
