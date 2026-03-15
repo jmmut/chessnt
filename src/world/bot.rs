@@ -7,6 +7,69 @@ use macroquad::math::Vec2;
 
 pub const WAIT_CURSOR: i32 = 20;
 
+pub struct Bots {
+    white_bot: Bot,
+    black_bot: Bot,
+    white_bot_enabled: bool,
+    black_bot_enabled: bool,
+}
+
+impl Bots {
+    pub fn new() -> Self {
+        Self::new_with(Bot::new(Team::White), false, Bot::new(Team::Black), false)
+    }
+    pub fn new_with(
+        white_bot: Bot,
+        white_bot_enabled: bool,
+        black_bot: Bot,
+        black_bot_enabled: bool,
+    ) -> Self {
+        Self {
+            white_bot,
+            black_bot,
+            white_bot_enabled,
+            black_bot_enabled,
+        }
+    }
+    pub fn tick(&mut self, delta_s: f64, board: &mut Board) {
+        let bots = self;
+        if bots.is_enabled(Team::White) {
+            bots.get_mut(Team::White).tick(delta_s, board)
+        }
+        if bots.is_enabled(Team::Black) {
+            bots.get_mut(Team::Black).tick(delta_s, board)
+        }
+    }
+    pub fn get(&self, team: Team) -> &Bot {
+        if team.is_white() {
+            &self.white_bot
+        } else {
+            &self.black_bot
+        }
+    }
+    pub fn get_mut(&mut self, team: Team) -> &mut Bot {
+        if team.is_white() {
+            &mut self.white_bot
+        } else {
+            &mut self.black_bot
+        }
+    }
+    pub fn is_enabled(&self, team: Team) -> bool {
+        if team.is_white() {
+            self.white_bot_enabled
+        } else {
+            self.black_bot_enabled
+        }
+    }
+    pub fn toggle(&mut self, team: Team) {
+        if team.is_white() {
+            self.white_bot_enabled = !self.white_bot_enabled;
+        } else {
+            self.black_bot_enabled = !self.black_bot_enabled;
+        }
+    }
+}
+
 enum Plan {
     None,
     Select {
@@ -205,5 +268,5 @@ fn close_to_center_of(cursor_pos: Coord, destination: Coord) -> bool {
     (cursor_pos - destination.round())
         .into::<Vec2>()
         .length_squared()
-        < 0.1
+        < 0.05
 }

@@ -6,7 +6,7 @@ use chessnt::screen::ui::{render_text_no_font, render_title, SCALE};
 use chessnt::screen::ui_board::Message;
 use chessnt::screen::ui_dev::DevUi;
 use chessnt::world::board::Board;
-use chessnt::world::bot::Bot;
+use chessnt::world::bot::Bots;
 use chessnt::world::moves::Move;
 use chessnt::world::team::Team;
 use chessnt::{
@@ -46,8 +46,7 @@ async fn fallible_main() -> AnyResult<()> {
     let mut theme = Theme::new(textures, fonts);
     let mut camera = CameraPos::default();
     let mut board = Board::new_chess(Coord::new_i(6, 4), Coord::new_i(2, 4));
-    let mut bot = Bot::new(Team::Black);
-    let mut bot_enabled = false;
+    let mut bots = Bots::new();
     let mut gamepads = Gamepads::new();
     let mut dev_ui = DevUi::new()?;
     let mut time = Time::new();
@@ -59,9 +58,7 @@ async fn fallible_main() -> AnyResult<()> {
 
         let mut messages = handle_inputs_shoud_exit(&mut board, &mut gamepads, &mut dev_ui);
         board.tick(time.delta());
-        if bot_enabled {
-            bot.tick(time.delta(), &mut board)
-        }
+        bots.tick(time.delta(), &mut board);
 
         set_3d_camera(&camera);
         clear_background(theme.palette.background);
@@ -69,8 +66,8 @@ async fn fallible_main() -> AnyResult<()> {
 
         set_default_camera();
         messages.extend(board.draw_ui(&theme));
-        messages.extend(dev_ui.draw(&time, &mut theme, &mut board, &mut camera)?);
-        if handle_ui_actions(messages, &mut board, &mut bot_enabled, &mut theme).await? {
+        messages.extend(dev_ui.draw(&time, &mut theme, &mut board, &mut camera, &mut bots)?);
+        if handle_ui_actions(messages, &mut board, &mut bots, &mut theme).await? {
             break;
         }
         next_frame().await
@@ -81,7 +78,7 @@ async fn fallible_main() -> AnyResult<()> {
 async fn handle_ui_actions(
     messages: Vec<Message>,
     board: &mut Board,
-    bot_enabled: &mut bool,
+    bots: &mut Bots,
     theme: &mut Theme,
 ) -> AnyResult<bool> {
     let mut should_exit = false;
@@ -99,8 +96,8 @@ async fn handle_ui_actions(
                 next_frame().await;
                 theme.textures = load_textures().await?;
             }
-            Message::ToggleBot => {
-                *bot_enabled = !*bot_enabled;
+            Message::ToggleBot(team) => {
+                bots.toggle(team);
             }
         }
     }
@@ -173,7 +170,10 @@ fn handle_inputs_shoud_exit(
         messages.push(Message::ReloadTextures);
     }
     if is_key_pressed(KeyCode::B) {
-        messages.push(Message::ToggleBot);
+        messages.push(Message::ToggleBot(Team::Black));
+    }
+    if is_key_pressed(KeyCode::V) {
+        messages.push(Message::ToggleBot(Team::White));
     }
     messages
 }

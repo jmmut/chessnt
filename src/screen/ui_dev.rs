@@ -11,6 +11,8 @@ use crate::screen::ui::{
 };
 use crate::screen::ui_board::Message;
 use crate::world::board::{Board, DEFAULT_PIECE_SIZE};
+use crate::world::bot::Bots;
+use crate::world::team::Team;
 use crate::{AnyResult, INITIAL_DEV_UI};
 use juquad::draw::draw_rect;
 use juquad::widgets::anchor::Anchor;
@@ -64,12 +66,13 @@ impl DevUi {
         theme: &mut Theme,
         board: &mut Board,
         camera: &mut CameraPos,
+        bots: &mut Bots,
     ) -> AnyResult<Vec<Message>> {
         match self.menu {
             DevUiMenu::Hidden => {}
             DevUiMenu::Main => self.draw_main(theme),
             DevUiMenu::Screen => self.draw_screen(time, theme, camera),
-            DevUiMenu::Board => return Ok(self.draw_characters(theme, board)),
+            DevUiMenu::Board => return Ok(self.draw_characters(theme, board, bots)),
             DevUiMenu::PaletteWorld => self.draw_palette(theme)?,
             DevUiMenu::PaletteUi => self.draw_palette_ui(theme)?,
             DevUiMenu::EditWorldColor(index) => self.draw_edit_world_color(index, theme)?,
@@ -151,7 +154,12 @@ impl DevUi {
         self.navigation(theme, "Back", DevUiMenu::Main, rect);
     }
 
-    fn draw_characters(&mut self, theme: &mut Theme, board: &mut Board) -> Vec<Message> {
+    fn draw_characters(
+        &mut self,
+        theme: &mut Theme,
+        board: &mut Board,
+        bots: &mut Bots,
+    ) -> Vec<Message> {
         let rect = &mut Self::dev_ui_title(theme);
 
         let _rect = render_slider(
@@ -185,20 +193,12 @@ impl DevUi {
         let text = format!("Referee trip time: {:0>5.2}", board.referee.trip_time);
         render_text_dev_mut(&text, theme, below_left, rect);
 
-        let action = if board.referee.render_radar {
-            "Hide"
-        } else {
-            "Show"
-        };
+        let action = hide_or_show(board.referee.render_radar);
         let text = format!("{} referee's radar (O)", action);
         if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
             board.referee.render_radar = !board.referee.render_radar;
         }
-        let action = if board.referee.referee_paused {
-            "Resume"
-        } else {
-            "Pause"
-        };
+        let action = pause_or_resume(board.referee.referee_paused);
         let text = format!("{} referee's movement (P)", action);
         if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
             board.referee.referee_paused = !board.referee.referee_paused;
@@ -209,8 +209,15 @@ impl DevUi {
             board.reset()
         }
 
-        if render_button_dev_mut(&format!("{} bot", action), theme, below_left, rect).is_clicked() {
-            messages.push(Message::ToggleBot);
+        let action = pause_or_resume(bots.is_enabled(Team::Black));
+        let text = &format!("{} black bot (B)", action);
+        if render_button_dev_mut(text, theme, below_left, rect).is_clicked() {
+            messages.push(Message::ToggleBot(Team::Black));
+        }
+        let action = pause_or_resume(bots.is_enabled(Team::White));
+        let text = &format!("{} white bot (V)", action);
+        if render_button_dev_mut(text, theme, below_left, rect).is_clicked() {
+            messages.push(Message::ToggleBot(Team::White));
         }
 
         self.navigation(theme, "Back", DevUiMenu::Main, rect);
@@ -390,7 +397,20 @@ fn color_editor(theme: &mut Theme, name: &str, rect: &mut Rect, color: &mut Colo
     // color = Color::new(color.r /255.0, color.g/255.0, color.b /255.0, color.a /255.0);
     render_button_dev_mut("Reset color", theme, below_left, rect)
 }
-
+pub fn pause_or_resume(enabled: bool) -> &'static str {
+    if enabled {
+        "Pause"
+    } else {
+        "Resume"
+    }
+}
+pub fn hide_or_show(enabled: bool) -> &'static str {
+    if enabled {
+        "Pause"
+    } else {
+        "Resume"
+    }
+}
 pub fn as_hex(color: Color) -> String {
     let [r, g, b, a]: [u8; 4] = color.into();
     format!("0x {:0>2X} {:0>2X} {:0>2X} {:0>2X}", r, g, b, a)
