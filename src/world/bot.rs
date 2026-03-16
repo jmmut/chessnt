@@ -30,25 +30,17 @@ enum Plan {
     Select(PlanSelect),
     Move(PlanMove),
 }
+impl From<PlanSelect> for Plan {
+    fn from(value: PlanSelect) -> Self {
+        Plan::Select(value)
+    }
+}
+impl From<PlanMove> for Plan {
+    fn from(value: PlanMove) -> Self {
+        Plan::Move(value)
+    }
+}
 impl Plan {
-    pub fn to_select_raw(&self) -> PlanSelect {
-        match self {
-            Plan::Select(plan) => *plan,
-            Plan::Move(plan) => plan.to_select_raw(),
-        }
-    }
-    pub fn to_move_raw(&self) -> PlanMove {
-        match self {
-            Plan::Select(plan) => plan.to_move_raw(),
-            Plan::Move(plan) => *plan,
-        }
-    }
-    pub fn to_select(&self) -> Plan {
-        match self {
-            Plan::Select(plan) => plan.to_select(),
-            Plan::Move(plan) => plan.to_select(),
-        }
-    }
     pub fn piece_index(&self) -> PieceIndex {
         match self {
             Plan::Select(PlanSelect { piece_index, .. })
@@ -63,34 +55,33 @@ struct PlanSelect {
     destination: Coord,
     wait: i32,
 }
-impl PlanSelect {
-    pub fn new(piece_index: PieceIndex, destination: Coord) -> Plan {
-        Plan::Select(Self::new_raw(piece_index, destination))
+impl From<Plan> for PlanSelect {
+    fn from(value: Plan) -> Self {
+        match value {
+            Plan::Select(plan) => plan,
+            Plan::Move(plan) => plan.into(),
+        }
     }
-
-    pub fn new_raw(piece_index: PieceIndex, destination: Coord) -> PlanSelect {
+}
+impl From<PlanMove> for PlanSelect {
+    fn from(value: PlanMove) -> Self {
+        Self::new(value.piece_index, value.destination)
+    }
+}
+impl PlanSelect {
+    pub fn new(piece_index: PieceIndex, destination: Coord) -> PlanSelect {
         Self {
             piece_index,
             destination,
             wait: WAIT_CURSOR,
         }
     }
-
-    pub fn to_move(&self) -> Plan {
-        PlanMove::new(self.piece_index, self.destination)
-    }
-    pub fn to_move_raw(&self) -> PlanMove {
-        PlanMove::new_raw(self.piece_index, self.destination)
-    }
-    pub fn to_select(&self) -> Plan {
-        PlanSelect::new(self.piece_index, self.destination)
-    }
-    pub fn to_select_wait(&self) -> Plan {
-        Plan::Select(Self {
+    pub fn wait(self) -> PlanSelect {
+        Self {
             piece_index: self.piece_index,
             destination: self.destination,
             wait: self.wait - 1,
-        })
+        }
     }
 }
 #[derive(Copy, Clone)]
@@ -98,27 +89,26 @@ struct PlanMove {
     piece_index: PieceIndex,
     destination: Coord,
 }
+impl From<Plan> for PlanMove {
+    fn from(value: Plan) -> Self {
+        match value {
+            Plan::Select(plan) => plan.into(),
+            Plan::Move(plan) => plan,
+        }
+    }
+}
+impl From<PlanSelect> for PlanMove {
+    fn from(value: PlanSelect) -> Self {
+        Self::new(value.piece_index, value.destination)
+    }
+}
 
 impl PlanMove {
-    pub fn new(piece_index: PieceIndex, destination: Coord) -> Plan {
-        Plan::Move(Self::new_raw(piece_index, destination))
-    }
-
-    pub fn new_raw(piece_index: PieceIndex, destination: Coord) -> PlanMove {
+    pub fn new(piece_index: PieceIndex, destination: Coord) -> PlanMove {
         Self {
             piece_index,
             destination,
         }
-    }
-
-    pub fn to_select(&self) -> Plan {
-        PlanSelect::new(self.piece_index, self.destination)
-    }
-    pub fn to_select_raw(&self) -> PlanSelect {
-        PlanSelect::new_raw(self.piece_index, self.destination)
-    }
-    pub fn to_move(&self) -> Plan {
-        PlanMove::new(self.piece_index, self.destination)
     }
 }
 
@@ -146,23 +136,18 @@ impl Bot {
 }
 
 fn advance_plan(plan_opt: Option<Plan>, team: Team, board: &mut Board) -> Option<Plan> {
-    let plan = if let Some(plan) = plan_opt {
-        Some(plan)
-    } else {
-        choose_target(board, team)
-    };
-    match plan {
-        None => None, // nothing to do...?
+    match plan_opt {
+        None => choose_target(board, team), // nothing to do...?
         Some(plan) => {
             if let Some(selected) = board.selected(team) {
                 if selected == plan.piece_index() {
-                    advance_plan_move(plan.to_move_raw(), team, board)
+                    advance_plan_move(plan.into(), team, board)
                 } else {
                     board.deselect(team);
-                    Some(plan.to_select())
+                    Some(PlanSelect::from(plan).into())
                 }
             } else {
-                Some(advance_plan_select(plan.to_select_raw(), team, board))
+                Some(advance_plan_select(plan.into(), team, board))
             }
         }
     }
@@ -170,26 +155,17 @@ fn advance_plan(plan_opt: Option<Plan>, team: Team, board: &mut Board) -> Option
 
 /// assumes no piece is selected
 fn advance_plan_select(plan: PlanSelect, team: Team, board: &mut Board) -> Plan {
-    if let Some(selected) = board.selected(team) {
-        if selected == plan.piece_index {
-            plan.to_move()
-        } else {
-            board.deselect(team);
-            plan.to_select()
-        }
+    let cursor_pos = board.cursor(team);
+    let piece_pos = board.pieces()[plan.piece_index].pos_f();
+    if piece_pos.round() == cursor_pos.round() {
+        board.select(team);
+        PlanMove::from(plan).into()
     } else {
-        let cursor_pos = board.cursor(team);
-        let piece_pos = board.pieces()[plan.piece_index].pos_f();
-        if piece_pos.round() == cursor_pos.round() {
-            board.select(team);
-            plan.to_move()
+        if plan.wait <= 0 {
+            move_cursor(cursor_pos, piece_pos, team, board);
+            PlanSelect::from(plan).into()
         } else {
-            if plan.wait <= 0 {
-                move_cursor(cursor_pos, piece_pos, team, board);
-                plan.to_select()
-            } else {
-                plan.to_select_wait()
-            }
+            PlanSelect::wait(plan).into()
         }
     }
 }
@@ -215,7 +191,7 @@ fn advance_plan_move(plan: PlanMove, team: Team, board: &mut Board) -> Option<Pl
     } else {
         // selected but not in destination, need to move
         move_selected(cursor_pos, plan.destination, team, board);
-        Some(plan.to_move())
+        Some(PlanMove::from(plan).into())
     }
 }
 
@@ -237,11 +213,11 @@ fn advance_plan_kill(
             None
         } else {
             // wait until referee sees and allows me to kill
-            Some(plan.to_move())
+            Some(PlanMove::from(plan).into())
         }
     } else {
         // should wait until it's my turn
-        Some(plan.to_move())
+        Some(PlanMove::from(plan).into())
     }
 }
 
@@ -255,7 +231,7 @@ fn advance_plan_move_empty(plan: PlanMove, team: Team, board: &mut Board) -> Opt
         // not our turn
         if board.referee.saw_piece(board.pieces(), plan.piece_index) {
             // should wait until referee doesn't see us
-            Some(plan.to_move())
+            Some(PlanMove::from(plan).into())
         } else {
             // forbidden movement but referee doesn't see
             board.deselect(team);
@@ -269,7 +245,7 @@ fn choose_target(board: &Board, team: Team) -> Option<Plan> {
         if piece.team == team {
             let moves = possible_moves(board.size(), board.pieces(), i);
             if let Some(movement) = moves.first() {
-                return Some(PlanSelect::new(i, *movement));
+                return Some(PlanSelect::new(i, *movement).into());
             }
         }
     }
