@@ -1,7 +1,6 @@
 use crate::core::coord::Coord;
 use crate::world::board::{other_pieces_at, Board, PieceIndex};
 use crate::world::moves::possible_moves;
-use crate::world::piece::Piece;
 use crate::world::team::{OneForEachTeam, Team};
 use macroquad::math::Vec2;
 
@@ -28,9 +27,34 @@ impl Bots {
 
 #[derive(Copy, Clone)]
 enum Plan {
-    None,
     Select(PlanSelect),
     Move(PlanMove),
+}
+impl Plan {
+    pub fn to_select_raw(&self) -> PlanSelect {
+        match self {
+            Plan::Select(plan) => *plan,
+            Plan::Move(plan) => plan.to_select_raw(),
+        }
+    }
+    pub fn to_move_raw(&self) -> PlanMove {
+        match self {
+            Plan::Select(plan) => plan.to_move_raw(),
+            Plan::Move(plan) => *plan,
+        }
+    }
+    pub fn to_select(&self) -> Plan {
+        match self {
+            Plan::Select(plan) => plan.to_select(),
+            Plan::Move(plan) => plan.to_select(),
+        }
+    }
+    pub fn piece_index(&self) -> PieceIndex {
+        match self {
+            Plan::Select(PlanSelect { piece_index, .. })
+            | Plan::Move(PlanMove { piece_index, .. }) => *piece_index,
+        }
+    }
 }
 
 #[derive(Copy, Clone)]
@@ -41,14 +65,22 @@ struct PlanSelect {
 }
 impl PlanSelect {
     pub fn new(piece_index: PieceIndex, destination: Coord) -> Plan {
-        Plan::Select(Self {
+        Plan::Select(Self::new_raw(piece_index, destination))
+    }
+
+    pub fn new_raw(piece_index: PieceIndex, destination: Coord) -> PlanSelect {
+        Self {
             piece_index,
             destination,
             wait: WAIT_CURSOR,
-        })
+        }
     }
+
     pub fn to_move(&self) -> Plan {
         PlanMove::new(self.piece_index, self.destination)
+    }
+    pub fn to_move_raw(&self) -> PlanMove {
+        PlanMove::new_raw(self.piece_index, self.destination)
     }
     pub fn to_select(&self) -> Plan {
         PlanSelect::new(self.piece_index, self.destination)
@@ -66,15 +98,24 @@ struct PlanMove {
     piece_index: PieceIndex,
     destination: Coord,
 }
+
 impl PlanMove {
     pub fn new(piece_index: PieceIndex, destination: Coord) -> Plan {
-        Plan::Move(Self {
+        Plan::Move(Self::new_raw(piece_index, destination))
+    }
+
+    pub fn new_raw(piece_index: PieceIndex, destination: Coord) -> PlanMove {
+        Self {
             piece_index,
             destination,
-        })
+        }
     }
+
     pub fn to_select(&self) -> Plan {
         PlanSelect::new(self.piece_index, self.destination)
+    }
+    pub fn to_select_raw(&self) -> PlanSelect {
+        PlanSelect::new_raw(self.piece_index, self.destination)
     }
     pub fn to_move(&self) -> Plan {
         PlanMove::new(self.piece_index, self.destination)
@@ -83,7 +124,7 @@ impl PlanMove {
 
 pub struct Bot {
     team: Team,
-    plan: Plan,
+    plan: Option<Plan>,
     pub enabled: bool,
 }
 
@@ -91,7 +132,7 @@ impl Bot {
     pub fn new(team: Team) -> Self {
         Self {
             team,
-            plan: Plan::None,
+            plan: None,
             enabled: false,
         }
     }
@@ -104,32 +145,30 @@ impl Bot {
     }
 }
 
-fn advance_plan(plan: Plan, team: Team, board: &mut Board) -> Plan {
-    match plan {
-        Plan::None => advance_plan_none(team, board),
-        Plan::Select(plan) => advance_plan_select(plan, team, board),
-        Plan::Move(plan) => advance_plan_move(plan, team, board),
-    }
-}
-
-fn advance_plan_none(team: Team, board: &mut Board) -> Plan {
-    if let Some((piece_index, _piece, destination)) = choose_target(board, team) {
-        if let Some(index) = board.selected(team) {
-            if index == piece_index {
-                PlanMove::new(piece_index, destination)
-            } else {
-                board.deselect(team);
-                PlanSelect::new(piece_index, destination)
-            }
-        } else {
-            PlanSelect::new(piece_index, destination)
-        }
+fn advance_plan(plan_opt: Option<Plan>, team: Team, board: &mut Board) -> Option<Plan> {
+    let plan = if let Some(plan) = plan_opt {
+        Some(plan)
     } else {
-        // nothing to do...?
-        Plan::None
+        choose_target(board, team)
+    };
+    match plan {
+        None => None, // nothing to do...?
+        Some(plan) => {
+            if let Some(selected) = board.selected(team) {
+                if selected == plan.piece_index() {
+                    advance_plan_move(plan.to_move_raw(), team, board)
+                } else {
+                    board.deselect(team);
+                    Some(plan.to_select())
+                }
+            } else {
+                Some(advance_plan_select(plan.to_select_raw(), team, board))
+            }
+        }
     }
 }
 
+/// assumes no piece is selected
 fn advance_plan_select(plan: PlanSelect, team: Team, board: &mut Board) -> Plan {
     if let Some(selected) = board.selected(team) {
         if selected == plan.piece_index {
@@ -155,79 +194,82 @@ fn advance_plan_select(plan: PlanSelect, team: Team, board: &mut Board) -> Plan 
     }
 }
 
-fn advance_plan_move(plan: PlanMove, team: Team, board: &mut Board) -> Plan {
-    if let Some(selected) = board.selected(team) {
-        if selected == plan.piece_index {
-            let cursor_pos = board.cursor(team);
-            if close_to_center_of(cursor_pos, plan.destination) {
-                // at destination. should deselect now or wait?
-                let others = other_pieces_at(plan.destination, selected, board.pieces());
-                if others.len() > 1 {
-                    panic!(
-                        "unsupported for several pieces ({}) to own a tile {:?}",
-                        others.len(),
-                        plan.destination
-                    );
-                }
-                if let Some(other) = others.first() {
-                    // there's another piece at destination
-                    if board.pieces()[*other].team == team {
-                        panic!("swapping pieces of bot's team is unsupported");
-                    }
-                    // the other piece is from the enemy team
-                    if board.referee.turn == team {
-                        // allowed to kill
-                        if board.referee.saw_piece(board.pieces(), selected) {
-                            board.deselect(team);
-                            Plan::None
-                        } else {
-                            // wait until referee sees and allows me to kill
-                            plan.to_move()
-                        }
-                    } else {
-                        // should wait until it's my turn
-                        plan.to_move()
-                    }
-                } else {
-                    // no other piece at destination
-                    if board.referee.turn == team {
-                        // allowed to move
-                        board.deselect(team);
-                        Plan::None
-                    } else {
-                        // not our turn
-                        if board.referee.saw_piece(board.pieces(), selected) {
-                            // should wait until referee doesn't see us
-                            plan.to_move()
-                        } else {
-                            // forbidden movement but referee doesn't see
-                            board.deselect(team);
-                            Plan::None
-                        }
-                    }
-                }
-            } else {
-                // selected but not in destination, need to move
-                move_selected(cursor_pos, plan.destination, team, board);
-                Plan::Move(plan)
-            }
+/// assumes correct piece is selected
+fn advance_plan_move(plan: PlanMove, team: Team, board: &mut Board) -> Option<Plan> {
+    let cursor_pos = board.cursor(team);
+    if close_to_center_of(cursor_pos, plan.destination) {
+        // at destination. should deselect now or wait?
+        let others = other_pieces_at(plan.destination, plan.piece_index, board.pieces());
+        if others.len() > 1 {
+            panic!(
+                "unsupported for several pieces ({}) to own a tile {:?}",
+                others.len(),
+                plan.destination
+            );
+        }
+        if let Some(other) = others.first() {
+            advance_plan_kill(plan, team, other, board)
         } else {
-            // selected wrong piece
-            board.deselect(team);
-            plan.to_select()
+            advance_plan_move_empty(plan, team, board)
         }
     } else {
-        // have no piece selected
-        plan.to_select()
+        // selected but not in destination, need to move
+        move_selected(cursor_pos, plan.destination, team, board);
+        Some(plan.to_move())
     }
 }
 
-fn choose_target(board: &Board, team: Team) -> Option<(usize, &Piece, Coord)> {
+/// assumes there's another piece at destination
+fn advance_plan_kill(
+    plan: PlanMove,
+    team: Team,
+    other: &PieceIndex,
+    board: &mut Board,
+) -> Option<Plan> {
+    if board.pieces()[*other].team == team {
+        panic!("swapping pieces of bot's team is unsupported");
+    }
+    // the other piece is from the enemy team
+    if board.referee.turn == team {
+        // allowed to kill
+        if board.referee.saw_piece(board.pieces(), plan.piece_index) {
+            board.deselect(team);
+            None
+        } else {
+            // wait until referee sees and allows me to kill
+            Some(plan.to_move())
+        }
+    } else {
+        // should wait until it's my turn
+        Some(plan.to_move())
+    }
+}
+
+/// assumes destination is empty
+fn advance_plan_move_empty(plan: PlanMove, team: Team, board: &mut Board) -> Option<Plan> {
+    if board.referee.turn == team {
+        // allowed to move
+        board.deselect(team);
+        None
+    } else {
+        // not our turn
+        if board.referee.saw_piece(board.pieces(), plan.piece_index) {
+            // should wait until referee doesn't see us
+            Some(plan.to_move())
+        } else {
+            // forbidden movement but referee doesn't see
+            board.deselect(team);
+            None
+        }
+    }
+}
+
+fn choose_target(board: &Board, team: Team) -> Option<Plan> {
     for (i, piece) in board.pieces().iter().enumerate() {
         if piece.team == team {
             let moves = possible_moves(board.size(), board.pieces(), i);
             if let Some(movement) = moves.first() {
-                return Some((i, piece, *movement));
+                return Some(PlanSelect::new(i, *movement));
             }
         }
     }
