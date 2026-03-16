@@ -7,35 +7,20 @@ use macroquad::math::Vec2;
 
 pub const WAIT_CURSOR: i32 = 20;
 
-pub struct BotHandler {
-    pub bot: Bot,
-    pub enabled: bool,
-}
-impl BotHandler {
-    pub fn new(bot: Bot, enabled: bool) -> Self {
-        Self { bot, enabled }
-    }
-    pub fn new_team(team: Team) -> Self {
-        Self::new(Bot::new(team), false)
-    }
-    pub fn toggle(&mut self) {
-        self.enabled = !self.enabled;
-    }
-}
 pub struct Bots {
-    pub bots: OneForEachTeam<BotHandler>,
+    pub bots: OneForEachTeam<Bot>,
 }
 
 impl Bots {
     pub fn new() -> Self {
         Self {
-            bots: OneForEachTeam::new_from_factory(BotHandler::new_team),
+            bots: OneForEachTeam::new_from_factory(Bot::new),
         }
     }
     pub fn tick(&mut self, delta_s: f64, board: &mut Board) {
-        for bot_handler in self.bots.iter_mut() {
-            if bot_handler.enabled {
-                bot_handler.bot.tick(delta_s, board)
+        for bot in self.bots.iter_mut() {
+            if bot.enabled {
+                bot.tick(delta_s, board)
             }
         }
     }
@@ -56,6 +41,7 @@ enum Plan {
 pub struct Bot {
     team: Team,
     plan: Plan,
+    pub enabled: bool,
 }
 
 impl Bot {
@@ -63,8 +49,13 @@ impl Bot {
         Self {
             team,
             plan: Plan::None,
+            enabled: false,
         }
     }
+    pub fn toggle(&mut self) {
+        self.enabled = !self.enabled;
+    }
+
     pub fn tick(&mut self, _delta_s: f64, board: &mut Board) {
         match self.plan {
             Plan::None => {
