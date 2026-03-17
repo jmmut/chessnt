@@ -196,17 +196,17 @@ impl DevUi {
         let action = hide_or_show(board.referee.render_radar);
         let text = format!("{} referee's radar (O)", action);
         if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
-            board.referee.render_radar = !board.referee.render_radar;
+            messages.push(Message::ToggleRadar)
         }
         let action = pause_or_resume(board.referee.referee_paused);
         let text = format!("{} referee's movement (P)", action);
         if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
-            board.referee.referee_paused = !board.referee.referee_paused;
+            messages.push(Message::ToggleReferee)
         }
 
         let text = "Reset board (R)";
         if render_button_dev_mut(text, theme, below_left, rect).is_clicked() {
-            board.reset()
+            messages.push(Message::Restart)
         }
 
         let description = OneForEachTeam::new("white bot (V)", "black bot (B)");

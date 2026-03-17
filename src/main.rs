@@ -89,6 +89,7 @@ async fn handle_ui_actions(
             }
             Message::Restart => {
                 board.reset();
+                bots.restart();
             }
             Message::ReloadTextures => {
                 let anchor = Anchor::center_v(theme.screen_rect().center());
@@ -98,6 +99,13 @@ async fn handle_ui_actions(
             }
             Message::ToggleBot(team) => {
                 bots.bots.get_mut(team).toggle();
+            }
+
+            Message::ToggleRadar => {
+                board.referee.render_radar = !board.referee.render_radar;
+            }
+            Message::ToggleReferee => {
+                board.referee.referee_paused = !board.referee.referee_paused;
             }
         }
     }
@@ -153,16 +161,16 @@ fn handle_inputs_shoud_exit(
             SCALE /= 1.3;
         }
     }
+    let mut messages = Vec::new();
     if is_key_pressed(KeyCode::R) {
-        board.reset();
+        messages.push(Message::Restart)
     }
     if is_key_pressed(KeyCode::P) {
-        board.referee.referee_paused = !board.referee.referee_paused;
+        messages.push(Message::ToggleReferee)
     }
     if is_key_pressed(KeyCode::O) {
-        board.referee.render_radar = !board.referee.render_radar;
+        messages.push(Message::ToggleRadar)
     }
-    let mut messages = Vec::new();
     if is_key_pressed(KeyCode::Escape) {
         messages.push(Message::Exit);
     }

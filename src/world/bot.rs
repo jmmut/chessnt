@@ -23,6 +23,11 @@ impl Bots {
             }
         }
     }
+    pub fn restart(&mut self) {
+        for bot in self.bots.iter_mut() {
+            bot.plan = None;
+        }
+    }
 }
 
 #[derive(Copy, Clone)]
@@ -82,6 +87,9 @@ impl PlanSelect {
             destination: self.destination,
             wait: self.wait - 1,
         }
+    }
+    pub fn reset(self) -> PlanSelect {
+        PlanSelect::new(self.piece_index, self.destination)
     }
 }
 #[derive(Copy, Clone)]
@@ -163,7 +171,7 @@ fn advance_plan_select(plan: PlanSelect, team: Team, board: &mut Board) -> Plan 
     } else {
         if plan.wait <= 0 {
             move_cursor(cursor_pos, piece_pos, team, board);
-            PlanSelect::from(plan).into()
+            PlanSelect::reset(plan).into()
         } else {
             PlanSelect::wait(plan).into()
         }
