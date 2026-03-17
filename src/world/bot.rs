@@ -35,21 +35,17 @@ enum Plan {
     Select(PlanSelect),
     Move(PlanMove),
 }
-impl From<PlanSelect> for Plan {
-    fn from(value: PlanSelect) -> Self {
-        Plan::Select(value)
-    }
-}
-impl From<PlanMove> for Plan {
-    fn from(value: PlanMove) -> Self {
-        Plan::Move(value)
-    }
-}
 impl Plan {
     pub fn piece_index(&self) -> PieceIndex {
         match self {
             Plan::Select(PlanSelect { piece_index, .. })
             | Plan::Move(PlanMove { piece_index, .. }) => *piece_index,
+        }
+    }
+    pub fn destination(&self) -> Coord {
+        match self {
+            Plan::Select(PlanSelect { destination, .. })
+            | Plan::Move(PlanMove { destination, .. }) => *destination,
         }
     }
 }
@@ -60,36 +56,32 @@ struct PlanSelect {
     destination: Coord,
     wait: i32,
 }
-impl From<Plan> for PlanSelect {
-    fn from(value: Plan) -> Self {
-        match value {
-            Plan::Select(plan) => plan,
-            Plan::Move(plan) => plan.into(),
-        }
-    }
-}
-impl From<PlanMove> for PlanSelect {
-    fn from(value: PlanMove) -> Self {
-        Self::new(value.piece_index, value.destination)
-    }
-}
 impl PlanSelect {
-    pub fn new(piece_index: PieceIndex, destination: Coord) -> PlanSelect {
+    pub fn new(piece_index: PieceIndex, destination: Coord) -> Plan {
+        Plan::Select(Self::new_raw(piece_index, destination))
+    }
+    pub fn new_raw(piece_index: PieceIndex, destination: Coord) -> PlanSelect {
+        Self::new_raw_wait(piece_index, destination, WAIT_CURSOR)
+    }
+    pub fn new_raw_wait(piece_index: PieceIndex, destination: Coord, wait: i32) -> PlanSelect {
         Self {
             piece_index,
             destination,
-            wait: WAIT_CURSOR,
+            wait,
         }
     }
-    pub fn wait(self) -> PlanSelect {
-        Self {
-            piece_index: self.piece_index,
-            destination: self.destination,
-            wait: self.wait - 1,
+    pub fn raw_from(plan: Plan) -> PlanSelect {
+        match plan {
+            Plan::Select(plan) => plan,
+            Plan::Move(plan) => Self::new_raw(plan.piece_index, plan.destination),
         }
     }
-    pub fn reset(self) -> PlanSelect {
-        PlanSelect::new(self.piece_index, self.destination)
+    pub fn wait(self) -> Plan {
+        let raw = Self::new_raw_wait(self.piece_index, self.destination, self.wait - 1);
+        Plan::Select(raw)
+    }
+    pub fn reset(self) -> Plan {
+        Plan::Select(Self::new_raw(self.piece_index, self.destination))
     }
 }
 #[derive(Copy, Clone)]
@@ -97,22 +89,12 @@ struct PlanMove {
     piece_index: PieceIndex,
     destination: Coord,
 }
-impl From<Plan> for PlanMove {
-    fn from(value: Plan) -> Self {
-        match value {
-            Plan::Select(plan) => plan.into(),
-            Plan::Move(plan) => plan,
-        }
-    }
-}
-impl From<PlanSelect> for PlanMove {
-    fn from(value: PlanSelect) -> Self {
-        Self::new(value.piece_index, value.destination)
-    }
-}
 
 impl PlanMove {
-    pub fn new(piece_index: PieceIndex, destination: Coord) -> PlanMove {
+    pub fn new(piece_index: PieceIndex, destination: Coord) -> Plan {
+        Plan::Move(Self::new_raw(piece_index, destination))
+    }
+    pub fn new_raw(piece_index: PieceIndex, destination: Coord) -> PlanMove {
         Self {
             piece_index,
             destination,
@@ -149,13 +131,13 @@ fn advance_plan(plan_opt: Option<Plan>, team: Team, board: &mut Board) -> Option
         Some(plan) => {
             if let Some(selected) = board.selected(team) {
                 if selected == plan.piece_index() {
-                    advance_plan_move(plan.into(), team, board)
+                    advance_plan_move(plan.piece_index(), plan.destination(), team, board)
                 } else {
                     board.deselect(team);
-                    Some(PlanSelect::from(plan).into())
+                    Some(Plan::Select(PlanSelect::raw_from(plan)))
                 }
             } else {
-                Some(advance_plan_select(plan.into(), team, board))
+                Some(advance_plan_select(PlanSelect::raw_from(plan), team, board))
             }
         }
     }
@@ -167,84 +149,64 @@ fn advance_plan_select(plan: PlanSelect, team: Team, board: &mut Board) -> Plan 
     let piece_pos = board.pieces()[plan.piece_index].pos_f();
     if piece_pos.round() == cursor_pos.round() {
         board.select(team);
-        PlanMove::from(plan).into()
+        PlanMove::new(plan.piece_index, plan.destination)
     } else {
         if plan.wait <= 0 {
             move_cursor(cursor_pos, piece_pos, team, board);
-            PlanSelect::reset(plan).into()
+            PlanSelect::reset(plan)
         } else {
-            PlanSelect::wait(plan).into()
+            PlanSelect::wait(plan)
         }
     }
 }
 
 /// assumes correct piece is selected
-fn advance_plan_move(plan: PlanMove, team: Team, board: &mut Board) -> Option<Plan> {
+fn advance_plan_move(
+    piece_index: PieceIndex,
+    destination: Coord,
+    team: Team,
+    board: &mut Board,
+) -> Option<Plan> {
     let cursor_pos = board.cursor(team);
-    if close_to_center_of(cursor_pos, plan.destination) {
+    if close_to_center_of(cursor_pos, destination) {
         // at destination. should deselect now or wait?
-        let others = other_pieces_at(plan.destination, plan.piece_index, board.pieces());
+        let others = other_pieces_at(destination, piece_index, board.pieces());
         if others.len() > 1 {
             panic!(
                 "unsupported for several pieces ({}) to own a tile {:?}",
                 others.len(),
-                plan.destination
+                destination
             );
         }
-        if let Some(other) = others.first() {
-            advance_plan_kill(plan, team, other, board)
+        if finished_moving(piece_index, team, board, others) {
+            board.deselect(team);
+            None
         } else {
-            advance_plan_move_empty(plan, team, board)
+            Some(PlanMove::new(piece_index, destination))
         }
     } else {
         // selected but not in destination, need to move
-        move_selected(cursor_pos, plan.destination, team, board);
-        Some(PlanMove::from(plan).into())
+        move_selected(cursor_pos, destination, team, board);
+        Some(PlanMove::new(piece_index, destination))
     }
 }
 
-/// assumes there's another piece at destination
-fn advance_plan_kill(
-    plan: PlanMove,
+fn finished_moving(
+    piece_index: PieceIndex,
     team: Team,
-    other: &PieceIndex,
     board: &mut Board,
-) -> Option<Plan> {
-    if board.pieces()[*other].team == team {
-        panic!("swapping pieces of bot's team is unsupported");
-    }
-    // the other piece is from the enemy team
-    if board.referee.turn == team {
-        // allowed to kill
-        if board.referee.saw_piece(board.pieces(), plan.piece_index) {
-            board.deselect(team);
-            None
-        } else {
-            // wait until referee sees and allows me to kill
-            Some(PlanMove::from(plan).into())
+    others: Vec<PieceIndex>,
+) -> bool {
+    if let Some(other) = others.first() {
+        if board.pieces()[*other].team == team {
+            panic!("swapping pieces of bot's team is unsupported");
         }
+        // the other piece is from the enemy team
+        // can only kill if it's my turn and the referee sees me, otherwise wait
+        board.referee.turn == team && board.referee.saw_piece(board.pieces(), piece_index)
     } else {
-        // should wait until it's my turn
-        Some(PlanMove::from(plan).into())
-    }
-}
-
-/// assumes destination is empty
-fn advance_plan_move_empty(plan: PlanMove, team: Team, board: &mut Board) -> Option<Plan> {
-    if board.referee.turn == team {
-        // allowed to move
-        board.deselect(team);
-        None
-    } else {
-        // not our turn
-        if board.referee.saw_piece(board.pieces(), plan.piece_index) {
-            // should wait until referee doesn't see us
-            Some(PlanMove::from(plan).into())
-        } else {
-            // forbidden movement but referee doesn't see
-            board.deselect(team);
-            None
-        }
+        // can move if it's my turn or if referee doesn't see me
+        board.referee.turn == team || !board.referee.saw_piece(board.pieces(), piece_index)
     }
 }
 
@@ -253,7 +215,7 @@ fn choose_target(board: &Board, team: Team) -> Option<Plan> {
         if piece.team == team {
             let moves = possible_moves(board.size(), board.pieces(), i);
             if let Some(movement) = moves.first() {
-                return Some(PlanSelect::new(i, *movement).into());
+                return Some(PlanSelect::new(i, *movement));
             }
         }
     }
@@ -277,6 +239,7 @@ fn move_cursor(cursor_pos: Coord, piece_pos: Coord, team: Team, board: &mut Boar
     board.move_cursor_rel(movement, team);
 }
 
+// TODO: centralize movement by raising messages instead of modifying the board
 fn move_selected(cursor_pos: Coord, destination: Coord, team: Team, board: &mut Board) {
     let max = 0.05;
     let diff = destination - cursor_pos;
