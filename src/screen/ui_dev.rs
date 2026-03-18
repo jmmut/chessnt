@@ -1,5 +1,6 @@
 use crate::core::array_union::ArrayUnionTrait;
 use crate::core::clipboard::Clipboard;
+use crate::core::input::Gamepads;
 use crate::core::time::Time;
 use crate::screen::theme::{
     coloring_elem, named_coloring, named_state_style, new_coloring, set_theme_coloring,
@@ -33,6 +34,7 @@ pub enum DevUiMenu {
     PaletteUi,
     EditWorldColor(usize),
     EditUiColor(usize, usize),
+    Gamepads,
 }
 
 pub struct DevUi {
@@ -67,6 +69,7 @@ impl DevUi {
         board: &mut Board,
         camera: &mut CameraPos,
         bots: &mut Bots,
+        gamepads: &mut Gamepads,
     ) -> AnyResult<Vec<Message>> {
         match self.menu {
             DevUiMenu::Hidden => {}
@@ -79,6 +82,7 @@ impl DevUi {
             DevUiMenu::EditUiColor(state_index, color_index) => {
                 self.draw_edit_ui_color(state_index, color_index, theme)?
             }
+            DevUiMenu::Gamepads => self.draw_gamepads(gamepads, theme),
         }
         Ok(Vec::new())
     }
@@ -112,6 +116,7 @@ impl DevUi {
         let rect = &mut Self::dev_ui_title(theme);
         self.navigation(theme, "Screen", DevUiMenu::Screen, rect);
         self.navigation(theme, "Board & Characters", DevUiMenu::Board, rect);
+        self.navigation(theme, "Gamepads", DevUiMenu::Gamepads, rect);
         self.navigation(theme, "Edit world palette", DevUiMenu::PaletteWorld, rect);
         self.navigation(theme, "Edit ui palette", DevUiMenu::PaletteUi, rect);
         self.navigation(theme, "Hide Dev UI", DevUiMenu::Hidden, rect);
@@ -370,6 +375,27 @@ impl DevUi {
             self.copied_color_name = None;
         }
         Ok(None)
+    }
+    fn draw_gamepads(&mut self, gamepads: &mut Gamepads, theme: &mut Theme) {
+        let rect = &mut Self::dev_ui_title(theme);
+        render_text_dev_mut(
+            &format!("{} joysticks", gamepads.cached.len()),
+            theme,
+            below_left,
+            rect,
+        );
+        for gamepad in &gamepads.cached {
+            let text = format!(
+                "id: {}, {}, at rest: {}, left joystick: {}, right joystick: {}",
+                gamepad.inner.id().value(),
+                gamepad.team,
+                gamepad.joystick_rest,
+                gamepad.left_stick(),
+                gamepad.right_stick()
+            );
+            render_text_dev_mut(&text, theme, below_left, rect);
+        }
+        self.navigation(theme, "Back", DevUiMenu::Main, rect);
     }
 }
 

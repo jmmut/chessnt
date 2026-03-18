@@ -66,7 +66,14 @@ async fn fallible_main() -> AnyResult<()> {
 
         set_default_camera();
         messages.extend(board.draw_ui(&theme));
-        messages.extend(dev_ui.draw(&time, &mut theme, &mut board, &mut camera, &mut bots)?);
+        messages.extend(dev_ui.draw(
+            &time,
+            &mut theme,
+            &mut board,
+            &mut camera,
+            &mut bots,
+            &mut gamepads,
+        )?);
         if handle_ui_actions(messages, &mut board, &mut bots, &mut theme).await? {
             break;
         }
@@ -208,7 +215,9 @@ fn move_cursor_or_piece(board: &mut Board, gamepads: &mut Gamepads) {
     move_cursor_or_piece_team(board, Team::White, ARROWS);
     move_cursor_or_piece_team(board, Team::Black, WASD);
 
+    // println!("before gamepads");
     gamepads.move_cursor_or_piece(board);
+    // println!("after gamepads");
 }
 
 fn move_cursor_or_piece_team(board: &mut Board, team: Team, directions: Directions) {

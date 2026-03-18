@@ -231,12 +231,17 @@ fn close_to_center_of(cursor_pos: Coord, destination: Coord) -> bool {
 
 fn move_cursor(cursor_pos: Coord, piece_pos: Coord, team: Team, board: &mut Board) {
     let diff = piece_pos - cursor_pos;
-    let movement = if diff.column_f().abs() >= diff.row_f().abs() {
-        Coord::new_i(diff.column().signum(), 0)
-    } else {
-        Coord::new_i(0, diff.row().signum())
-    };
+    let movement = quantize(diff);
     board.move_cursor_rel(movement, team);
+}
+
+pub fn quantize(diff: Coord) -> Coord {
+    let movement = if diff.column_f().abs() >= diff.row_f().abs() {
+        Coord::new_f(diff.column_f().signum(), 0.0)
+    } else {
+        Coord::new_f(0.0, diff.row_f().signum())
+    };
+    movement
 }
 
 // TODO: centralize movement by raising messages instead of modifying the board
