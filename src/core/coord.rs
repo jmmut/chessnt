@@ -161,3 +161,8 @@ impl MulAssign<f32> for Coord {
         self.row *= other;
     }
 }
+
+/// sad that the format spec doesn't support variable alignment like `{:*.*}, 7, 4, -0.0001`
+pub fn fmt_vec2(v: Vec2) -> String {
+    format!("[{:7.4}, {:7.4}]", v.x, v.y)
+}

@@ -5,6 +5,9 @@ use crate::world::team::Team;
 use gamepads::Button;
 use macroquad::math::{vec2, Vec2};
 
+// TODO: make this configurable
+const JOYSTICK_DEAD_ZONE: f32 = 0.15;
+
 type JoystickWasAtRest = bool;
 
 pub struct Gamepad {
@@ -39,10 +42,7 @@ impl Gamepads {
         let mut whites = 0;
         let mut blacks = 0;
         let mut new_gamepads = Vec::new();
-        println!("pad ids:");
         for pad in self.pads.all() {
-            println!("pad id: {:?}", pad.id());
-
             if let Some(gamepad) = self
                 .cached
                 .iter_mut()
@@ -84,6 +84,7 @@ fn maybe_move_team(gamepad: Option<&mut Gamepad>, board: &mut Board) {
         move_team(gamepad, board);
     }
 }
+
 fn move_team(gamepad_outer: &mut Gamepad, board: &mut Board) {
     let mut delta = gamepad_outer.left_stick();
     delta += gamepad_outer.right_stick();
@@ -98,8 +99,9 @@ fn move_team(gamepad_outer: &mut Gamepad, board: &mut Board) {
     }
     if board.is_selected(team) {
         gamepad_outer.joystick_rest = true;
-        if delta.length() < 0.1 {
+        if delta.length() < JOYSTICK_DEAD_ZONE {
             // protect against stick drift
+
             delta = vec2(0.0, 0.0);
         }
         if gamepad.is_currently_pressed(Button::DPadRight) {

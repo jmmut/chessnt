@@ -1,5 +1,6 @@
 use crate::core::array_union::ArrayUnionTrait;
 use crate::core::clipboard::Clipboard;
+use crate::core::coord::fmt_vec2;
 use crate::core::input::Gamepads;
 use crate::core::time::Time;
 use crate::screen::theme::{
@@ -146,11 +147,7 @@ impl DevUi {
         if render_button_dev_mut("Reset camera", theme, below_left, rect).is_clicked() {
             *camera = CameraPos::default();
         }
-        let action = if self.clipboard.enabled {
-            "Disable"
-        } else {
-            "Enable"
-        };
+        let action = enable_or_disable(self.clipboard.enabled);
         let text = format!("{} OS/Web clipboard", action);
         if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
             self.clipboard.enabled = !self.clipboard.enabled;
@@ -386,12 +383,12 @@ impl DevUi {
         );
         for gamepad in &gamepads.cached {
             let text = format!(
-                "id: {}, {}, at rest: {}, left joystick: {}, right joystick: {}",
+                "id: {}, {}, at rest: {: >5}, left joystick: {}, right joystick: {}",
                 gamepad.inner.id().value(),
                 gamepad.team,
                 gamepad.joystick_rest,
-                gamepad.left_stick(),
-                gamepad.right_stick()
+                fmt_vec2(gamepad.left_stick()),
+                fmt_vec2(gamepad.right_stick()),
             );
             render_text_dev_mut(&text, theme, below_left, rect);
         }
@@ -433,6 +430,13 @@ pub fn hide_or_show(enabled: bool) -> &'static str {
         "Pause"
     } else {
         "Resume"
+    }
+}
+pub fn enable_or_disable(enabled: bool) -> &'static str {
+    if enabled {
+        "Disable"
+    } else {
+        "Enable"
     }
 }
 pub fn as_hex(color: Color) -> String {
