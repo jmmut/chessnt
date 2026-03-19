@@ -51,9 +51,6 @@ pub fn possible_moves(size: Coord, pieces: &Vec<Piece>, piece_index: usize) -> V
         valid_moves.extend(piece_moves(movement, pieces, piece_index, size));
     }
     valid_moves
-        .into_iter()
-        .filter(|pos| inside(*pos, size))
-        .collect()
 }
 
 fn piece_moves(
@@ -84,7 +81,7 @@ fn piece_moves(
     ];
     let piece = &pieces[piece_index];
     let occupied = &to_occupied_matrix(pieces, board_size);
-    match movement {
+    let moves = match movement {
         Move::Pawn => get_pawn_positions(piece_index, pieces, board_size),
         Move::Bishop => get_bishop_positions(piece, occupied, board_size),
         Move::Knight => get_positions(piece, KNIGHT, occupied, board_size),
@@ -94,7 +91,12 @@ fn piece_moves(
             .into_iter()
             .chain(get_bishop_positions(piece, occupied, board_size))
             .collect(),
-    }
+    };
+
+    moves
+        .into_iter()
+        .filter(|pos| inside(*pos, board_size))
+        .collect()
 }
 
 fn get_positions(

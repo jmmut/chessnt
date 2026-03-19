@@ -1,7 +1,8 @@
 use crate::core::coord::Coord;
 use crate::world::board::{other_pieces_at, Board, PieceIndex};
-use crate::world::moves::possible_moves;
+use crate::world::bot_chess;
 use crate::world::team::{OneForEachTeam, Team};
+use bot_chess::choose_target;
 use macroquad::math::Vec2;
 
 pub const WAIT_CURSOR: i32 = 20;
@@ -30,8 +31,8 @@ impl Bots {
     }
 }
 
-#[derive(Copy, Clone)]
-enum Plan {
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub enum Plan {
     Select(PlanSelect),
     Move(PlanMove),
 }
@@ -50,8 +51,8 @@ impl Plan {
     }
 }
 
-#[derive(Copy, Clone)]
-struct PlanSelect {
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub struct PlanSelect {
     piece_index: PieceIndex,
     destination: Coord,
     wait: i32,
@@ -84,7 +85,7 @@ impl PlanSelect {
         Plan::Select(Self::new_raw(self.piece_index, self.destination))
     }
 }
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 struct PlanMove {
     piece_index: PieceIndex,
     destination: Coord,
@@ -127,7 +128,7 @@ impl Bot {
 
 fn advance_plan(plan_opt: Option<Plan>, team: Team, board: &mut Board) -> Option<Plan> {
     match plan_opt {
-        None => choose_target(board, team), // nothing to do...?
+        None => choose_target(board, team), // if returns None, nothing to do...?
         Some(plan) => {
             if let Some(selected) = board.selected(team) {
                 if selected == plan.piece_index() {
@@ -208,18 +209,6 @@ fn finished_moving(
         // can move if it's my turn or if referee doesn't see me
         board.referee.turn == team || !board.referee.saw_piece(board.pieces(), piece_index)
     }
-}
-
-fn choose_target(board: &Board, team: Team) -> Option<Plan> {
-    for (i, piece) in board.pieces().iter().enumerate() {
-        if piece.team == team {
-            let moves = possible_moves(board.size(), board.pieces(), i);
-            if let Some(movement) = moves.first() {
-                return Some(PlanSelect::new(i, *movement));
-            }
-        }
-    }
-    None
 }
 
 fn close_to_center_of(cursor_pos: Coord, destination: Coord) -> bool {
