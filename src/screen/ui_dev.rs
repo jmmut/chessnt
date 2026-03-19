@@ -14,7 +14,8 @@ use crate::screen::ui::{
 use crate::screen::ui_board::Message;
 use crate::world::board::{Board, DEFAULT_PIECE_SIZE};
 use crate::world::bot::Bots;
-use crate::world::team::OneForEachTeam;
+use crate::world::bot_chess::evaluate_pieces;
+use crate::world::team::{OneForEachTeam, Team};
 use crate::{AnyResult, INITIAL_DEV_UI};
 use juquad::draw::draw_rect;
 use juquad::widgets::anchor::Anchor;
@@ -219,6 +220,15 @@ impl DevUi {
                 bot.toggle();
             }
         }
+        let score = evaluate_pieces(Team::White, board.pieces());
+        let text = if score > 0.0 {
+            format!("Score: {} is winning by {} points", Team::White, score)
+        } else if score < 0.0 {
+            format!("Score: {} is winning by {} points", Team::Black, -score)
+        } else {
+            "Score: tie".to_string()
+        };
+        render_text_dev_mut(&text, theme, below_left, rect);
 
         self.navigation(theme, "Back", DevUiMenu::Main, rect);
         messages

@@ -253,6 +253,85 @@ pub fn compute_attackers(i: PieceIndex, board_size: Coord, pieces: &Vec<Piece>) 
     attackers
 }
 
+const LETTER_KING: u8 = b'k';
+const LETTER_QUEEN: u8 = b'q';
+const LETTER_BISHOP: u8 = b'b';
+const LETTER_KNIGHT: u8 = b'h'; // horse (shrug)
+const LETTER_ROOK: u8 = b'r';
+const LETTER_PAWN: u8 = b'p';
+
+pub fn is_better<T, U>(best: &Option<T>, new: U, right_better: fn(&T, &U) -> bool) -> bool {
+    if let Some(best) = best {
+        right_better(best, &new)
+    } else {
+        true
+    }
+}
+pub fn store_better<T>(max: &mut Option<T>, new: T, right_better: impl Fn(&T, &T) -> bool)
+where
+    T: PartialOrd<T>,
+{
+    if let Some(current_max) = max {
+        if right_better(current_max, &new) {
+            *max = Some(new);
+        }
+    } else {
+        *max = Some(new);
+    }
+}
+
+pub fn store_max<T>(max: &mut Option<T>, new: T)
+where
+    T: PartialOrd<T>,
+{
+    store_better(max, new, |a, b| a < b)
+}
+
+pub fn print_board(pieces: &Vec<Piece>) {
+    println!("{}", board_to_str(pieces));
+}
+pub fn board_to_str(pieces: &Vec<Piece>) -> String {
+    let mut message = String::new();
+    let mut max_row = None;
+    let mut max_column = None;
+    for piece in pieces {
+        store_max(&mut max_row, piece.initial_pos.row);
+        store_max(&mut max_column, piece.initial_pos.column);
+    }
+    if let (Some(row), Some(column)) = (max_row, max_column) {
+        let mut matrix = vec![vec![None; column as usize + 1]; row as usize + 1];
+        let board_size = Coord::new_f(column + 1.0, row + 1.0);
+        for piece in pieces {
+            if inside(piece.initial_pos, board_size) {
+                matrix[piece.initial_pos.row as usize][piece.initial_pos.column as usize] =
+                    Some((piece.team, piece.moveset.first().unwrap()));
+            }
+        }
+        for row in matrix {
+            for cell in row {
+                if let Some((team, movement)) = cell {
+                    message += &format!(
+                        "{}{} ",
+                        if team.is_white() { 'w' } else { 'b' },
+                        match movement {
+                            Move::Pawn => LETTER_PAWN,
+                            Move::Knight => LETTER_KNIGHT,
+                            Move::Bishop => LETTER_BISHOP,
+                            Move::Rook => LETTER_ROOK,
+                            Move::Queen => LETTER_QUEEN,
+                            Move::King => LETTER_KING,
+                        } as char
+                    )
+                } else {
+                    message += "-- ";
+                }
+            }
+            message += "\n";
+        }
+    }
+    message
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -267,6 +346,7 @@ pub mod tests {
         let (size, pieces, _, _) = parse_board_cursor(text);
         (size, pieces)
     }
+
     pub fn parse_board_cursor(text: &str) -> (Coord, Vec<Piece>, Coord, Coord) {
         let mut max_columns = None;
         let mut white_cursor = Coord::new_i(0, 0);
@@ -296,18 +376,17 @@ pub mod tests {
                     if let Some(team) = team {
                         let piece = tile.as_bytes()[1];
                         let coord = Coord::new_i(column as i32, line_count);
-                        let movement = if piece == b'k' {
+                        let movement = if piece == LETTER_KING {
                             Move::King
-                        } else if piece == b'q' {
+                        } else if piece == LETTER_QUEEN {
                             Move::Queen
-                        } else if piece == b'b' {
+                        } else if piece == LETTER_BISHOP {
                             Move::Bishop
-                        } else if piece == b'h' {
-                            // horse (shrug)
+                        } else if piece == LETTER_KNIGHT {
                             Move::Knight
-                        } else if piece == b'r' {
+                        } else if piece == LETTER_ROOK {
                             Move::Rook
-                        } else if piece == b'p' {
+                        } else if piece == LETTER_PAWN {
                             Move::Pawn
                         } else {
                             panic!(

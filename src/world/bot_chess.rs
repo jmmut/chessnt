@@ -1,12 +1,18 @@
 use crate::core::coord::Coord;
 use crate::world::board::{other_pieces_at, Board, PieceIndex};
 use crate::world::bot::{Plan, PlanSelect};
-use crate::world::moves::{possible_moves, Move};
+use crate::world::moves::{board_to_str, is_better, possible_moves, print_board, Move};
 use crate::world::piece::Piece;
 use crate::world::team::Team;
 use std::time::Instant;
 
 pub const PLANNING_DEPTH: i32 = 4;
+
+#[cfg(test)]
+pub const DEBUG_PLANNING: bool = true;
+
+#[cfg(not(test))]
+pub const DEBUG_PLANNING: bool = false;
 
 pub type Score = f32;
 
@@ -20,8 +26,16 @@ pub fn choose_target(board: &Board, team: Team) -> Option<Plan> {
     plan
 }
 pub fn choose_target_inner(team: Team, pieces: &Vec<Piece>, board_size: Coord) -> Option<Plan> {
+    choose_target_inner_depth(team, pieces, board_size, PLANNING_DEPTH)
+}
+pub fn choose_target_inner_depth(
+    team: Team,
+    pieces: &Vec<Piece>,
+    board_size: Coord,
+    depth: i32,
+) -> Option<Plan> {
     if let (Some((i, movement)), score) =
-        choose_target_score(team, pieces, board_size, PLANNING_DEPTH)
+        choose_target_score(team, &mut pieces.clone(), board_size, depth)
     {
         Some(PlanSelect::new(i, movement))
     } else {
@@ -30,7 +44,7 @@ pub fn choose_target_inner(team: Team, pieces: &Vec<Piece>, board_size: Coord) -
 }
 pub fn choose_target_score(
     team: Team,
-    pieces: &Vec<Piece>,
+    pieces: &mut Vec<Piece>,
     board_size: Coord,
     depth: i32,
 ) -> (Option<(PieceIndex, Coord)>, Score) {
@@ -51,67 +65,170 @@ pub fn choose_target_score(
     //     if evaluate board is better
     //       store best
     // return best
-    let initial_board_score: f32 = pieces.iter().map(|piece| piece_value(piece, team)).sum();
+    let initial_board_score: f32 = evaluate_pieces(team, pieces);
+    if DEBUG_PLANNING {
+        // print!("{}choosing move for board as {}:\n{}", ".".repeat(depth as usize), team, board_to_str(pieces));
+        print!("{}", board_to_str(pieces));
+    }
     if depth <= 0 {
+        if DEBUG_PLANNING {
+            println!(
+                "{} returning (depth==0) with score {} for {} ************",
+                ".*".repeat(depth as usize),
+                initial_board_score,
+                team
+            );
+        }
         return (None, initial_board_score);
     }
-    let mut working_board = pieces.clone();
     let mut best = None;
-    for (i, piece) in working_board.iter().enumerate() {
+    let pieces_copy = pieces.clone();
+    for (i, piece) in pieces_copy.iter().enumerate() {
         if piece.team == team {
-            for movement in possible_moves(board_size, &working_board, i) {
-                if let Some(other_i) = other_pieces_at(movement, i, &working_board).first() {
-                    let other = &working_board[*other_i];
+            if DEBUG_PLANNING {
+                println!(
+                    "{}. where to move piece {} {:?} at {:?}?",
+                    ".*".repeat(depth as usize - 1),
+                    piece.team,
+                    piece.moveset.first().unwrap(),
+                    piece.initial_pos
+                );
+            }
+            for movement in possible_moves(board_size, &pieces, i) {
+                if DEBUG_PLANNING {
+                    println!(
+                        "{} evaluating move to {:?}",
+                        ".*".repeat(depth as usize - 1),
+                        movement
+                    );
+                }
+                if let Some(other_i) = other_pieces_at(movement, i, &pieces).first() {
+                    let other = &pieces[*other_i];
                     if other.team != team {
-                        let mut potential_pieces = working_board.clone();
-                        potential_pieces[i].set_pos_and_initial(movement);
-                        potential_pieces[*other_i].alive = false;
-                        potential_pieces[*other_i].set_pos_and_initial(Coord::new_i(0, -2));
+                        let old_pos = pieces[i].initial_pos;
+                        pieces[i].set_pos_and_initial(movement);
+                        pieces[*other_i].alive = false;
+                        let old_killed_pos = pieces[*other_i].initial_pos;
+                        pieces[*other_i].set_pos_and_initial(Coord::new_i(0, -2));
 
-                        let (_, future_score) = choose_target_score(
-                            team.opposite(),
-                            &potential_pieces,
-                            board_size,
-                            depth - 1,
-                        );
+                        let (_, future_score) =
+                            choose_target_score(team.opposite(), pieces, board_size, depth - 1);
+
+                        pieces[i].set_pos_and_initial(old_pos);
+                        pieces[*other_i].set_pos_and_initial(old_killed_pos);
+                        pieces[*other_i].alive = true;
+
                         let future_score = -future_score;
-                        if let Some((best_i, best_movement, best_score)) = best {
-                            if best_score < future_score {
-                                best = Some((i, movement, future_score));
-                            }
-                        } else {
-                            best = Some((i, movement, future_score));
-                        }
+                        // if let Some((best_i, best_movement, best_score)) = best {
+                        //     if best_score < future_score {
+                        //         print_decision_kill(pieces, i, movement, other_i, future_score, depth);
+                        //         best = Some((i, movement, future_score));
+                        //     }
+                        // } else {
+                        //     print_decision_kill(pieces, i, movement, other_i, future_score, depth);
+                        //     best = Some((i, movement, future_score));
+                        // }
+
+                        maybe_store_better(&mut best, future_score, i, movement);
                     }
                 } else {
                     // TODO: modify score due to our movement's benefit
-                    let mut potential_pieces = working_board.clone();
-                    potential_pieces[i].set_pos_and_initial(movement);
-                    let (_, future_score) = choose_target_score(
-                        team.opposite(),
-                        &potential_pieces,
-                        board_size,
-                        depth - 1,
-                    );
+                    let old_pos = pieces[i].initial_pos;
+                    pieces[i].set_pos_and_initial(movement);
+                    let (_, future_score) =
+                        choose_target_score(team.opposite(), pieces, board_size, depth - 1);
+                    pieces[i].set_pos_and_initial(old_pos);
 
                     let future_score = -future_score;
-                    if let Some((best_i, best_movement, best_score)) = best {
-                        if best_score < future_score {
-                            best = Some((i, movement, future_score));
-                        }
-                    } else {
-                        best = Some((i, movement, future_score));
-                    }
+                    // if let Some((best_i, best_movement, best_score)) = best {
+                    //     if best_score < future_score {
+                    //         // print_decision(pieces, depth, piece, movement, future_score);
+                    //         best = Some((i, movement, future_score));
+                    //     }
+                    // } else {
+                    //     // print_decision(pieces, depth, piece, movement, future_score);
+                    //     best = Some((i, movement, future_score));
+                    // }
+                    maybe_store_better(&mut best, future_score, i, movement);
                 }
             }
         }
     }
     if let Some((best_i, best_move, best_score)) = best {
+        if DEBUG_PLANNING {
+            println!(
+                "{} chose moving {} {:?} to {:?} with score {}",
+                ".*".repeat(depth as usize),
+                pieces[best_i].team,
+                pieces[best_i].moveset.first().unwrap(),
+                best_move,
+                best_score
+            );
+        }
         (Some((best_i, best_move)), best_score)
     } else {
         (None, initial_board_score)
     }
 }
+
+pub fn evaluate_pieces(team: Team, pieces: &Vec<Piece>) -> f32 {
+    pieces.iter().map(|piece| piece_value(piece, team)).sum()
+}
+
+fn maybe_store_better(
+    best: &mut Option<(PieceIndex, Coord, Score)>,
+    future_score: Score,
+    i: PieceIndex,
+    movement: Coord,
+) {
+    if is_better(best, future_score, |(_, _, best_score), future_score| {
+        best_score < future_score
+    }) {
+        // print_decision_kill(pieces, i, movement, other_i, future_score, depth);
+        *best = Some((i, movement, future_score));
+    }
+}
+
+fn print_decision_kill(
+    pieces: &mut Vec<Piece>,
+    i: PieceIndex,
+    movement: Coord,
+    other_i: &PieceIndex,
+    future_score: Score,
+    depth: i32,
+) {
+    let piece = &pieces[i];
+    print_board(pieces);
+    println!(
+        "{}moving {} {:?} to {:?} (kill {} {:?}) has better score {}",
+        ".".repeat(depth as usize),
+        piece.team,
+        piece.moveset.first().unwrap(),
+        movement,
+        pieces[*other_i].team,
+        pieces[*other_i].moveset.first().unwrap(),
+        future_score
+    );
+}
+
+fn print_decision(
+    pieces: &mut Vec<Piece>,
+    depth: i32,
+    piece: &Piece,
+    movement: Coord,
+    future_score: Score,
+) {
+    print_board(pieces);
+    println!(
+        "{}moving {} {:?} to {:?} has better score {}",
+        ".".repeat(depth as usize),
+        piece.team,
+        piece.moveset.first().unwrap(),
+        movement,
+        future_score
+    );
+}
+
 pub fn choose_first_target(board: &Board, team: Team) -> Option<Plan> {
     choose_target_inner(team, board.pieces(), board.size())
 }
@@ -163,7 +280,7 @@ mod tests {
             -- -- wb --
             bk -- -- wr
         ");
-        let plan = choose_target_inner(Team::White, &pieces, size);
+        let plan = choose_target_inner_depth(Team::White, &pieces, size, 2);
         let rook = find_first(Team::White, Move::Rook, &pieces).unwrap();
         let king = find_first(Team::Black, Move::King, &pieces).unwrap();
         assert_eq!(plan, Some(PlanSelect::new(rook, pieces[king].initial_pos)));
@@ -175,7 +292,7 @@ mod tests {
             bk -- -- wr
             br -- -- wp
         ");
-        let plan = choose_target_inner(Team::Black, &pieces, size);
+        let plan = choose_target_inner_depth(Team::Black, &pieces, size, 2);
         let king = find_first(Team::Black, Move::King, &pieces).unwrap();
         assert_eq!(plan, Some(PlanSelect::new(king, Coord::new_i(1, 1))));
     }
