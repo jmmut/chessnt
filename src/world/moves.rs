@@ -79,10 +79,13 @@ fn piece_moves(
         Coord::new_i(-1, 2),
         Coord::new_i(-2, 1),
     ];
+    if !pieces[piece_index].alive {
+        return Vec::new();
+    }
     let piece = &pieces[piece_index];
     let occupied = &to_occupied_matrix(pieces, board_size);
     let moves = match movement {
-        Move::Pawn => get_pawn_positions(piece_index, pieces, board_size),
+        Move::Pawn => get_pawn_positions(piece_index, pieces, occupied, board_size),
         Move::Bishop => get_bishop_positions(piece, occupied, board_size),
         Move::Knight => get_positions(piece, KNIGHT, occupied, board_size),
         Move::Rook => get_rook_positions(piece, occupied, board_size),
@@ -120,7 +123,12 @@ fn get_positions(
         .collect()
 }
 
-fn get_pawn_positions(piece_index: usize, pieces: &Vec<Piece>, board_size: Coord) -> Vec<Coord> {
+fn get_pawn_positions(
+    piece_index: usize,
+    pieces: &Vec<Piece>,
+    occupied: &Vec<Vec<Option<Team>>>,
+    board_size: Coord,
+) -> Vec<Coord> {
     let piece_pos = pieces[piece_index].initial_pos;
     let team = pieces[piece_index].team;
     let direction = Coord::new_i(if team.is_white() { -1 } else { 1 }, 0);
@@ -131,11 +139,11 @@ fn get_pawn_positions(piece_index: usize, pieces: &Vec<Piece>, board_size: Coord
     };
     let mut moves = vec![];
     let front = direction + piece_pos;
-    if empty_tile(front, piece_index, pieces) {
+    if is_occupied(front, occupied).is_none() {
         moves.push(front);
         let double_start = direction + front;
         if piece_pos.column() == starting_pawn_column
-            && empty_tile(double_start, piece_index, pieces)
+            && is_occupied(double_start, occupied).is_none()
         {
             moves.push(double_start);
         }
