@@ -195,7 +195,7 @@ fn get_bishop_positions(
 fn to_occupied_matrix(pieces: &Vec<Piece>, board_size: Coord) -> Vec<Vec<Option<Team>>> {
     let mut occupied = vec![vec![None; board_size.column as usize]; board_size.row as usize];
     for piece in pieces {
-        let pos = piece.pos_initial_i();
+        let pos = piece.initial_pos;
         if inside(pos, board_size) {
             occupied[pos.row() as usize][pos.column() as usize] = Some(piece.team);
         }
@@ -213,7 +213,7 @@ fn add_direction(
     delta: Coord,
     positions: &mut Vec<Coord>,
 ) {
-    let mut test = piece.pos_initial_i();
+    let mut test = piece.initial_pos;
     loop {
         test += delta;
         if inside(test, board_size) {
