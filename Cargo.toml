@@ -22,9 +22,10 @@ gamepads = { version = "=0.1.7", default-features = false }
 
 [profile.release]
 strip = true
-lto = true
+lto = "thin"
 
 [profile.profiling]
 inherits = "release"
 debug = true
 strip = false
+lto = false
