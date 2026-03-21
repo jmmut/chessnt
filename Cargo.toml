@@ -19,6 +19,11 @@ gamepads = { version = "=0.1.7", default-features = false }
 #[target.'cfg(target_arch = "wasm32")'.dependencies]
 #web-sys = { version = "=0.3.91", features = ["Clipboard"] }
 
+[profile.dev]
+opt-level = 1
+
+[profile.test]
+opt-level = 0
 
 [profile.release]
 strip = true
