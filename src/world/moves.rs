@@ -193,12 +193,13 @@ fn get_rook_positions(
     board_size: ICoord,
 ) -> Vec<ICoord> {
     let mut positions = Vec::new();
-    for dir in [
+    const DIRECTIONS: [ICoord; 4] = [
         ICoord::new_i(-1, 0),
         ICoord::new_i(1, 0),
         ICoord::new_i(0, -1),
         ICoord::new_i(0, 1),
-    ] {
+    ];
+    for dir in DIRECTIONS {
         add_direction(piece, board_size, &occupied, dir, &mut positions);
     }
     positions
@@ -210,12 +211,13 @@ fn get_bishop_positions(
     board_size: ICoord,
 ) -> Vec<ICoord> {
     let mut positions = Vec::new();
-    for dir in [
+    const DIRECTIONS: [ICoord; 4] = [
         ICoord::new_i(-1, -1),
         ICoord::new_i(-1, 1),
         ICoord::new_i(1, -1),
         ICoord::new_i(1, 1),
-    ] {
+    ];
+    for dir in DIRECTIONS {
         add_direction(piece, board_size, &occupied, dir, &mut positions);
     }
     positions
