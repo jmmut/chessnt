@@ -1,4 +1,4 @@
-use macroquad::math::{f32, vec2, vec3, IVec2, Vec2, Vec3};
+use macroquad::math::{f32, ivec2, vec2, vec3, IVec2, Vec2, Vec3};
 use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
 
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
@@ -29,25 +29,25 @@ impl Coord {
     pub fn column_f(&self) -> f32 {
         self.column
     }
-    pub fn abs(self) -> Coord {
-        Coord {
+    pub fn abs(self) -> Self {
+        Self {
             row: self.row.abs(),
             column: self.column.abs(),
         }
     }
-    pub fn floor(self) -> Coord {
-        Coord {
+    pub fn floor(self) -> Self {
+        Self {
             row: self.row.floor(),
             column: self.column.floor(),
         }
     }
-    pub fn round(self) -> Coord {
-        Coord {
+    pub fn round(self) -> Self {
+        Self {
             row: self.row.round(),
             column: self.column.round(),
         }
     }
-    pub fn normalize(self) -> Coord {
+    pub fn normalize(self) -> Self {
         let v: Vec2 = self.into();
         v.normalize().into()
     }
@@ -61,6 +61,11 @@ impl Coord {
 pub fn to_ivec(v: Vec2) -> IVec2 {
     let Vec2 { x, y } = v.floor();
     IVec2::new(x as i32, y as i32)
+}
+impl From<ICoord> for Coord {
+    fn from(value: ICoord) -> Self {
+        Coord::new_i(value.column, value.row)
+    }
 }
 impl From<IVec2> for Coord {
     fn from(value: IVec2) -> Self {
@@ -165,4 +170,154 @@ impl MulAssign<f32> for Coord {
 /// sad that the format spec doesn't support variable alignment like `{:*.*}, 7, 4, -0.0001`
 pub fn fmt_vec2(v: Vec2) -> String {
     format!("[{:7.4}, {:7.4}]", v.x, v.y)
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
+pub struct ICoord {
+    pub column: i32,
+    pub row: i32,
+}
+impl ICoord {
+    pub const fn new_f(column: f32, row: f32) -> Self {
+        Self {
+            column: column as i32,
+            row: row as i32,
+        }
+    }
+    pub const fn new_i(column: i32, row: i32) -> Self {
+        Self { column, row }
+    }
+    pub fn row(&self) -> i32 {
+        self.row
+    }
+    pub fn column(&self) -> i32 {
+        self.column
+    }
+    pub fn row_f(&self) -> f32 {
+        self.row as f32
+    }
+    pub fn column_f(&self) -> f32 {
+        self.column as f32
+    }
+    pub fn abs(self) -> Self {
+        Self {
+            row: self.row.abs(),
+            column: self.column.abs(),
+        }
+    }
+    pub fn normalize(self) -> Self {
+        let v: Vec2 = self.into();
+        v.normalize().into()
+    }
+    pub fn to_vec3(&self, y: f32) -> Vec3 {
+        vec3(self.column_f(), y, self.row_f())
+    }
+    pub fn into<T: From<ICoord>>(self) -> T {
+        Into::<T>::into(self)
+    }
+}
+
+impl From<Coord> for ICoord {
+    fn from(value: Coord) -> Self {
+        ICoord::new_f(value.column, value.row)
+    }
+}
+impl From<IVec2> for ICoord {
+    fn from(value: IVec2) -> Self {
+        ICoord::new_i(value.x, value.y)
+    }
+}
+impl From<ICoord> for IVec2 {
+    fn from(value: ICoord) -> Self {
+        ivec2(value.column, value.row)
+    }
+}
+impl From<Vec2> for ICoord {
+    fn from(value: Vec2) -> Self {
+        ICoord::new_f(value.x, value.y)
+    }
+}
+impl From<ICoord> for Vec2 {
+    fn from(value: ICoord) -> Self {
+        vec2(value.column_f(), value.row_f())
+    }
+}
+impl From<Vec3> for ICoord {
+    fn from(value: Vec3) -> Self {
+        ICoord::new_f(value.z, value.x)
+    }
+}
+impl From<ICoord> for Vec3 {
+    fn from(value: ICoord) -> Self {
+        value.to_vec3(0.0)
+    }
+}
+impl Add<ICoord> for ICoord {
+    type Output = ICoord;
+    fn add(mut self, other: ICoord) -> Self::Output {
+        self += other;
+        self
+    }
+}
+impl AddAssign<ICoord> for ICoord {
+    fn add_assign(&mut self, other: ICoord) {
+        self.column += other.column;
+        self.row += other.row;
+    }
+}
+impl Add<i32> for ICoord {
+    type Output = ICoord;
+    fn add(mut self, other: i32) -> Self::Output {
+        self += other;
+        self
+    }
+}
+impl AddAssign<i32> for ICoord {
+    fn add_assign(&mut self, rhs: i32) {
+        self.column += rhs;
+        self.row += rhs;
+    }
+}
+impl Sub<ICoord> for ICoord {
+    type Output = ICoord;
+    fn sub(mut self, other: ICoord) -> Self::Output {
+        self -= other;
+        self
+    }
+}
+
+impl SubAssign<ICoord> for ICoord {
+    fn sub_assign(&mut self, other: ICoord) {
+        self.column -= other.column;
+        self.row -= other.row;
+    }
+}
+impl Mul<ICoord> for ICoord {
+    type Output = ICoord;
+
+    fn mul(mut self, other: ICoord) -> Self::Output {
+        self *= other;
+        self
+    }
+}
+impl Mul<i32> for ICoord {
+    type Output = ICoord;
+
+    fn mul(mut self, other: i32) -> Self::Output {
+        self.column *= other;
+        self.row *= other;
+        self
+    }
+}
+impl MulAssign<ICoord> for ICoord {
+    fn mul_assign(&mut self, other: ICoord) {
+        self.column *= other.column;
+        self.row *= other.row;
+    }
+}
+impl MulAssign<i32> for ICoord {
+    fn mul_assign(&mut self, other: i32) {
+        self.column *= other;
+        self.row *= other;
+    }
 }

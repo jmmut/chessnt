@@ -1,4 +1,4 @@
-use crate::core::coord::Coord;
+use crate::core::coord::{Coord, ICoord};
 use crate::world::moves::{Move, Moveset};
 use crate::world::team::Team;
 
@@ -6,7 +6,7 @@ pub const COOLDOWN: f64 = 2.0;
 
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub struct Piece {
-    pub initial_pos: Coord,
+    pub initial_pos: ICoord,
     pos: Coord,
     pub moveset: Moveset,
     pub team: Team,
@@ -16,7 +16,7 @@ pub struct Piece {
 }
 #[derive(Debug)]
 pub struct PieceMock {
-    pub initial_pos: Coord,
+    pub initial_pos: ICoord,
     pos: Coord,
     pub moveset: Moveset,
     pub team: Team,
@@ -27,7 +27,7 @@ pub struct PieceMock {
 impl PieceMock {
     pub fn new(pos: Coord, moveset: Moveset, team: Team) -> Self {
         PieceMock {
-            initial_pos: pos,
+            initial_pos: pos.into(),
             pos,
             moveset,
             team,
@@ -40,7 +40,7 @@ impl PieceMock {
         self.pos = pos;
         self
     }
-    pub fn initial_pos(mut self, initial_pos: Coord) -> Self {
+    pub fn initial_pos(mut self, initial_pos: ICoord) -> Self {
         self.initial_pos = initial_pos;
         self
     }
@@ -88,7 +88,7 @@ impl From<&Piece> for PieceMock {
 impl Piece {
     pub fn new(pos: Coord, team: Team, movement: Move) -> Self {
         Self {
-            initial_pos: pos,
+            initial_pos: pos.into(),
             pos,
             moveset: vec![movement],
             team,
@@ -99,6 +99,10 @@ impl Piece {
     }
     pub fn set_pos_and_initial(&mut self, new_pos: Coord) {
         self.pos = new_pos;
+        self.initial_pos = new_pos.into();
+    }
+    pub fn set_pos_and_initial_i(&mut self, new_pos: ICoord) {
+        self.pos = new_pos.into();
         self.initial_pos = new_pos;
     }
     pub fn set_pos(&mut self, new_pos: Coord) {
@@ -107,11 +111,18 @@ impl Piece {
     pub fn move_rel(&mut self, delta: Coord) {
         self.pos += delta;
     }
+    pub fn move_rel_and_initial(&mut self, delta: Coord) {
+        self.pos += delta;
+        self.initial_pos = self.pos.into();
+    }
     pub fn pos_i(&self) -> Coord {
         self.pos.round()
     }
-    pub fn pos_initial_i(&self) -> Coord {
-        self.initial_pos.round()
+    pub fn pos_ii(&self) -> ICoord {
+        self.pos.round().into()
+    }
+    pub fn pos_initial_i(&self) -> ICoord {
+        self.initial_pos
     }
     pub fn pos_f(&self) -> Coord {
         self.pos

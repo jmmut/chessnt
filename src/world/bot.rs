@@ -1,4 +1,4 @@
-use crate::core::coord::Coord;
+use crate::core::coord::{Coord, ICoord};
 use crate::world::board::{other_pieces_at, Board, PieceIndex};
 use crate::world::bot_chess;
 use crate::world::team::{OneForEachTeam, Team};
@@ -43,7 +43,7 @@ impl Plan {
             | Plan::Move(PlanMove { piece_index, .. }) => *piece_index,
         }
     }
-    pub fn destination(&self) -> Coord {
+    pub fn destination(&self) -> ICoord {
         match self {
             Plan::Select(PlanSelect { destination, .. })
             | Plan::Move(PlanMove { destination, .. }) => *destination,
@@ -54,17 +54,17 @@ impl Plan {
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct PlanSelect {
     piece_index: PieceIndex,
-    destination: Coord,
+    destination: ICoord,
     wait: i32,
 }
 impl PlanSelect {
-    pub fn new(piece_index: PieceIndex, destination: Coord) -> Plan {
+    pub fn new(piece_index: PieceIndex, destination: ICoord) -> Plan {
         Plan::Select(Self::new_raw(piece_index, destination))
     }
-    pub fn new_raw(piece_index: PieceIndex, destination: Coord) -> PlanSelect {
+    pub fn new_raw(piece_index: PieceIndex, destination: ICoord) -> PlanSelect {
         Self::new_raw_wait(piece_index, destination, WAIT_CURSOR)
     }
-    pub fn new_raw_wait(piece_index: PieceIndex, destination: Coord, wait: i32) -> PlanSelect {
+    pub fn new_raw_wait(piece_index: PieceIndex, destination: ICoord, wait: i32) -> PlanSelect {
         Self {
             piece_index,
             destination,
@@ -88,14 +88,14 @@ impl PlanSelect {
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct PlanMove {
     piece_index: PieceIndex,
-    destination: Coord,
+    destination: ICoord,
 }
 
 impl PlanMove {
-    pub fn new(piece_index: PieceIndex, destination: Coord) -> Plan {
+    pub fn new(piece_index: PieceIndex, destination: ICoord) -> Plan {
         Plan::Move(Self::new_raw(piece_index, destination))
     }
-    pub fn new_raw(piece_index: PieceIndex, destination: Coord) -> PlanMove {
+    pub fn new_raw(piece_index: PieceIndex, destination: ICoord) -> PlanMove {
         Self {
             piece_index,
             destination,
@@ -164,7 +164,7 @@ fn advance_plan_select(plan: PlanSelect, team: Team, board: &mut Board) -> Plan 
 /// assumes correct piece is selected
 fn advance_plan_move(
     piece_index: PieceIndex,
-    destination: Coord,
+    destination: ICoord,
     team: Team,
     board: &mut Board,
 ) -> Option<Plan> {
@@ -211,8 +211,8 @@ fn finished_moving(
     }
 }
 
-fn close_to_center_of(cursor_pos: Coord, destination: Coord) -> bool {
-    (cursor_pos - destination.round())
+fn close_to_center_of(cursor_pos: Coord, destination: ICoord) -> bool {
+    (cursor_pos - destination.into())
         .into::<Vec2>()
         .length_squared()
         < 0.05
@@ -234,9 +234,9 @@ pub fn quantize(diff: Coord) -> Coord {
 }
 
 // TODO: centralize movement by raising messages instead of modifying the board
-fn move_selected(cursor_pos: Coord, destination: Coord, team: Team, board: &mut Board) {
+fn move_selected(cursor_pos: Coord, destination: ICoord, team: Team, board: &mut Board) {
     let max = 0.05;
-    let diff = destination - cursor_pos;
+    let diff = destination.into::<Coord>() - cursor_pos;
     let diff = diff.normalize();
     let diff = diff * max;
     board.move_cursor_rel(diff, team);

@@ -1,4 +1,4 @@
-use crate::core::coord::Coord;
+use crate::core::coord::{Coord, ICoord};
 use crate::world::board::PieceIndex;
 use crate::world::piece::Piece;
 use crate::world::team::Team;
@@ -44,7 +44,7 @@ fn move_to_string(movement: Move) -> String {
     .to_string()
 }
 
-pub fn possible_moves(size: Coord, pieces: &Vec<Piece>, piece_index: usize) -> Vec<Coord> {
+pub fn possible_moves(size: ICoord, pieces: &Vec<Piece>, piece_index: usize) -> Vec<ICoord> {
     let mut valid_moves = Vec::new();
     let piece = &pieces[piece_index];
     for movement in &piece.moveset {
@@ -57,27 +57,27 @@ fn piece_moves(
     movement: &Move,
     pieces: &Vec<Piece>,
     piece_index: usize,
-    board_size: Coord,
-) -> Vec<Coord> {
-    const KING: &[Coord] = &[
-        Coord::new_i(-1, 0),
-        Coord::new_i(1, 0),
-        Coord::new_i(0, -1),
-        Coord::new_i(0, 1),
-        Coord::new_i(-1, -1),
-        Coord::new_i(1, -1),
-        Coord::new_i(1, 1),
-        Coord::new_i(-1, 1),
+    board_size: ICoord,
+) -> Vec<ICoord> {
+    const KING: &[ICoord] = &[
+        ICoord::new_i(-1, 0),
+        ICoord::new_i(1, 0),
+        ICoord::new_i(0, -1),
+        ICoord::new_i(0, 1),
+        ICoord::new_i(-1, -1),
+        ICoord::new_i(1, -1),
+        ICoord::new_i(1, 1),
+        ICoord::new_i(-1, 1),
     ];
-    const KNIGHT: &[Coord] = &[
-        Coord::new_i(-2, -1),
-        Coord::new_i(-1, -2),
-        Coord::new_i(2, 1),
-        Coord::new_i(1, 2),
-        Coord::new_i(2, -1),
-        Coord::new_i(1, -2),
-        Coord::new_i(-1, 2),
-        Coord::new_i(-2, 1),
+    const KNIGHT: &[ICoord] = &[
+        ICoord::new_i(-2, -1),
+        ICoord::new_i(-1, -2),
+        ICoord::new_i(2, 1),
+        ICoord::new_i(1, 2),
+        ICoord::new_i(2, -1),
+        ICoord::new_i(1, -2),
+        ICoord::new_i(-1, 2),
+        ICoord::new_i(-2, 1),
     ];
     if !pieces[piece_index].alive {
         return Vec::new();
@@ -104,10 +104,10 @@ fn piece_moves(
 
 fn get_positions(
     piece: &Piece,
-    possible: &[Coord],
+    possible: &[ICoord],
     occupied: &Vec<Vec<Option<Team>>>,
-    board_size: Coord,
-) -> Vec<Coord> {
+    board_size: ICoord,
+) -> Vec<ICoord> {
     let piece_pos = piece.initial_pos;
     possible
         .iter()
@@ -127,11 +127,11 @@ fn get_pawn_positions(
     piece_index: usize,
     pieces: &Vec<Piece>,
     occupied: &Vec<Vec<Option<Team>>>,
-    board_size: Coord,
-) -> Vec<Coord> {
+    board_size: ICoord,
+) -> Vec<ICoord> {
     let piece_pos = pieces[piece_index].initial_pos;
     let team = pieces[piece_index].team;
-    let direction = Coord::new_i(if team.is_white() { -1 } else { 1 }, 0);
+    let direction = ICoord::new_i(if team.is_white() { -1 } else { 1 }, 0);
     let starting_pawn_column = if team.is_white() {
         board_size.column() - 2
     } else {
@@ -158,22 +158,22 @@ fn get_pawn_positions(
             }
         }
     };
-    add_if_enemy_is_at(piece_pos + direction + Coord::new_i(0, 1));
-    add_if_enemy_is_at(piece_pos + direction + Coord::new_i(0, -1));
+    add_if_enemy_is_at(piece_pos + direction + ICoord::new_i(0, 1));
+    add_if_enemy_is_at(piece_pos + direction + ICoord::new_i(0, -1));
     moves
 }
 
 fn get_rook_positions(
     piece: &Piece,
     occupied: &Vec<Vec<Option<Team>>>,
-    board_size: Coord,
-) -> Vec<Coord> {
+    board_size: ICoord,
+) -> Vec<ICoord> {
     let mut positions = Vec::new();
     for dir in [
-        Coord::new_i(-1, 0),
-        Coord::new_i(1, 0),
-        Coord::new_i(0, -1),
-        Coord::new_i(0, 1),
+        ICoord::new_i(-1, 0),
+        ICoord::new_i(1, 0),
+        ICoord::new_i(0, -1),
+        ICoord::new_i(0, 1),
     ] {
         add_direction(piece, board_size, &occupied, dir, &mut positions);
     }
@@ -183,21 +183,21 @@ fn get_rook_positions(
 fn get_bishop_positions(
     piece: &Piece,
     occupied: &Vec<Vec<Option<Team>>>,
-    board_size: Coord,
-) -> Vec<Coord> {
+    board_size: ICoord,
+) -> Vec<ICoord> {
     let mut positions = Vec::new();
     for dir in [
-        Coord::new_i(-1, -1),
-        Coord::new_i(-1, 1),
-        Coord::new_i(1, -1),
-        Coord::new_i(1, 1),
+        ICoord::new_i(-1, -1),
+        ICoord::new_i(-1, 1),
+        ICoord::new_i(1, -1),
+        ICoord::new_i(1, 1),
     ] {
         add_direction(piece, board_size, &occupied, dir, &mut positions);
     }
     positions
 }
 
-fn to_occupied_matrix(pieces: &Vec<Piece>, board_size: Coord) -> Vec<Vec<Option<Team>>> {
+fn to_occupied_matrix(pieces: &Vec<Piece>, board_size: ICoord) -> Vec<Vec<Option<Team>>> {
     let mut occupied = vec![vec![None; board_size.column as usize]; board_size.row as usize];
     for piece in pieces {
         let pos = piece.initial_pos;
@@ -207,16 +207,16 @@ fn to_occupied_matrix(pieces: &Vec<Piece>, board_size: Coord) -> Vec<Vec<Option<
     }
     occupied
 }
-fn is_occupied(test: Coord, occupied: &Vec<Vec<Option<Team>>>) -> Option<Team> {
-    occupied[test.row_f() as usize][test.column_f() as usize]
+fn is_occupied(test: ICoord, occupied: &Vec<Vec<Option<Team>>>) -> Option<Team> {
+    occupied[test.row() as usize][test.column() as usize]
 }
 
 fn add_direction(
     piece: &Piece,
-    board_size: Coord,
+    board_size: ICoord,
     occupied: &Vec<Vec<Option<Team>>>,
-    delta: Coord,
-    positions: &mut Vec<Coord>,
+    delta: ICoord,
+    positions: &mut Vec<ICoord>,
 ) {
     let mut test = piece.initial_pos;
     loop {
@@ -236,14 +236,21 @@ fn add_direction(
     }
 }
 
-pub fn inside(pos: Coord, board_size: Coord) -> bool {
+pub fn inside_f(pos: Coord, board_size: ICoord) -> bool {
     pos.column >= 0.0
-        && pos.column < board_size.column
+        && pos.column < board_size.column_f()
         && pos.row >= 0.0
-        && pos.row < board_size.row
+        && pos.row < board_size.row_f()
+}
+pub fn inside(pos: ICoord, board_size: ICoord) -> bool {
+    pos.column >= 0 && pos.column < board_size.column && pos.row >= 0 && pos.row < board_size.row
 }
 
-pub fn compute_attackers(i: PieceIndex, board_size: Coord, pieces: &Vec<Piece>) -> Vec<PieceIndex> {
+pub fn compute_attackers(
+    i: PieceIndex,
+    board_size: ICoord,
+    pieces: &Vec<Piece>,
+) -> Vec<PieceIndex> {
     let target = &pieces[i];
     let target_pos = target.pos_initial_i();
     let mut attackers = Vec::new();
@@ -305,7 +312,7 @@ pub fn board_to_str(pieces: &Vec<Piece>) -> String {
     }
     if let (Some(row), Some(column)) = (max_row, max_column) {
         let mut matrix = vec![vec![None; column as usize + 1]; row as usize + 1];
-        let board_size = Coord::new_f(column + 1.0, row + 1.0);
+        let board_size = ICoord::new_i(column + 1, row + 1);
         for piece in pieces {
             if inside(piece.initial_pos, board_size) {
                 matrix[piece.initial_pos.row as usize][piece.initial_pos.column as usize] =
@@ -347,12 +354,12 @@ pub mod tests {
     use Move::*;
     use Team::*;
 
-    pub fn parse_board(text: &str) -> (Coord, Vec<Piece>) {
+    pub fn parse_board(text: &str) -> (ICoord, Vec<Piece>) {
         let (size, pieces, _, _) = parse_board_cursor(text);
         (size, pieces)
     }
 
-    pub fn parse_board_cursor(text: &str) -> (Coord, Vec<Piece>, Coord, Coord) {
+    pub fn parse_board_cursor(text: &str) -> (ICoord, Vec<Piece>, Coord, Coord) {
         let mut max_columns = None;
         let mut white_cursor = Coord::new_i(0, 0);
         let mut black_cursor = Coord::new_i(0, 0);
@@ -415,7 +422,7 @@ pub mod tests {
                 line_count += 1;
             }
         }
-        let size = Coord::new_i(max_columns.unwrap_or(0), line_count);
+        let size = ICoord::new_i(max_columns.unwrap_or(0), line_count);
         (size, pieces, white_cursor, black_cursor)
     }
     #[test]
@@ -436,7 +443,7 @@ pub mod tests {
         ];
         // parsed_pieces.sort();
         // pieces.sort();
-        assert_eq!(size, Coord::new_i(4, 5));
+        assert_eq!(size, ICoord::new_i(4, 5));
         assert_eq!(parsed_pieces, pieces);
     }
     #[test]
@@ -457,7 +464,7 @@ pub mod tests {
         ];
         // parsed_pieces.sort();
         // pieces.sort();
-        assert_eq!(size, Coord::new_i(4, 5));
+        assert_eq!(size, ICoord::new_i(4, 5));
         assert_eq!(parsed_pieces, pieces);
     }
     #[test]
@@ -499,6 +506,6 @@ pub mod tests {
         ");
         let white_pawn = find_first(White, Pawn, &pieces).unwrap();
         let moves = possible_moves(board_size, &pieces, white_pawn);
-        assert_eq!(moves, vec![Coord::new_i(1, 2)]);
+        assert_eq!(moves, vec![ICoord::new_i(1, 2)]);
     }
 }

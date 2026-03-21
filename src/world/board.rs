@@ -1,10 +1,10 @@
-use crate::core::coord::Coord;
+use crate::core::coord::{Coord, ICoord};
 use crate::screen::render::{
     floor_corners, mesh_coord, mesh_cursor, mesh_cursor_width, mesh_figure_texture,
     mesh_progress_bar, mesh_quad, mesh_texture_quad, mesh_triangle, mesh_vertical_texture, quad,
 };
 use crate::screen::theme::Theme;
-use crate::world::moves::{compute_attackers, inside, possible_moves, Move};
+use crate::world::moves::{compute_attackers, inside_f, possible_moves, Move};
 use crate::world::piece::Piece;
 use crate::world::referee::Referee;
 use crate::world::team::{OneForEachTeam, Team};
@@ -23,7 +23,7 @@ pub type PieceIndex = usize;
 pub struct Board {
     cursor: OneForEachTeam<Coord>,
     selected: OneForEachTeam<Option<PieceIndex>>,
-    size: Coord,
+    size: ICoord,
     pieces: Vec<Piece>,
     pub referee: Referee,
     pub piece_size: Vec2,
@@ -33,7 +33,7 @@ pub struct Board {
 pub const DEFAULT_PIECE_SIZE: Vec2 = vec2(0.3, 1.0);
 
 impl Board {
-    pub fn new(cursor_white: Coord, cursor_black: Coord, size: Coord, pieces: Vec<Piece>) -> Self {
+    pub fn new(cursor_white: Coord, cursor_black: Coord, size: ICoord, pieces: Vec<Piece>) -> Self {
         Self {
             cursor: OneForEachTeam::new(cursor_white, cursor_black),
             selected: OneForEachTeam::new(None, None),
@@ -62,7 +62,7 @@ impl Board {
             pieces.push(Piece::new(Coord::new_i(6, *row), Team::White, Move::Pawn));
             pieces.push(Piece::new(Coord::new_i(1, *row), Team::Black, Move::Pawn));
         }
-        let size = Coord::new_i(8, 8);
+        let size = ICoord::new_i(8, 8);
         Self::new(cursor_white, cursor_black, size, pieces)
     }
     pub fn reset(&mut self) {
@@ -80,7 +80,7 @@ impl Board {
             piece.tick(delta_s);
         }
     }
-    pub fn size(&self) -> Coord {
+    pub fn size(&self) -> ICoord {
         self.size
     }
     fn get_selected_piece(&self, team: Team) -> Option<&Piece> {
@@ -159,33 +159,33 @@ impl Board {
                             && self.referee.turn == selected_team
                         {
                             self.kill(overlap_i);
-                            self.pieces[selected_i].set_pos_and_initial(rounded_overlap_initial);
+                            self.pieces[selected_i].set_pos_and_initial_i(rounded_overlap_initial);
                             self.referee.turn.toggle();
                         } else {
                             self.kill(selected_i);
                         }
                     } else {
-                        self.pieces[selected_i].set_pos_and_initial(initial);
+                        self.pieces[selected_i].set_pos_and_initial_i(initial);
                     }
                 } else {
                     let initial = self.pieces[selected_i].initial_pos;
-                    self.pieces[overlap_i].set_pos_and_initial(initial.round());
-                    self.pieces[selected_i].set_pos_and_initial(rounded_overlap_initial);
+                    self.pieces[overlap_i].set_pos_and_initial_i(initial);
+                    self.pieces[selected_i].set_pos_and_initial_i(rounded_overlap_initial);
                     if self
                         .referee
                         .saw_any_piece(&self.pieces, vec![selected_i, overlap_i])
                     {
                         // TODO: defer after animation
-                        self.pieces[overlap_i].set_pos_and_initial(rounded_overlap_initial);
+                        self.pieces[overlap_i].set_pos_and_initial_i(rounded_overlap_initial);
                         self.kill(selected_i);
                     }
                 }
             } else {
-                let rounded_pos = self.pieces[selected_i].pos_i(); // TODO: leave positions unrounded
-                let initial_pos = self.pieces[selected_i].initial_pos.round();
+                let rounded_pos = self.pieces[selected_i].pos_i().into::<ICoord>(); // TODO: leave positions unrounded
+                let initial_pos = self.pieces[selected_i].initial_pos;
                 let moves = possible_moves(self.size, &self.pieces, selected_i);
                 let referee_saw = self.referee.saw_any_piece(&self.pieces, vec![selected_i]);
-                self.pieces[selected_i].set_pos_and_initial(rounded_pos);
+                self.pieces[selected_i].set_pos_and_initial_i(rounded_pos);
                 if referee_saw {
                     if initial_pos == rounded_pos {
                         // grabbed and dropped in the same place: ok for both teams
@@ -199,7 +199,7 @@ impl Board {
                         self.referee.turn.toggle();
                     }
                 } else {
-                    if inside(self.pieces[selected_i].pos_i(), self.size) {
+                    if inside_f(self.pieces[selected_i].pos_i(), self.size) {
                         self.pieces[selected_i].alive = true;
                     }
                 }
@@ -252,8 +252,7 @@ impl Board {
         let column = self.pieces[selected_i].pos_i().column();
         self.pieces[selected_i].set_pos_and_initial(Coord::new_i(column, -2));
         while self.overlapping_pieces(selected_i).len() > 0 {
-            self.pieces[selected_i].move_rel(Coord::new_i(0, -1));
-            self.pieces[selected_i].initial_pos = self.pieces[selected_i].pos_f();
+            self.pieces[selected_i].move_rel_and_initial(Coord::new_i(0, -1));
         }
     }
 
@@ -291,11 +290,11 @@ pub fn find_first(team: Team, move_type: Move, pieces: &Vec<Piece>) -> Option<Pi
 }
 
 fn overlapping_piece(selected_i: PieceIndex, pieces: &Vec<Piece>) -> Vec<PieceIndex> {
-    let selected_rounded = pieces[selected_i].pos_i();
+    let selected_rounded = pieces[selected_i].pos_ii();
     other_pieces_at(selected_rounded, selected_i, pieces)
 }
 
-pub fn other_pieces_at(pos: Coord, index: PieceIndex, pieces: &Vec<Piece>) -> Vec<PieceIndex> {
+pub fn other_pieces_at(pos: ICoord, index: PieceIndex, pieces: &Vec<Piece>) -> Vec<PieceIndex> {
     let mut others = Vec::new();
     for (i, piece) in pieces.iter().enumerate() {
         if i != index && piece.pos_initial_i() == pos {
@@ -304,7 +303,7 @@ pub fn other_pieces_at(pos: Coord, index: PieceIndex, pieces: &Vec<Piece>) -> Ve
     }
     others
 }
-pub fn empty_tile(double_start: Coord, piece_index: usize, pieces: &Vec<Piece>) -> bool {
+pub fn empty_tile(double_start: ICoord, piece_index: usize, pieces: &Vec<Piece>) -> bool {
     other_pieces_at(double_start, piece_index, pieces).len() == 0
 }
 
@@ -417,13 +416,13 @@ impl Board {
         let mut meshes = Vec::new();
         if let Some(index) = self.selected(team) {
             meshes.extend(mesh_cursor(
-                self.pieces[index].initial_pos,
+                self.pieces[index].initial_pos.into(),
                 theme.palette.ghost,
                 SELECTION_HEIGHT,
             ));
             for movement in possible_moves(self.size, &self.pieces, index) {
                 meshes.extend(mesh_cursor(
-                    movement,
+                    movement.into(),
                     theme.palette.selection,
                     SELECTION_HEIGHT,
                 ))
@@ -449,7 +448,7 @@ impl Board {
         let mut meshes = Vec::new();
         for (_team, kind_index) in self.in_check() {
             meshes.extend(mesh_cursor_width(
-                self.pieces[kind_index].initial_pos,
+                self.pieces[kind_index].initial_pos.into(),
                 theme.palette.check,
                 SELECTION_HEIGHT,
                 0.2,
@@ -459,7 +458,7 @@ impl Board {
     }
     fn turn_light_meshes(&self, theme: &Theme) -> Vec<Mesh> {
         let z = vec3(0.0, 0.0, 1.0) * 10.0;
-        let coord_00 = vec3(0.0 + self.size.column * 0.5, 4.0, 6.0);
+        let coord_00 = vec3(0.0 + self.size.column as f32 * 0.5, 4.0, 6.0);
         let slope_direction = if self.referee.turn.is_white() {
             1.0
         } else {
@@ -530,7 +529,7 @@ mod tests {
     #[test]
     fn test_deselect_when_killed() {
         let mut board = build_board("wqO brX");
-        let pos_right = board.cursor(Team::Black);
+        let pos_right = board.cursor(Team::Black).into();
 
         board.select(Team::White);
         board.select(Team::Black);
