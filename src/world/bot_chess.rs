@@ -177,16 +177,6 @@ fn evaluate_movement(
                 0.0
             };
             let future_score = -future_score - kill_value;
-            // if let Some((best_i, best_movement, best_score)) = best {
-            //     if best_score < future_score {
-            //         print_decision_kill(pieces, i, movement, other_i, future_score, depth);
-            //         best = Some((i, movement, future_score));
-            //     }
-            // } else {
-            //     print_decision_kill(pieces, i, movement, other_i, future_score, depth);
-            //     best = Some((i, movement, future_score));
-            // }
-
             maybe_store_better(best, future_score, i, movement);
         }
     } else {
@@ -219,15 +209,6 @@ fn evaluate_movement(
             0.0
         };
         let future_score = -future_score;
-        // if let Some((best_i, best_movement, best_score)) = best {
-        //     if best_score < future_score {
-        //         // print_decision(pieces, depth, piece, movement, future_score);
-        //         best = Some((i, movement, future_score));
-        //     }
-        // } else {
-        //     // print_decision(pieces, depth, piece, movement, future_score);
-        //     best = Some((i, movement, future_score));
-        // }
         maybe_store_better(best, future_score, i, movement);
     }
 }
@@ -295,9 +276,6 @@ fn print_decision(
     );
 }
 
-pub fn choose_first_target(board: &Board, team: Team) -> Option<Plan> {
-    choose_target_inner(team, board.pieces(), board.size())
-}
 pub fn choose_first_target_inner(
     team: Team,
     pieces: &Vec<Piece>,
