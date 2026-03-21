@@ -365,7 +365,7 @@ fn add_direction(
     positions: &mut Vec<ICoord>,
 ) {
     let mut test = piece.initial_pos;
-    loop {
+    for _ in 0..8 {
         test += delta;
         if inside(test, board_size) {
             if let Some(other_team) = is_occupied(test, occupied) {
