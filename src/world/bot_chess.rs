@@ -22,42 +22,56 @@ pub type Score = f32;
 
 pub fn choose_target(board: &Board, team: Team) -> Option<Plan> {
     let start = Instant::now();
-    let plan = choose_target_inner(team, board.pieces(), board.size());
-    println!(
-        "planning took {:5.3}ms",
-        (Instant::now() - start).as_secs_f64() * 1000.0
-    );
-    plan
+    if board.referee.turn != team {
+        None
+    } else {
+        let plan = choose_target_inner(team, board.pieces(), board.referee.turn, board.size());
+        println!(
+            "planning took {:5.3}ms",
+            (Instant::now() - start).as_secs_f64() * 1000.0
+        );
+        plan
+    }
 }
-pub fn choose_target_inner(team: Team, pieces: &Vec<Piece>, board_size: ICoord) -> Option<Plan> {
-    choose_target_inner_depth(team, pieces, board_size, PLANNING_DEPTH)
+pub fn choose_target_inner(
+    team: Team,
+    pieces: &Vec<Piece>,
+    turn: Team,
+    board_size: ICoord,
+) -> Option<Plan> {
+    choose_target_inner_depth(team, pieces, board_size, turn, PLANNING_DEPTH)
 }
 
 pub fn choose_target_inner_depth(
     team: Team,
     pieces: &Vec<Piece>,
     board_size: ICoord,
+    turn: Team,
     depth: i32,
 ) -> Option<Plan> {
     let mut occupied = to_occupied_matrix(pieces, board_size);
     let mut indexes = to_piece_index_matrix_small(pieces, board_size);
-    if let (Some((i, movement)), _score) = choose_target_score_mut(
+    if let (Some((i, movement)), score) = choose_target_score_mut(
         team,
         &mut pieces.clone(),
         board_size,
+        turn,
         depth,
         &mut occupied,
         &mut indexes,
     ) {
         Some(PlanSelect::new(i, movement))
-    } else {
+    } else if team == turn {
         choose_first_target_inner(team, pieces, board_size)
+    } else {
+        None
     }
 }
 pub fn choose_target_score_mut(
     team: Team,
     pieces: &mut Vec<Piece>,
     board_size: ICoord,
+    turn: Team,
     depth: i32,
     occupied: &mut Vec<Vec<Option<Team>>>,
     indexes: &mut Vec<Vec<Option<PieceIndexSmall>>>,
@@ -95,7 +109,8 @@ pub fn choose_target_score_mut(
             for movement in &moves {
                 let movement = *movement;
                 evaluate_movement(
-                    team, pieces, board_size, depth, occupied, indexes, &mut best, i, movement,
+                    team, pieces, board_size, turn, depth, occupied, indexes, &mut best, i,
+                    movement,
                 );
             }
         }
@@ -121,6 +136,7 @@ fn evaluate_movement(
     team: Team,
     pieces: &mut Vec<Piece>,
     board_size: ICoord,
+    turn: Team,
     depth: i32,
     occupied: &mut Vec<Vec<Option<Team>>>,
     indexes: &mut Vec<Vec<Option<PieceIndexSmall>>>,
@@ -138,6 +154,9 @@ fn evaluate_movement(
     if let Some(other_i) = index_at(movement, &indexes) {
         let other_i = other_i as usize;
         if pieces[other_i].team != team {
+            if turn != team {
+                return; // don't think about killing when it's not your turn
+            }
             let kill_value = piece_value(&pieces[other_i], team);
 
             let future_score = if depth >= 2 {
@@ -157,6 +176,7 @@ fn evaluate_movement(
                     team.opposite(),
                     pieces,
                     board_size,
+                    turn.opposite(),
                     depth - 1,
                     occupied,
                     indexes,
@@ -193,6 +213,7 @@ fn evaluate_movement(
                 team.opposite(),
                 pieces,
                 board_size,
+                turn.opposite(),
                 depth - 1,
                 occupied,
                 indexes,
@@ -324,7 +345,7 @@ mod tests {
             -- -- wb --
             bk -- -- wr
         ");
-        let plan = choose_target_inner_depth(Team::White, &pieces, size, 2);
+        let plan = choose_target_inner_depth(Team::White, &pieces, size, Team::White, 2);
         let rook = find_first(Team::White, Move::Rook, &pieces).unwrap();
         let king = find_first(Team::Black, Move::King, &pieces).unwrap();
         assert_eq!(plan, Some(PlanSelect::new(rook, pieces[king].initial_pos)));
@@ -336,7 +357,7 @@ mod tests {
             bk -- -- wr
             br -- -- wp
         ");
-        let plan = choose_target_inner_depth(Team::Black, &pieces, size, 2);
+        let plan = choose_target_inner_depth(Team::Black, &pieces, size, Team::Black, 2);
         let king = find_first(Team::Black, Move::King, &pieces).unwrap();
         assert_eq!(plan, Some(PlanSelect::new(king, ICoord::new_i(1, 1))));
     }
