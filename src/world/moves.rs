@@ -150,14 +150,11 @@ fn get_pawn_positions(
     }
 
     let mut add_if_enemy_is_at = |attack| {
-        let attackable = other_pieces_at(attack, piece_index, pieces);
-        assert!(
-            attackable.len() <= 1,
-            "killing several pieces in the same tile is unsupported"
-        );
-        if let Some(other) = attackable.last().cloned() {
-            if inside(attack, board_size) && pieces[other].team != pieces[piece_index].team {
-                moves.push(attack);
+        if inside(attack, board_size) {
+            if let Some(other_team) = is_occupied(attack, occupied) {
+                if other_team != pieces[piece_index].team {
+                    moves.push(attack);
+                }
             }
         }
     };
@@ -211,7 +208,7 @@ fn to_occupied_matrix(pieces: &Vec<Piece>, board_size: Coord) -> Vec<Vec<Option<
     occupied
 }
 fn is_occupied(test: Coord, occupied: &Vec<Vec<Option<Team>>>) -> Option<Team> {
-    occupied[test.row() as usize][test.column() as usize]
+    occupied[test.row_f() as usize][test.column_f() as usize]
 }
 
 fn add_direction(
