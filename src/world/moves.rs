@@ -304,6 +304,9 @@ pub fn to_occupied_matrix(pieces: &Vec<Piece>, board_size: ICoord) -> Vec<Vec<Op
 pub fn is_occupied(test: ICoord, occupied: &Vec<Vec<Option<Team>>>) -> Option<Team> {
     occupied[test.row() as usize][test.column() as usize]
 }
+pub fn set_occupied(test: ICoord, team: Option<Team>, occupied: &mut Vec<Vec<Option<Team>>>) {
+    occupied[test.row() as usize][test.column() as usize] = team;
+}
 pub fn to_piece_index_matrix(
     pieces: &Vec<Piece>,
     board_size: ICoord,
@@ -342,6 +345,14 @@ pub fn index_at(
     occupied: &Vec<Vec<Option<PieceIndexSmall>>>,
 ) -> Option<PieceIndexSmall> {
     occupied[test.row() as usize][test.column() as usize]
+}
+
+pub fn set_index_at(
+    test: ICoord,
+    index: Option<PieceIndexSmall>,
+    occupied: &mut Vec<Vec<Option<PieceIndexSmall>>>,
+) {
+    occupied[test.row() as usize][test.column() as usize] = index;
 }
 
 fn add_direction(

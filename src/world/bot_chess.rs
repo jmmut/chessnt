@@ -1,9 +1,10 @@
 use crate::core::coord::{Coord, ICoord};
-use crate::world::board::{Board, PieceIndex, other_pieces_at};
+use crate::world::board::{Board, PieceIndex, PieceIndexSmall, other_pieces_at};
 use crate::world::bot::{Plan, PlanSelect};
 use crate::world::moves::{
     Move, board_to_str, index_at, is_better, possible_moves, possible_moves_matrix, print_board,
-    to_occupied_matrix, to_piece_index_matrix, to_piece_index_matrix_small,
+    set_index_at, set_occupied, to_occupied_matrix, to_piece_index_matrix,
+    to_piece_index_matrix_small,
 };
 use crate::world::piece::Piece;
 use crate::world::team::Team;
@@ -37,19 +38,28 @@ pub fn choose_target_inner_depth(
     board_size: ICoord,
     depth: i32,
 ) -> Option<Plan> {
-    if let (Some((i, movement)), _score) =
-        choose_target_score(team, &mut pieces.clone(), board_size, depth)
-    {
+    let mut occupied = to_occupied_matrix(pieces, board_size);
+    let mut indexes = to_piece_index_matrix_small(pieces, board_size);
+    if let (Some((i, movement)), _score) = choose_target_score_mut(
+        team,
+        &mut pieces.clone(),
+        board_size,
+        depth,
+        &mut occupied,
+        &mut indexes,
+    ) {
         Some(PlanSelect::new(i, movement))
     } else {
         choose_first_target_inner(team, pieces, board_size)
     }
 }
-pub fn choose_target_score(
+pub fn choose_target_score_mut(
     team: Team,
     pieces: &mut Vec<Piece>,
     board_size: ICoord,
     depth: i32,
+    occupied: &mut Vec<Vec<Option<Team>>>,
+    indexes: &mut Vec<Vec<Option<PieceIndexSmall>>>,
 ) -> (Option<(PieceIndex, ICoord)>, Score) {
     // make pieces a Vec<&Piece> to be able to replace pieces easily?
     // evaluate board
@@ -83,8 +93,6 @@ pub fn choose_target_score(
         }
         return (None, 0.0);
     }
-    let occupied = to_occupied_matrix(pieces, board_size);
-    let indexes = to_piece_index_matrix_small(pieces, board_size);
     let mut best = None;
     for i in 0..pieces.len() {
         if pieces[i].team == team && pieces[i].alive {
@@ -107,21 +115,38 @@ pub fn choose_target_score(
                 }
                 if let Some(other_i) = index_at(movement, &indexes) {
                     let other_i = other_i as usize;
-                    let other = &pieces[other_i];
-                    if other.team != team {
+                    if pieces[other_i].team != team {
                         let old_pos = pieces[i].initial_pos;
                         pieces[i].set_pos_and_initial_i(movement);
                         let kill_value = piece_value(&pieces[other_i], team);
                         pieces[other_i].alive = false;
                         let old_killed_pos = pieces[other_i].initial_pos;
                         pieces[other_i].set_pos_and_initial(Coord::new_i(0, -2));
+                        set_occupied(old_killed_pos, None, occupied);
+                        set_occupied(old_pos, None, occupied);
+                        set_occupied(movement, Some(team), occupied);
+                        set_index_at(old_killed_pos, None, indexes);
+                        set_index_at(old_pos, None, indexes);
+                        set_index_at(movement, Some(i as PieceIndexSmall), indexes);
 
-                        let (_, future_score) =
-                            choose_target_score(team.opposite(), pieces, board_size, depth - 1);
+                        let (_, future_score) = choose_target_score_mut(
+                            team.opposite(),
+                            pieces,
+                            board_size,
+                            depth - 1,
+                            occupied,
+                            indexes,
+                        );
 
                         pieces[i].set_pos_and_initial_i(old_pos);
                         pieces[other_i].set_pos_and_initial_i(old_killed_pos);
                         pieces[other_i].alive = true;
+                        set_occupied(old_pos, Some(team), occupied);
+                        set_occupied(movement, None, occupied);
+                        set_occupied(old_killed_pos, Some(pieces[other_i].team), occupied);
+                        set_index_at(old_pos, Some(i as PieceIndexSmall), indexes);
+                        set_index_at(movement, None, indexes);
+                        set_index_at(old_killed_pos, Some(other_i as PieceIndexSmall), indexes);
 
                         let future_score = -future_score - kill_value;
                         // if let Some((best_i, best_movement, best_score)) = best {
@@ -140,9 +165,25 @@ pub fn choose_target_score(
                     // TODO: modify score due to our movement's benefit
                     let old_pos = pieces[i].initial_pos;
                     pieces[i].set_pos_and_initial_i(movement);
-                    let (_, future_score) =
-                        choose_target_score(team.opposite(), pieces, board_size, depth - 1);
+                    set_occupied(old_pos, None, occupied);
+                    set_occupied(movement, Some(team), occupied);
+                    set_index_at(old_pos, None, indexes);
+                    set_index_at(movement, Some(i as PieceIndexSmall), indexes);
+
+                    let (_, future_score) = choose_target_score_mut(
+                        team.opposite(),
+                        pieces,
+                        board_size,
+                        depth - 1,
+                        occupied,
+                        indexes,
+                    );
+
                     pieces[i].set_pos_and_initial_i(old_pos);
+                    set_occupied(old_pos, Some(team), occupied);
+                    set_occupied(movement, None, occupied);
+                    set_index_at(old_pos, Some(i as PieceIndexSmall), indexes);
+                    set_index_at(movement, None, indexes);
 
                     let future_score = -future_score;
                     // if let Some((best_i, best_movement, best_score)) = best {
