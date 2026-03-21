@@ -1,4 +1,4 @@
-use macroquad::camera::{set_camera, Camera3D};
+use macroquad::camera::{Camera3D, set_camera};
 use macroquad::color::Color;
 use macroquad::math::vec3;
 use screen::theme::CameraPos;

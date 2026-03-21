@@ -1,11 +1,11 @@
+use crate::COLUMNS;
 use crate::core::coord::Coord;
 use crate::core::interpolation;
 use crate::core::interpolation::Interpolation;
 use crate::world::board::PieceIndex;
 use crate::world::piece::Piece;
 use crate::world::team::Team;
-use crate::COLUMNS;
-use macroquad::math::{vec2, vec3, Vec2, Vec3};
+use macroquad::math::{Vec2, Vec3, vec2, vec3};
 
 pub struct Referee {
     position: Vec2,

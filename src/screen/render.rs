@@ -3,7 +3,7 @@ use crate::screen::theme::Theme;
 use crate::world::piece::Piece;
 use crate::world::referee::texture_pos_to_v3;
 use macroquad::color::Color;
-use macroquad::math::{vec2, vec3, Vec2, Vec3, Vec4};
+use macroquad::math::{Vec2, Vec3, Vec4, vec2, vec3};
 use macroquad::models::{Mesh, Vertex};
 use macroquad::prelude::Texture2D;
 

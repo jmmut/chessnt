@@ -1,6 +1,6 @@
-use crate::screen::theme::{margin, Theme};
+use crate::screen::theme::{Theme, margin};
 use juquad::widgets::anchor::{Anchor, Layout};
-use macroquad::math::{vec2, Rect, Vec2};
+use macroquad::math::{Rect, Vec2, vec2};
 
 pub fn inside_initial(theme: &Theme, screen: Rect, layout: Layout) -> Rect {
     inside_initial_pad(screen, layout, margin(theme))

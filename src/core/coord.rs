@@ -1,4 +1,4 @@
-use macroquad::math::{f32, ivec2, vec2, vec3, IVec2, Vec2, Vec3};
+use macroquad::math::{IVec2, Vec2, Vec3, f32, ivec2, vec2, vec3};
 use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
 
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]

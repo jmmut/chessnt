@@ -1,9 +1,9 @@
 use crate::core::coord::{Coord, ICoord};
-use crate::world::board::{other_pieces_at, Board, PieceIndex};
+use crate::world::board::{Board, PieceIndex, other_pieces_at};
 use crate::world::bot::{Plan, PlanSelect};
 use crate::world::moves::{
-    board_to_str, is_better, possible_moves, possible_moves_matrix, print_board,
-    to_occupied_matrix, Move,
+    Move, board_to_str, is_better, possible_moves, possible_moves_matrix, print_board,
+    to_occupied_matrix,
 };
 use crate::world::piece::Piece;
 use crate::world::team::Team;

@@ -1,17 +1,17 @@
+use crate::TRANSPARENT;
 use crate::core::coord::{Coord, ICoord};
 use crate::screen::render::{
     floor_corners, mesh_coord, mesh_cursor, mesh_cursor_width, mesh_figure_texture,
     mesh_progress_bar, mesh_quad, mesh_texture_quad, mesh_triangle, mesh_vertical_texture, quad,
 };
 use crate::screen::theme::Theme;
-use crate::world::moves::{compute_attackers, inside_f, possible_moves, Move};
+use crate::world::moves::{Move, compute_attackers, inside_f, possible_moves};
 use crate::world::piece::Piece;
 use crate::world::referee::Referee;
 use crate::world::team::{OneForEachTeam, Team};
-use crate::TRANSPARENT;
 use macroquad::color::{Color, WHITE};
-use macroquad::math::{vec2, vec3, Vec2, Vec3};
-use macroquad::models::{draw_mesh, Mesh};
+use macroquad::math::{Vec2, Vec3, vec2, vec3};
+use macroquad::models::{Mesh, draw_mesh};
 
 const CURSOR_HEIGHT: f32 = 0.1;
 const SELECTION_HEIGHT: f32 = CURSOR_HEIGHT * 0.5;
@@ -520,10 +520,12 @@ mod tests {
         let at_5_0 = pieces_at(expected_pos, &board.pieces);
         assert_eq!(
             at_5_0,
-            vec![&PieceMock::new(expected_pos, vec![Move::Pawn], Team::White)
-                .cooldown(Some(0.0))
-                .moved(true)
-                .into()]
+            vec![
+                &PieceMock::new(expected_pos, vec![Move::Pawn], Team::White)
+                    .cooldown(Some(0.0))
+                    .moved(true)
+                    .into()
+            ]
         )
     }
     #[test]

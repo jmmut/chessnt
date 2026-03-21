@@ -1,5 +1,5 @@
 use crate::core::coord::{Coord, ICoord};
-use crate::world::board::{other_pieces_at, Board, PieceIndex};
+use crate::world::board::{Board, PieceIndex, other_pieces_at};
 use crate::world::bot_chess;
 use crate::world::team::{OneForEachTeam, Team};
 use bot_chess::choose_target;

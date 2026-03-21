@@ -4,8 +4,8 @@ use crate::core::coord::fmt_vec2;
 use crate::core::input::Gamepads;
 use crate::core::time::Time;
 use crate::screen::theme::{
-    coloring_elem, named_coloring, named_state_style, new_coloring, set_theme_coloring,
-    state_style_elem, CameraPos, Palette, Theme,
+    CameraPos, Palette, Theme, coloring_elem, named_coloring, named_state_style, new_coloring,
+    set_theme_coloring, state_style_elem,
 };
 use crate::screen::ui;
 use crate::screen::ui::{
@@ -18,8 +18,8 @@ use crate::world::bot_chess::evaluate_pieces;
 use crate::world::team::{OneForEachTeam, Team};
 use crate::{AnyResult, INITIAL_DEV_UI};
 use juquad::draw::draw_rect;
-use juquad::widgets::anchor::Anchor;
 use juquad::widgets::Interaction;
+use juquad::widgets::anchor::Anchor;
 use macroquad::color::Color;
 use macroquad::math::{Rect, Vec2};
 use macroquad::prelude::info;
@@ -429,25 +429,13 @@ fn color_editor(theme: &mut Theme, name: &str, rect: &mut Rect, color: &mut Colo
     render_button_dev_mut("Reset color", theme, below_left, rect)
 }
 pub fn pause_or_resume(enabled: bool) -> &'static str {
-    if enabled {
-        "Pause"
-    } else {
-        "Resume"
-    }
+    if enabled { "Pause" } else { "Resume" }
 }
 pub fn hide_or_show(enabled: bool) -> &'static str {
-    if enabled {
-        "Pause"
-    } else {
-        "Resume"
-    }
+    if enabled { "Pause" } else { "Resume" }
 }
 pub fn enable_or_disable(enabled: bool) -> &'static str {
-    if enabled {
-        "Disable"
-    } else {
-        "Enable"
-    }
+    if enabled { "Disable" } else { "Enable" }
 }
 pub fn as_hex(color: Color) -> String {
     let [r, g, b, a]: [u8; 4] = color.into();

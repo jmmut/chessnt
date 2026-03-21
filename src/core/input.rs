@@ -3,7 +3,7 @@ use crate::world::board::Board;
 use crate::world::bot::quantize;
 use crate::world::team::Team;
 use gamepads::Button;
-use macroquad::math::{vec2, Vec2};
+use macroquad::math::{Vec2, vec2};
 
 // TODO: make this configurable
 const JOYSTICK_DEAD_ZONE: f32 = 0.15;

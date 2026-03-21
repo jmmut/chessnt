@@ -2,17 +2,17 @@ use crate::core::array_union::{ArrayUnion, ArrayUnionTrait, ExternalArrayUnion};
 use crate::world::moves::Move;
 use crate::world::team::Team;
 use crate::{
-    height_to_width, DEFAULT_ASPECT_RATIO, DEFAULT_FONT_SIZE, DEFAULT_WINDOW_HEIGHT,
-    DEFAULT_WINDOW_WIDTH, TRANSPARENT,
+    DEFAULT_ASPECT_RATIO, DEFAULT_FONT_SIZE, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_WIDTH,
+    TRANSPARENT, height_to_width,
 };
 use juquad::draw::to_rect;
 use juquad::elm::style::Style;
 use juquad::lazy::{Margin, Pad, Size};
 use juquad::widgets::anchor::{Horizontal, Layout, Vertical};
 use juquad::widgets::{StateColor, StateStyle, Style as Coloring};
-use macroquad::color::{Color, BLUE, DARKBLUE, GRAY, GREEN, LIGHTGRAY, PURPLE, RED, WHITE, YELLOW};
+use macroquad::color::{BLUE, Color, DARKBLUE, GRAY, GREEN, LIGHTGRAY, PURPLE, RED, WHITE, YELLOW};
 use macroquad::color_u8;
-use macroquad::math::{vec2, Rect};
+use macroquad::math::{Rect, vec2};
 use macroquad::prelude::{Font, Texture2D, Vec2};
 use std::collections::HashMap;
 
