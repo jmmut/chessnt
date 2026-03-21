@@ -1,5 +1,5 @@
 use crate::core::coord::{Coord, ICoord};
-use crate::world::board::PieceIndex;
+use crate::world::board::{PieceIndex, PieceIndexSmall};
 use crate::world::piece::Piece;
 use crate::world::team::Team;
 
@@ -325,8 +325,27 @@ pub fn to_piece_index_matrix(
     }
     occupied
 }
+pub fn to_piece_index_matrix_small(
+    pieces: &Vec<Piece>,
+    board_size: ICoord,
+) -> Vec<Vec<Option<PieceIndexSmall>>> {
+    let mut occupied = vec![vec![None; board_size.column as usize]; board_size.row as usize];
+    for i in 0..pieces.len() {
+        let pos = pieces[i].initial_pos;
+        if inside(pos, board_size) && pieces[i].alive {
+            if occupied[pos.row() as usize][pos.column() as usize].is_some() {
+                panic!("unsupported several pieces in the same tile");
+            }
+            occupied[pos.row() as usize][pos.column() as usize] = Some(i as u8);
+        }
+    }
+    occupied
+}
 
-pub fn index_at(test: ICoord, occupied: &Vec<Vec<Option<PieceIndex>>>) -> Option<PieceIndex> {
+pub fn index_at(
+    test: ICoord,
+    occupied: &Vec<Vec<Option<PieceIndexSmall>>>,
+) -> Option<PieceIndexSmall> {
     occupied[test.row() as usize][test.column() as usize]
 }
 

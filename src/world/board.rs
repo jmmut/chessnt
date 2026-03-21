@@ -19,6 +19,7 @@ const RADAR_HEIGHT: f32 = SELECTION_HEIGHT * 0.7;
 const FLOOR_PIECE_HEIGHT: f32 = RADAR_HEIGHT * 0.2;
 
 pub type PieceIndex = usize;
+pub type PieceIndexSmall = u8;
 
 pub struct Board {
     cursor: OneForEachTeam<Coord>,

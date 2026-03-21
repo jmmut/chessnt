@@ -3,7 +3,7 @@ use crate::world::board::{Board, PieceIndex, other_pieces_at};
 use crate::world::bot::{Plan, PlanSelect};
 use crate::world::moves::{
     Move, board_to_str, index_at, is_better, possible_moves, possible_moves_matrix, print_board,
-    to_occupied_matrix, to_piece_index_matrix,
+    to_occupied_matrix, to_piece_index_matrix, to_piece_index_matrix_small,
 };
 use crate::world::piece::Piece;
 use crate::world::team::Team;
@@ -84,7 +84,7 @@ pub fn choose_target_score(
         return (None, 0.0);
     }
     let occupied = to_occupied_matrix(pieces, board_size);
-    let indexes = to_piece_index_matrix(pieces, board_size);
+    let indexes = to_piece_index_matrix_small(pieces, board_size);
     let mut best = None;
     for i in 0..pieces.len() {
         if pieces[i].team == team && pieces[i].alive {
@@ -106,6 +106,7 @@ pub fn choose_target_score(
                     );
                 }
                 if let Some(other_i) = index_at(movement, &indexes) {
+                    let other_i = other_i as usize;
                     let other = &pieces[other_i];
                     if other.team != team {
                         let old_pos = pieces[i].initial_pos;
