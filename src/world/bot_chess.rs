@@ -82,16 +82,15 @@ pub fn choose_target_score(
         return (None, initial_board_score);
     }
     let mut best = None;
-    let pieces_copy = pieces.clone();
-    for (i, piece) in pieces_copy.iter().enumerate() {
-        if piece.team == team {
+    for i in 0..pieces.len() {
+        if pieces[i].team == team {
             if DEBUG_PLANNING {
                 println!(
                     "{}. where to move piece {} {:?} at {:?}?",
                     ".*".repeat(depth as usize - 1),
-                    piece.team,
-                    piece.moveset.first().unwrap(),
-                    piece.initial_pos
+                    pieces[i].team,
+                    pieces[i].moveset.first().unwrap(),
+                    pieces[i].initial_pos
                 );
             }
             for movement in possible_moves(board_size, &pieces, i) {
