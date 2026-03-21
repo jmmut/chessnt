@@ -32,6 +32,7 @@ pub fn choose_target(board: &Board, team: Team) -> Option<Plan> {
 pub fn choose_target_inner(team: Team, pieces: &Vec<Piece>, board_size: ICoord) -> Option<Plan> {
     choose_target_inner_depth(team, pieces, board_size, PLANNING_DEPTH)
 }
+
 pub fn choose_target_inner_depth(
     team: Team,
     pieces: &Vec<Piece>,
@@ -110,97 +111,9 @@ pub fn choose_target_score_mut(
             possible_moves_matrix_mut(board_size, &pieces, i, &occupied, &mut moves);
             for movement in &moves {
                 let movement = *movement;
-                if DEBUG_PLANNING {
-                    println!(
-                        "{} evaluating move to {:?}",
-                        ".*".repeat(depth as usize - 1),
-                        movement
-                    );
-                }
-                if let Some(other_i) = index_at(movement, &indexes) {
-                    let other_i = other_i as usize;
-                    if pieces[other_i].team != team {
-                        let old_pos = pieces[i].initial_pos;
-                        pieces[i].set_pos_and_initial_i(movement);
-                        let kill_value = piece_value(&pieces[other_i], team);
-                        pieces[other_i].alive = false;
-                        let old_killed_pos = pieces[other_i].initial_pos;
-                        pieces[other_i].set_pos_and_initial(Coord::new_i(0, -2));
-                        set_occupied(old_killed_pos, None, occupied);
-                        set_occupied(old_pos, None, occupied);
-                        set_occupied(movement, Some(team), occupied);
-                        set_index_at(old_killed_pos, None, indexes);
-                        set_index_at(old_pos, None, indexes);
-                        set_index_at(movement, Some(i as PieceIndexSmall), indexes);
-
-                        let (_, future_score) = choose_target_score_mut(
-                            team.opposite(),
-                            pieces,
-                            board_size,
-                            depth - 1,
-                            occupied,
-                            indexes,
-                        );
-
-                        pieces[i].set_pos_and_initial_i(old_pos);
-                        pieces[other_i].set_pos_and_initial_i(old_killed_pos);
-                        pieces[other_i].alive = true;
-                        set_occupied(old_pos, Some(team), occupied);
-                        set_occupied(movement, None, occupied);
-                        set_occupied(old_killed_pos, Some(pieces[other_i].team), occupied);
-                        set_index_at(old_pos, Some(i as PieceIndexSmall), indexes);
-                        set_index_at(movement, None, indexes);
-                        set_index_at(old_killed_pos, Some(other_i as PieceIndexSmall), indexes);
-
-                        let future_score = -future_score - kill_value;
-                        // if let Some((best_i, best_movement, best_score)) = best {
-                        //     if best_score < future_score {
-                        //         print_decision_kill(pieces, i, movement, other_i, future_score, depth);
-                        //         best = Some((i, movement, future_score));
-                        //     }
-                        // } else {
-                        //     print_decision_kill(pieces, i, movement, other_i, future_score, depth);
-                        //     best = Some((i, movement, future_score));
-                        // }
-
-                        maybe_store_better(&mut best, future_score, i, movement);
-                    }
-                } else {
-                    // TODO: modify score due to our movement's benefit
-                    let old_pos = pieces[i].initial_pos;
-                    pieces[i].set_pos_and_initial_i(movement);
-                    set_occupied(old_pos, None, occupied);
-                    set_occupied(movement, Some(team), occupied);
-                    set_index_at(old_pos, None, indexes);
-                    set_index_at(movement, Some(i as PieceIndexSmall), indexes);
-
-                    let (_, future_score) = choose_target_score_mut(
-                        team.opposite(),
-                        pieces,
-                        board_size,
-                        depth - 1,
-                        occupied,
-                        indexes,
-                    );
-
-                    pieces[i].set_pos_and_initial_i(old_pos);
-                    set_occupied(old_pos, Some(team), occupied);
-                    set_occupied(movement, None, occupied);
-                    set_index_at(old_pos, Some(i as PieceIndexSmall), indexes);
-                    set_index_at(movement, None, indexes);
-
-                    let future_score = -future_score;
-                    // if let Some((best_i, best_movement, best_score)) = best {
-                    //     if best_score < future_score {
-                    //         // print_decision(pieces, depth, piece, movement, future_score);
-                    //         best = Some((i, movement, future_score));
-                    //     }
-                    // } else {
-                    //     // print_decision(pieces, depth, piece, movement, future_score);
-                    //     best = Some((i, movement, future_score));
-                    // }
-                    maybe_store_better(&mut best, future_score, i, movement);
-                }
+                evaluate_movement(
+                    team, pieces, board_size, depth, occupied, indexes, &mut best, i, movement,
+                );
             }
         }
     }
@@ -218,6 +131,121 @@ pub fn choose_target_score_mut(
         (Some((best_i, best_move)), best_score)
     } else {
         (None, 0.0)
+    }
+}
+
+fn evaluate_movement(
+    team: Team,
+    pieces: &mut Vec<Piece>,
+    board_size: ICoord,
+    depth: i32,
+    occupied: &mut Vec<Vec<Option<Team>>>,
+    indexes: &mut Vec<Vec<Option<PieceIndexSmall>>>,
+    best: &mut Option<(PieceIndex, ICoord, Score)>,
+    i: usize,
+    movement: ICoord,
+) {
+    if DEBUG_PLANNING {
+        println!(
+            "{} evaluating move to {:?}",
+            ".*".repeat(depth as usize - 1),
+            movement
+        );
+    }
+    if let Some(other_i) = index_at(movement, &indexes) {
+        let other_i = other_i as usize;
+        if pieces[other_i].team != team {
+            let kill_value = piece_value(&pieces[other_i], team);
+
+            let future_score = if depth >= 2 {
+                let old_pos = pieces[i].initial_pos;
+                pieces[i].set_pos_and_initial_i(movement);
+                pieces[other_i].alive = false;
+                let old_killed_pos = pieces[other_i].initial_pos;
+                pieces[other_i].set_pos_and_initial(Coord::new_i(0, -2));
+                set_occupied(old_killed_pos, None, occupied);
+                set_occupied(old_pos, None, occupied);
+                set_occupied(movement, Some(team), occupied);
+                set_index_at(old_killed_pos, None, indexes);
+                set_index_at(old_pos, None, indexes);
+                set_index_at(movement, Some(i as PieceIndexSmall), indexes);
+
+                let (_, future_score) = choose_target_score_mut(
+                    team.opposite(),
+                    pieces,
+                    board_size,
+                    depth - 1,
+                    occupied,
+                    indexes,
+                );
+
+                pieces[i].set_pos_and_initial_i(old_pos);
+                pieces[other_i].set_pos_and_initial_i(old_killed_pos);
+                pieces[other_i].alive = true;
+                set_occupied(old_pos, Some(team), occupied);
+                set_occupied(movement, None, occupied);
+                set_occupied(old_killed_pos, Some(pieces[other_i].team), occupied);
+                set_index_at(old_pos, Some(i as PieceIndexSmall), indexes);
+                set_index_at(movement, None, indexes);
+                set_index_at(old_killed_pos, Some(other_i as PieceIndexSmall), indexes);
+
+                future_score
+            } else {
+                0.0
+            };
+            let future_score = -future_score - kill_value;
+            // if let Some((best_i, best_movement, best_score)) = best {
+            //     if best_score < future_score {
+            //         print_decision_kill(pieces, i, movement, other_i, future_score, depth);
+            //         best = Some((i, movement, future_score));
+            //     }
+            // } else {
+            //     print_decision_kill(pieces, i, movement, other_i, future_score, depth);
+            //     best = Some((i, movement, future_score));
+            // }
+
+            maybe_store_better(best, future_score, i, movement);
+        }
+    } else {
+        // TODO: modify score due to our movement's benefit
+        let future_score = if depth >= 2 {
+            let old_pos = pieces[i].initial_pos;
+            pieces[i].set_pos_and_initial_i(movement);
+            set_occupied(old_pos, None, occupied);
+            set_occupied(movement, Some(team), occupied);
+            set_index_at(old_pos, None, indexes);
+            set_index_at(movement, Some(i as PieceIndexSmall), indexes);
+
+            let (_, future_score) = choose_target_score_mut(
+                team.opposite(),
+                pieces,
+                board_size,
+                depth - 1,
+                occupied,
+                indexes,
+            );
+
+            pieces[i].set_pos_and_initial_i(old_pos);
+            set_occupied(old_pos, Some(team), occupied);
+            set_occupied(movement, None, occupied);
+            set_index_at(old_pos, Some(i as PieceIndexSmall), indexes);
+            set_index_at(movement, None, indexes);
+
+            future_score
+        } else {
+            0.0
+        };
+        let future_score = -future_score;
+        // if let Some((best_i, best_movement, best_score)) = best {
+        //     if best_score < future_score {
+        //         // print_decision(pieces, depth, piece, movement, future_score);
+        //         best = Some((i, movement, future_score));
+        //     }
+        // } else {
+        //     // print_decision(pieces, depth, piece, movement, future_score);
+        //     best = Some((i, movement, future_score));
+        // }
+        maybe_store_better(best, future_score, i, movement);
     }
 }
 
