@@ -34,7 +34,7 @@ pub fn choose_target_inner_depth(
     board_size: Coord,
     depth: i32,
 ) -> Option<Plan> {
-    if let (Some((i, movement)), score) =
+    if let (Some((i, movement)), _score) =
         choose_target_score(team, &mut pieces.clone(), board_size, depth)
     {
         Some(PlanSelect::new(i, movement))
@@ -189,6 +189,7 @@ fn maybe_store_better(
     }
 }
 
+#[allow(unused)]
 fn print_decision_kill(
     pieces: &mut Vec<Piece>,
     i: PieceIndex,
@@ -211,6 +212,7 @@ fn print_decision_kill(
     );
 }
 
+#[allow(unused)]
 fn print_decision(
     pieces: &mut Vec<Piece>,
     depth: i32,

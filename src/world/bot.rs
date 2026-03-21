@@ -86,7 +86,7 @@ impl PlanSelect {
     }
 }
 #[derive(Copy, Clone, PartialEq, Debug)]
-struct PlanMove {
+pub struct PlanMove {
     piece_index: PieceIndex,
     destination: Coord,
 }

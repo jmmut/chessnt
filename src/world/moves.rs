@@ -1,5 +1,5 @@
 use crate::core::coord::Coord;
-use crate::world::board::{empty_tile, other_pieces_at, PieceIndex};
+use crate::world::board::PieceIndex;
 use crate::world::piece::Piece;
 use crate::world::team::Team;
 
@@ -108,7 +108,7 @@ fn get_positions(
     occupied: &Vec<Vec<Option<Team>>>,
     board_size: Coord,
 ) -> Vec<Coord> {
-    let piece_pos = piece.pos_initial_i();
+    let piece_pos = piece.initial_pos;
     possible
         .iter()
         .map(|p| *p + piece_pos)
