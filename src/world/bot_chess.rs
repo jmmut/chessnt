@@ -2,9 +2,9 @@ use crate::core::coord::{Coord, ICoord};
 use crate::world::board::{Board, PieceIndex, PieceIndexSmall, other_pieces_at};
 use crate::world::bot::{Plan, PlanSelect};
 use crate::world::moves::{
-    Move, board_to_str, index_at, is_better, possible_moves, possible_moves_matrix, print_board,
-    set_index_at, set_occupied, to_occupied_matrix, to_piece_index_matrix,
-    to_piece_index_matrix_small,
+    Move, board_to_str, index_at, is_better, possible_moves, possible_moves_matrix,
+    possible_moves_matrix_mut, print_board, set_index_at, set_occupied, to_occupied_matrix,
+    to_piece_index_matrix, to_piece_index_matrix_small,
 };
 use crate::world::piece::Piece;
 use crate::world::team::Team;
@@ -93,6 +93,7 @@ pub fn choose_target_score_mut(
         }
         return (None, 0.0);
     }
+    let mut moves = Vec::new();
     let mut best = None;
     for i in 0..pieces.len() {
         if pieces[i].team == team && pieces[i].alive {
@@ -105,7 +106,10 @@ pub fn choose_target_score_mut(
                     pieces[i].initial_pos
                 );
             }
-            for movement in possible_moves_matrix(board_size, &pieces, i, &occupied) {
+            moves.clear();
+            possible_moves_matrix_mut(board_size, &pieces, i, &occupied, &mut moves);
+            for movement in &moves {
+                let movement = *movement;
                 if DEBUG_PLANNING {
                     println!(
                         "{} evaluating move to {:?}",

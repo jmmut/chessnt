@@ -55,18 +55,20 @@ pub fn possible_moves_matrix(
     occupied: &Vec<Vec<Option<Team>>>,
 ) -> Vec<ICoord> {
     let mut valid_moves = Vec::new();
+    possible_moves_matrix_mut(size, pieces, piece_index, occupied, &mut valid_moves);
+    valid_moves
+}
+pub fn possible_moves_matrix_mut(
+    size: ICoord,
+    pieces: &Vec<Piece>,
+    piece_index: usize,
+    occupied: &Vec<Vec<Option<Team>>>,
+    valid_moves: &mut Vec<ICoord>,
+) {
     let piece = &pieces[piece_index];
     for movement in &piece.moveset {
-        piece_moves_matrix_mut(
-            movement,
-            pieces,
-            piece_index,
-            occupied,
-            size,
-            &mut valid_moves,
-        );
+        piece_moves_matrix_mut(movement, pieces, piece_index, occupied, size, valid_moves);
     }
-    valid_moves
 }
 
 fn piece_moves(
