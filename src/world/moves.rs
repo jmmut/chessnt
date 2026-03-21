@@ -297,12 +297,35 @@ pub fn to_occupied_matrix(pieces: &Vec<Piece>, board_size: ICoord) -> Vec<Vec<Op
     for piece in pieces {
         let pos = piece.initial_pos;
         if inside(pos, board_size) {
+            if occupied[pos.row() as usize][pos.column() as usize].is_some() {
+                panic!("unsupported several pieces in the same tile");
+            }
             occupied[pos.row() as usize][pos.column() as usize] = Some(piece.team);
         }
     }
     occupied
 }
-fn is_occupied(test: ICoord, occupied: &Vec<Vec<Option<Team>>>) -> Option<Team> {
+pub fn is_occupied(test: ICoord, occupied: &Vec<Vec<Option<Team>>>) -> Option<Team> {
+    occupied[test.row() as usize][test.column() as usize]
+}
+pub fn to_piece_index_matrix(
+    pieces: &Vec<Piece>,
+    board_size: ICoord,
+) -> Vec<Vec<Option<PieceIndex>>> {
+    let mut occupied = vec![vec![None; board_size.column as usize]; board_size.row as usize];
+    for i in 0..pieces.len() {
+        let pos = pieces[i].initial_pos;
+        if inside(pos, board_size) {
+            if occupied[pos.row() as usize][pos.column() as usize].is_some() {
+                panic!("unsupported several pieces in the same tile");
+            }
+            occupied[pos.row() as usize][pos.column() as usize] = Some(i);
+        }
+    }
+    occupied
+}
+
+pub fn index_at(test: ICoord, occupied: &Vec<Vec<Option<PieceIndex>>>) -> Option<PieceIndex> {
     occupied[test.row() as usize][test.column() as usize]
 }
 

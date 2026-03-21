@@ -2,8 +2,8 @@ use crate::core::coord::{Coord, ICoord};
 use crate::world::board::{Board, PieceIndex, other_pieces_at};
 use crate::world::bot::{Plan, PlanSelect};
 use crate::world::moves::{
-    Move, board_to_str, is_better, possible_moves, possible_moves_matrix, print_board,
-    to_occupied_matrix,
+    Move, board_to_str, index_at, is_better, possible_moves, possible_moves_matrix, print_board,
+    to_occupied_matrix, to_piece_index_matrix,
 };
 use crate::world::piece::Piece;
 use crate::world::team::Team;
@@ -84,10 +84,11 @@ pub fn choose_target_score(
         }
         return (None, initial_board_score);
     }
-    let occupied = &to_occupied_matrix(pieces, board_size);
+    let occupied = to_occupied_matrix(pieces, board_size);
+    let indexes = to_piece_index_matrix(pieces, board_size);
     let mut best = None;
     for i in 0..pieces.len() {
-        if pieces[i].team == team {
+        if pieces[i].team == team && pieces[i].alive {
             if DEBUG_PLANNING {
                 println!(
                     "{}. where to move piece {} {:?} at {:?}?",
@@ -97,7 +98,7 @@ pub fn choose_target_score(
                     pieces[i].initial_pos
                 );
             }
-            for movement in possible_moves_matrix(board_size, &pieces, i, occupied) {
+            for movement in possible_moves_matrix(board_size, &pieces, i, &occupied) {
                 if DEBUG_PLANNING {
                     println!(
                         "{} evaluating move to {:?}",
@@ -105,21 +106,21 @@ pub fn choose_target_score(
                         movement
                     );
                 }
-                if let Some(other_i) = other_pieces_at(movement, i, &pieces).first() {
-                    let other = &pieces[*other_i];
+                if let Some(other_i) = index_at(movement, &indexes) {
+                    let other = &pieces[other_i];
                     if other.team != team {
                         let old_pos = pieces[i].initial_pos;
                         pieces[i].set_pos_and_initial_i(movement);
-                        pieces[*other_i].alive = false;
-                        let old_killed_pos = pieces[*other_i].initial_pos;
-                        pieces[*other_i].set_pos_and_initial(Coord::new_i(0, -2));
+                        pieces[other_i].alive = false;
+                        let old_killed_pos = pieces[other_i].initial_pos;
+                        pieces[other_i].set_pos_and_initial(Coord::new_i(0, -2));
 
                         let (_, future_score) =
                             choose_target_score(team.opposite(), pieces, board_size, depth - 1);
 
                         pieces[i].set_pos_and_initial_i(old_pos);
-                        pieces[*other_i].set_pos_and_initial_i(old_killed_pos);
-                        pieces[*other_i].alive = true;
+                        pieces[other_i].set_pos_and_initial_i(old_killed_pos);
+                        pieces[other_i].alive = true;
 
                         let future_score = -future_score;
                         // if let Some((best_i, best_movement, best_score)) = best {
