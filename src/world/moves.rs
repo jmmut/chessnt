@@ -129,12 +129,7 @@ fn piece_moves_matrix_mut(
     }
     let piece = &pieces[piece_index];
     match movement {
-        Move::Pawn => moves.extend(get_pawn_positions(
-            piece_index,
-            pieces,
-            occupied,
-            board_size,
-        )),
+        Move::Pawn => get_pawn_positions_mut(piece_index, pieces, occupied, board_size, moves),
         Move::Bishop => get_bishop_positions_mut(piece, occupied, board_size, moves),
         Move::Knight => get_positions_mut(piece, KNIGHT, occupied, board_size, moves),
         Move::Rook => get_rook_positions_mut(piece, occupied, board_size, moves),
