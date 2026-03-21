@@ -62,23 +62,6 @@ pub fn choose_target_score_mut(
     occupied: &mut Vec<Vec<Option<Team>>>,
     indexes: &mut Vec<Vec<Option<PieceIndexSmall>>>,
 ) -> (Option<(PieceIndex, ICoord)>, Score) {
-    // make pieces a Vec<&Piece> to be able to replace pieces easily?
-    // evaluate board
-    // for each piece
-    //   for each movement
-    //     update board with piece moved  <--- ??
-    //     if evaluate board is better
-    //       store best
-    // return best
-
-    // make pieces a Vec<&Piece> to be able to replace pieces easily?
-    // evaluate pieces values
-    // for each piece
-    //   for each movement
-    //     update piece value (-old +new)
-    //     if evaluate board is better
-    //       store best
-    // return best
     if DEBUG_PLANNING {
         // print!("{}choosing move for board as {}:\n{}", ".".repeat(depth as usize), team, board_to_str(pieces));
         print!("{}", board_to_str(pieces));
