@@ -185,9 +185,12 @@ fn maybe_store_better(
     i: PieceIndex,
     movement: ICoord,
 ) {
-    if is_better(best, future_score, |(_, _, best_score), future_score| {
-        best_score < future_score
-    }) {
+    let is_better = if let Some((_, _, best_score)) = best {
+        *best_score < future_score
+    } else {
+        true
+    };
+    if is_better {
         // print_decision_kill(pieces, i, movement, other_i, future_score, depth);
         *best = Some((i, movement, future_score));
     }

@@ -294,9 +294,10 @@ fn get_bishop_positions_mut(
 
 pub fn to_occupied_matrix(pieces: &Vec<Piece>, board_size: ICoord) -> Vec<Vec<Option<Team>>> {
     let mut occupied = vec![vec![None; board_size.column as usize]; board_size.row as usize];
-    for piece in pieces {
+    for i in 0..pieces.len() {
+        let piece = &pieces[i];
         let pos = piece.initial_pos;
-        if inside(pos, board_size) {
+        if inside(pos, board_size) && pieces[i].alive {
             if occupied[pos.row() as usize][pos.column() as usize].is_some() {
                 panic!("unsupported several pieces in the same tile");
             }
@@ -315,7 +316,7 @@ pub fn to_piece_index_matrix(
     let mut occupied = vec![vec![None; board_size.column as usize]; board_size.row as usize];
     for i in 0..pieces.len() {
         let pos = pieces[i].initial_pos;
-        if inside(pos, board_size) {
+        if inside(pos, board_size) && pieces[i].alive {
             if occupied[pos.row() as usize][pos.column() as usize].is_some() {
                 panic!("unsupported several pieces in the same tile");
             }
