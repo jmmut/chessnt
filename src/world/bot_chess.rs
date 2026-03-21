@@ -68,7 +68,6 @@ pub fn choose_target_score(
     //     if evaluate board is better
     //       store best
     // return best
-    let initial_board_score: f32 = evaluate_pieces(team, pieces);
     if DEBUG_PLANNING {
         // print!("{}choosing move for board as {}:\n{}", ".".repeat(depth as usize), team, board_to_str(pieces));
         print!("{}", board_to_str(pieces));
@@ -78,11 +77,11 @@ pub fn choose_target_score(
             println!(
                 "{} returning (depth==0) with score {} for {} ************",
                 ".*".repeat(depth as usize),
-                initial_board_score,
+                0.0,
                 team
             );
         }
-        return (None, initial_board_score);
+        return (None, 0.0);
     }
     let occupied = to_occupied_matrix(pieces, board_size);
     let indexes = to_piece_index_matrix(pieces, board_size);
@@ -111,6 +110,7 @@ pub fn choose_target_score(
                     if other.team != team {
                         let old_pos = pieces[i].initial_pos;
                         pieces[i].set_pos_and_initial_i(movement);
+                        let kill_value = piece_value(&pieces[other_i], team);
                         pieces[other_i].alive = false;
                         let old_killed_pos = pieces[other_i].initial_pos;
                         pieces[other_i].set_pos_and_initial(Coord::new_i(0, -2));
@@ -122,7 +122,7 @@ pub fn choose_target_score(
                         pieces[other_i].set_pos_and_initial_i(old_killed_pos);
                         pieces[other_i].alive = true;
 
-                        let future_score = -future_score;
+                        let future_score = -future_score - kill_value;
                         // if let Some((best_i, best_movement, best_score)) = best {
                         //     if best_score < future_score {
                         //         print_decision_kill(pieces, i, movement, other_i, future_score, depth);
@@ -171,7 +171,7 @@ pub fn choose_target_score(
         }
         (Some((best_i, best_move)), best_score)
     } else {
-        (None, initial_board_score)
+        (None, 0.0)
     }
 }
 
