@@ -1,7 +1,10 @@
 use crate::core::coord::{Coord, ICoord};
 use crate::world::board::{other_pieces_at, Board, PieceIndex};
 use crate::world::bot::{Plan, PlanSelect};
-use crate::world::moves::{board_to_str, is_better, possible_moves, print_board, Move};
+use crate::world::moves::{
+    board_to_str, is_better, possible_moves, possible_moves_matrix, print_board,
+    to_occupied_matrix, Move,
+};
 use crate::world::piece::Piece;
 use crate::world::team::Team;
 use std::time::Instant;
@@ -81,6 +84,7 @@ pub fn choose_target_score(
         }
         return (None, initial_board_score);
     }
+    let occupied = &to_occupied_matrix(pieces, board_size);
     let mut best = None;
     for i in 0..pieces.len() {
         if pieces[i].team == team {
@@ -93,7 +97,7 @@ pub fn choose_target_score(
                     pieces[i].initial_pos
                 );
             }
-            for movement in possible_moves(board_size, &pieces, i) {
+            for movement in possible_moves_matrix(board_size, &pieces, i, occupied) {
                 if DEBUG_PLANNING {
                     println!(
                         "{} evaluating move to {:?}",

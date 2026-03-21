@@ -45,10 +45,25 @@ fn move_to_string(movement: Move) -> String {
 }
 
 pub fn possible_moves(size: ICoord, pieces: &Vec<Piece>, piece_index: usize) -> Vec<ICoord> {
+    let occupied = &to_occupied_matrix(pieces, size);
+    possible_moves_matrix(size, pieces, piece_index, occupied)
+}
+pub fn possible_moves_matrix(
+    size: ICoord,
+    pieces: &Vec<Piece>,
+    piece_index: usize,
+    occupied: &Vec<Vec<Option<Team>>>,
+) -> Vec<ICoord> {
     let mut valid_moves = Vec::new();
     let piece = &pieces[piece_index];
     for movement in &piece.moveset {
-        valid_moves.extend(piece_moves(movement, pieces, piece_index, size));
+        valid_moves.extend(piece_moves_matrix(
+            movement,
+            pieces,
+            piece_index,
+            occupied,
+            size,
+        ));
     }
     valid_moves
 }
@@ -57,6 +72,16 @@ fn piece_moves(
     movement: &Move,
     pieces: &Vec<Piece>,
     piece_index: usize,
+    board_size: ICoord,
+) -> Vec<ICoord> {
+    let occupied = &to_occupied_matrix(pieces, board_size);
+    piece_moves_matrix(movement, pieces, piece_index, occupied, board_size)
+}
+fn piece_moves_matrix(
+    movement: &Move,
+    pieces: &Vec<Piece>,
+    piece_index: usize,
+    occupied: &Vec<Vec<Option<Team>>>,
     board_size: ICoord,
 ) -> Vec<ICoord> {
     const KING: &[ICoord] = &[
@@ -83,7 +108,6 @@ fn piece_moves(
         return Vec::new();
     }
     let piece = &pieces[piece_index];
-    let occupied = &to_occupied_matrix(pieces, board_size);
     let moves = match movement {
         Move::Pawn => get_pawn_positions(piece_index, pieces, occupied, board_size),
         Move::Bishop => get_bishop_positions(piece, occupied, board_size),
@@ -197,7 +221,7 @@ fn get_bishop_positions(
     positions
 }
 
-fn to_occupied_matrix(pieces: &Vec<Piece>, board_size: ICoord) -> Vec<Vec<Option<Team>>> {
+pub fn to_occupied_matrix(pieces: &Vec<Piece>, board_size: ICoord) -> Vec<Vec<Option<Team>>> {
     let mut occupied = vec![vec![None; board_size.column as usize]; board_size.row as usize];
     for piece in pieces {
         let pos = piece.initial_pos;
