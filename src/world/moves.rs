@@ -136,9 +136,9 @@ fn piece_moves_matrix_mut(
             board_size,
         )),
         Move::Bishop => get_bishop_positions_mut(piece, occupied, board_size, moves),
-        Move::Knight => moves.extend(get_positions(piece, KNIGHT, occupied, board_size)),
+        Move::Knight => get_positions_mut(piece, KNIGHT, occupied, board_size, moves),
         Move::Rook => get_rook_positions_mut(piece, occupied, board_size, moves),
-        Move::King => moves.extend(get_positions(piece, KING, occupied, board_size)),
+        Move::King => get_positions_mut(piece, KING, occupied, board_size, moves),
         Move::Queen => {
             get_rook_positions_mut(piece, occupied, board_size, moves);
             get_bishop_positions_mut(piece, occupied, board_size, moves)
@@ -167,12 +167,45 @@ fn get_positions(
         .collect()
 }
 
+fn get_positions_mut(
+    piece: &Piece,
+    possible: &[ICoord],
+    occupied: &Vec<Vec<Option<Team>>>,
+    board_size: ICoord,
+    moves: &mut Vec<ICoord>,
+) {
+    for p in possible {
+        let absolute = *p + piece.initial_pos;
+        if inside(absolute, board_size) {
+            let can_move_or_kill = if let Some(other_team) = is_occupied(absolute, occupied) {
+                piece.team != other_team
+            } else {
+                true
+            };
+            if can_move_or_kill {
+                moves.push(absolute);
+            }
+        }
+    }
+}
+
 fn get_pawn_positions(
     piece_index: usize,
     pieces: &Vec<Piece>,
     occupied: &Vec<Vec<Option<Team>>>,
     board_size: ICoord,
 ) -> Vec<ICoord> {
+    let mut moves = vec![];
+    get_pawn_positions_mut(piece_index, pieces, occupied, board_size, &mut moves);
+    moves
+}
+fn get_pawn_positions_mut(
+    piece_index: usize,
+    pieces: &Vec<Piece>,
+    occupied: &Vec<Vec<Option<Team>>>,
+    board_size: ICoord,
+    moves: &mut Vec<ICoord>,
+) {
     let piece_pos = pieces[piece_index].initial_pos;
     let team = pieces[piece_index].team;
     let direction = ICoord::new_i(if team.is_white() { -1 } else { 1 }, 0);
@@ -181,7 +214,6 @@ fn get_pawn_positions(
     } else {
         1
     };
-    let mut moves = vec![];
     let front = direction + piece_pos;
     if inside(front, board_size) {
         if is_occupied(front, occupied).is_none() {
@@ -206,7 +238,6 @@ fn get_pawn_positions(
         add_if_enemy_is_at(piece_pos + direction + ICoord::new_i(0, 1));
         add_if_enemy_is_at(piece_pos + direction + ICoord::new_i(0, -1));
     }
-    moves
 }
 
 fn get_rook_positions(
