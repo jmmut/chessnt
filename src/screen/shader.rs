@@ -1,5 +1,5 @@
 use crate::AnyResult;
-use crate::screen::shader::names::{COLOR_BLACK, COLOR_WHITE, TILES};
+use crate::screen::shader::names::{COLOR_BLACK, COLOR_WHITE, RADAR, TILES};
 use macroquad::material::{Material, MaterialParams, load_material};
 use macroquad::miniquad::{ShaderSource, UniformDesc, UniformType};
 
@@ -34,6 +34,11 @@ pub fn init_shaders() -> AnyResult<Material> {
                 name: TILES.to_string(),
                 uniform_type: UniformType::Float2,
                 array_count: 1,
+            },
+            UniformDesc {
+                name: RADAR.to_string(),
+                uniform_type: UniformType::Float2,
+                array_count: 3,
             },
             UniformDesc {
                 name: COLOR_WHITE.to_string(),

@@ -161,6 +161,10 @@ impl Referee {
         let radar_right = radar_base + dir - left;
         [radar_base, radar_right, radar_left]
     }
+    pub fn radar_v2(&self) -> [Vec2; 3] {
+        let coords = self.radar();
+        [coords[0].into(), coords[1].into(), coords[2].into()]
+    }
     pub fn dir_v3(&self) -> Vec3 {
         vec3(self.direction.x, 0.0, self.direction.y) * DIR_MULTIPLIER
     }

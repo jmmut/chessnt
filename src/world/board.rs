@@ -463,11 +463,9 @@ impl Board {
         theme
             .material
             .set_uniform(COLOR_WHITE, theme.palette.tiles_white);
-        // theme
-        //     .material
-        //     .set_uniform(RADAR, theme.palette.tiles_white);
-        let radar = self.referee.radar();
-        
+        let radar = self.referee.radar_v2();
+        theme.material.set_uniform_array(RADAR, &radar);
+
         let corners = horizontal_quad(
             Coord::new_i(0, 0).to_vec3(0.0),
             self.size.column_f(),
