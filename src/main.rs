@@ -1,6 +1,7 @@
 use chessnt::core::coord::Coord;
 use chessnt::core::input::Gamepads;
 use chessnt::core::time::Time;
+use chessnt::screen::shader::init_shaders;
 use chessnt::screen::theme::{CameraPos, Fonts, Textures, Theme, new_text_coloring};
 use chessnt::screen::ui::{SCALE, render_text_no_font, render_title};
 use chessnt::screen::ui_board::Message;
@@ -43,7 +44,8 @@ async fn fallible_main() -> AnyResult<()> {
         text: load_ttf_font("assets/fonts/TitilliumWeb-SemiBold.ttf").await?,
         dev: load_ttf_font("assets/fonts/JetBrainsMono-Medium.ttf").await?,
     };
-    let mut theme = Theme::new(textures, fonts);
+    let material = init_shaders()?;
+    let mut theme = Theme::new(textures, fonts, material);
     let mut camera = CameraPos::default();
     let mut board = Board::new_chess(Coord::new_i(6, 4), Coord::new_i(2, 4));
     let mut bots = Bots::new();

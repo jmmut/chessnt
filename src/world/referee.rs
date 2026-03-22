@@ -54,7 +54,7 @@ impl Referee {
             turn: Team::White,
             trip_time: (trip.column.abs() / REFEREE_SPEED) as f64,
             referee_paused: false,
-            render_radar: true,
+            render_radar: false,
             all_seeing: false,
         }
     }

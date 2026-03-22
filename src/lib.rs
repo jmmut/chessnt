@@ -15,6 +15,7 @@ pub mod core {
 pub mod screen {
     pub mod anchorer;
     pub mod render;
+    pub mod shader;
     pub mod theme;
     pub mod ui;
     pub mod ui_board;

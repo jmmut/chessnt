@@ -59,7 +59,7 @@ pub fn mesh_cursor_width(coord: Coord, color: Color, height: f32, width: f32) ->
     meshes
 }
 
-fn horizontal_quad(coord_00: Vec3, x: f32, z: f32) -> [Vec3; 4] {
+pub fn horizontal_quad(coord_00: Vec3, x: f32, z: f32) -> [Vec3; 4] {
     quad(coord_00, vec3(x, 0.0, 0.0), vec3(0.0, 0.0, z))
 }
 pub fn vertical_quad(coord_00: Vec3, x: f32, y: f32) -> [Vec3; 4] {

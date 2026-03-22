@@ -1,17 +1,22 @@
 use crate::TRANSPARENT;
 use crate::core::coord::{Coord, ICoord};
 use crate::screen::render::{
-    floor_corners, mesh_coord, mesh_cursor, mesh_cursor_width, mesh_figure_texture,
-    mesh_progress_bar, mesh_quad, mesh_texture_quad, mesh_triangle, mesh_vertical_texture, quad,
+    floor_corners, horizontal_quad, mesh_coord, mesh_cursor, mesh_cursor_width,
+    mesh_figure_texture, mesh_progress_bar, mesh_quad, mesh_texture_quad, mesh_triangle,
+    mesh_vertical_texture, quad,
 };
+use crate::screen::shader::{POSITION_X_NAME, POSITION_Y_NAME};
 use crate::screen::theme::Theme;
 use crate::world::moves::{Move, compute_attackers, inside_f, possible_moves};
 use crate::world::piece::Piece;
 use crate::world::referee::Referee;
 use crate::world::team::{OneForEachTeam, Team};
 use macroquad::color::{Color, WHITE};
+use macroquad::input::mouse_position;
+use macroquad::material::{gl_use_default_material, gl_use_material};
 use macroquad::math::{Vec2, Vec3, vec2, vec3};
 use macroquad::models::{Mesh, draw_mesh};
+use macroquad::prelude::{draw_rectangle, screen_height, screen_width};
 
 const CURSOR_HEIGHT: f32 = 0.1;
 const SELECTION_HEIGHT: f32 = CURSOR_HEIGHT * 0.5;
@@ -439,16 +444,24 @@ impl Board {
     }
 
     fn draw_floor(&self, theme: &Theme) {
-        for column in 0..self.size.column() {
-            for row in 0..self.size.row() {
-                let color = if (row + column) % 2 == 0 {
-                    theme.palette.tiles_black
-                } else {
-                    theme.palette.tiles_white
-                };
-                draw_mesh(&mesh_coord(Coord::new_i(column, row), color));
-            }
-        }
+        gl_use_material(&theme.material);
+        let position_in_pixels_tuple = mouse_position();
+        let position_in_pixels = Vec2::new(position_in_pixels_tuple.0, position_in_pixels_tuple.1);
+        let position_minus_1_to_1 =
+            position_in_pixels / Vec2::new(screen_width(), screen_height()) * 2.0 - 1.0;
+        theme
+            .material
+            .set_uniform(POSITION_X_NAME, position_minus_1_to_1.x);
+        theme
+            .material
+            .set_uniform(POSITION_Y_NAME, position_minus_1_to_1.y);
+        let corners = horizontal_quad(
+            Coord::new_i(0, 0).to_vec3(0.0),
+            self.size.column_f(),
+            self.size.row_f(),
+        );
+        draw_mesh(&mesh_texture_quad(corners, WHITE, None, false, false));
+        gl_use_default_material();
     }
 
     fn checks_meshes(&self, theme: &Theme) -> Vec<Mesh> {
