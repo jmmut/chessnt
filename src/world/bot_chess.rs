@@ -22,7 +22,8 @@ pub type Score = f32;
 
 pub fn choose_target(board: &Board, team: Team) -> Option<Plan> {
     let start = Instant::now();
-    if board.referee.turn != team {
+    let in_check = board.is_in_check(team).is_some();
+    if board.referee.turn != team && !in_check {
         None
     } else {
         let plan = choose_target_inner(team, board.pieces(), board.referee.turn, board.size());
@@ -213,7 +214,7 @@ fn evaluate_movement(
                 team.opposite(),
                 pieces,
                 board_size,
-                turn.opposite(),
+                team.opposite(), // team: not a bug. on the first level we want to evaluate movements out of our turn before the other team moves
                 depth - 1,
                 occupied,
                 indexes,

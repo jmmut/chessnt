@@ -271,12 +271,18 @@ impl Board {
     }
 
     fn add_check(&self, team: Team, checks: &mut Vec<(Team, PieceIndex)>) {
+        if let Some(king) = self.is_in_check(team) {
+            checks.push((team, king));
+        }
+    }
+    pub fn is_in_check(&self, team: Team) -> Option<PieceIndex> {
         if let Some(king) = find_first(team, Move::King, self.pieces()) {
             let attacks = compute_attackers(king, self.size, &self.pieces);
             if attacks.len() > 0 {
-                checks.push((team, king));
+                return Some(king);
             }
         }
+        None
     }
 }
 
