@@ -1,4 +1,5 @@
 use crate::AnyResult;
+use crate::screen::shader::names::TILES;
 use macroquad::material::{Material, MaterialParams, load_material};
 use macroquad::miniquad::{ShaderSource, UniformDesc, UniformType};
 
@@ -7,6 +8,7 @@ pub const POSITION_Y_NAME: &str = "position_y";
 
 pub mod names {
     pub const RADAR: &str = "radar";
+    pub const TILES: &str = "tiles";
 }
 
 const FRAGMENT_SHADER: &'static str = include_str!("../shaders/floor_fragment.glsl");
@@ -24,6 +26,11 @@ pub fn init_shaders() -> AnyResult<Material> {
             UniformDesc {
                 name: POSITION_Y_NAME.to_string(),
                 uniform_type: UniformType::Float1,
+                array_count: 1,
+            },
+            UniformDesc {
+                name: TILES.to_string(),
+                uniform_type: UniformType::Float2,
                 array_count: 1,
             },
         ],

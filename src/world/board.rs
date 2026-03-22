@@ -5,6 +5,7 @@ use crate::screen::render::{
     mesh_figure_texture, mesh_progress_bar, mesh_quad, mesh_texture_quad, mesh_triangle,
     mesh_vertical_texture, quad,
 };
+use crate::screen::shader::names::{RADAR, TILES};
 use crate::screen::shader::{POSITION_X_NAME, POSITION_Y_NAME};
 use crate::screen::theme::Theme;
 use crate::world::moves::{Move, compute_attackers, inside_f, possible_moves};
@@ -455,12 +456,13 @@ impl Board {
         theme
             .material
             .set_uniform(POSITION_Y_NAME, position_minus_1_to_1.y);
+        theme.material.set_uniform(TILES, self.size.into::<Vec2>());
         let corners = horizontal_quad(
             Coord::new_i(0, 0).to_vec3(0.0),
             self.size.column_f(),
             self.size.row_f(),
         );
-        draw_mesh(&mesh_texture_quad(corners, WHITE, None, false, false));
+        draw_mesh(&mesh_texture_quad(corners, WHITE, None, false, true));
         gl_use_default_material();
     }
 
