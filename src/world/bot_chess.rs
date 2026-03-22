@@ -1,10 +1,9 @@
 use crate::core::coord::{Coord, ICoord};
-use crate::world::board::{Board, PieceIndex, PieceIndexSmall, other_pieces_at};
+use crate::world::board::{Board, PieceIndex, PieceIndexSmall};
 use crate::world::bot::{Plan, PlanSelect};
 use crate::world::moves::{
-    Move, board_to_str, index_at, is_better, possible_moves, possible_moves_matrix,
-    possible_moves_matrix_mut, print_board, set_index_at, set_occupied, to_occupied_matrix,
-    to_piece_index_matrix, to_piece_index_matrix_small,
+    Move, board_to_str, index_at, possible_moves, possible_moves_matrix_mut, print_board,
+    set_index_at, set_occupied, to_occupied_matrix, to_piece_index_matrix_small,
 };
 use crate::world::piece::Piece;
 use crate::world::team::Team;
@@ -52,7 +51,7 @@ pub fn choose_target_inner_depth(
 ) -> Option<Plan> {
     let mut occupied = to_occupied_matrix(pieces, board_size);
     let mut indexes = to_piece_index_matrix_small(pieces, board_size);
-    if let (Some((i, movement)), score) = choose_target_score_mut(
+    if let (Some((i, movement)), _score) = choose_target_score_mut(
         team,
         &mut pieces.clone(),
         board_size,

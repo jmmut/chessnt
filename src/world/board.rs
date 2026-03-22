@@ -1,9 +1,8 @@
 use crate::TRANSPARENT;
 use crate::core::coord::{Coord, ICoord};
 use crate::screen::render::{
-    floor_corners, horizontal_quad, mesh_coord, mesh_cursor, mesh_cursor_width,
-    mesh_figure_texture, mesh_progress_bar, mesh_quad, mesh_texture_quad, mesh_triangle,
-    mesh_vertical_texture, quad,
+    floor_corners, horizontal_quad, mesh_cursor, mesh_cursor_width, mesh_figure_texture,
+    mesh_progress_bar, mesh_quad, mesh_texture_quad, mesh_triangle, mesh_vertical_texture, quad,
 };
 use crate::screen::shader::names::{COLOR_BLACK, COLOR_WHITE, RADAR, TILES};
 use crate::screen::shader::{POSITION_X_NAME, POSITION_Y_NAME};
@@ -17,7 +16,7 @@ use macroquad::input::mouse_position;
 use macroquad::material::{gl_use_default_material, gl_use_material};
 use macroquad::math::{Vec2, Vec3, vec2, vec3};
 use macroquad::models::{Mesh, draw_mesh};
-use macroquad::prelude::{draw_rectangle, screen_height, screen_width};
+use macroquad::prelude::{screen_height, screen_width};
 
 const CURSOR_HEIGHT: f32 = 0.1;
 const SELECTION_HEIGHT: f32 = CURSOR_HEIGHT * 0.5;

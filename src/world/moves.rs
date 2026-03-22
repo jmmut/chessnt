@@ -71,33 +71,6 @@ pub fn possible_moves_matrix_mut(
     }
 }
 
-fn piece_moves(
-    movement: &Move,
-    pieces: &Vec<Piece>,
-    piece_index: usize,
-    board_size: ICoord,
-) -> Vec<ICoord> {
-    let occupied = &to_occupied_matrix(pieces, board_size);
-    piece_moves_matrix(movement, pieces, piece_index, occupied, board_size)
-}
-fn piece_moves_matrix(
-    movement: &Move,
-    pieces: &Vec<Piece>,
-    piece_index: usize,
-    occupied: &Vec<Vec<Option<Team>>>,
-    board_size: ICoord,
-) -> Vec<ICoord> {
-    let mut moves = Vec::new();
-    piece_moves_matrix_mut(
-        movement,
-        pieces,
-        piece_index,
-        occupied,
-        board_size,
-        &mut moves,
-    );
-    moves
-}
 fn piece_moves_matrix_mut(
     movement: &Move,
     pieces: &Vec<Piece>,
@@ -143,27 +116,6 @@ fn piece_moves_matrix_mut(
     };
 }
 
-fn get_positions(
-    piece: &Piece,
-    possible: &[ICoord],
-    occupied: &Vec<Vec<Option<Team>>>,
-    board_size: ICoord,
-) -> Vec<ICoord> {
-    let piece_pos = piece.initial_pos;
-    possible
-        .iter()
-        .map(|p| *p + piece_pos)
-        .filter(|coord| inside(*coord, board_size))
-        .filter(|coord| {
-            if let Some(other_team) = is_occupied(*coord, occupied) {
-                piece.team != other_team
-            } else {
-                true
-            }
-        })
-        .collect()
-}
-
 fn get_positions_mut(
     piece: &Piece,
     possible: &[ICoord],
@@ -186,16 +138,6 @@ fn get_positions_mut(
     }
 }
 
-fn get_pawn_positions(
-    piece_index: usize,
-    pieces: &Vec<Piece>,
-    occupied: &Vec<Vec<Option<Team>>>,
-    board_size: ICoord,
-) -> Vec<ICoord> {
-    let mut moves = vec![];
-    get_pawn_positions_mut(piece_index, pieces, occupied, board_size, &mut moves);
-    moves
-}
 fn get_pawn_positions_mut(
     piece_index: usize,
     pieces: &Vec<Piece>,
@@ -237,15 +179,6 @@ fn get_pawn_positions_mut(
     }
 }
 
-fn get_rook_positions(
-    piece: &Piece,
-    occupied: &Vec<Vec<Option<Team>>>,
-    board_size: ICoord,
-) -> Vec<ICoord> {
-    let mut positions = Vec::new();
-    get_rook_positions_mut(piece, occupied, board_size, &mut positions);
-    positions
-}
 fn get_rook_positions_mut(
     piece: &Piece,
     occupied: &Vec<Vec<Option<Team>>>,
@@ -263,15 +196,6 @@ fn get_rook_positions_mut(
     }
 }
 
-fn get_bishop_positions(
-    piece: &Piece,
-    occupied: &Vec<Vec<Option<Team>>>,
-    board_size: ICoord,
-) -> Vec<ICoord> {
-    let mut positions = Vec::new();
-    get_bishop_positions_mut(piece, occupied, board_size, &mut positions);
-    positions
-}
 fn get_bishop_positions_mut(
     piece: &Piece,
     occupied: &Vec<Vec<Option<Team>>>,
