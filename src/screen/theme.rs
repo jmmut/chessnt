@@ -248,13 +248,13 @@ pub struct Palette {
 impl Default for Palette {
     fn default() -> Self {
         Self {
-            tiles_white: from_hex(0xF7FFE5),
-            tiles_black: from_hex(0x181449),
+            tiles_white: from_hex_rgba(0xBBADC4FF),
+            tiles_black: from_hex_rgba(0x312C79FF),
             cursor_white: color_average_weight(color_average(GREEN, GRAY), YELLOW, 0.3),
             cursor_black: color_average_weight(color_average(GREEN, GRAY), DARKBLUE, 0.3),
             mask_white: WHITE,
             mask_black: GRAY,
-            background: GRAY,
+            background: from_hex_rgba(0x381C73FF),
             spotlight: color_average(GREEN, LIGHTGRAY),
             radar: color_average(RED, TRANSPARENT),
             ghost: color_average(PURPLE, GRAY),
