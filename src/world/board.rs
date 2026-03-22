@@ -21,8 +21,8 @@ use macroquad::prelude::{draw_rectangle, screen_height, screen_width};
 
 const CURSOR_HEIGHT: f32 = 0.1;
 const SELECTION_HEIGHT: f32 = CURSOR_HEIGHT * 0.5;
-const RADAR_HEIGHT: f32 = SELECTION_HEIGHT * 0.7;
-const FLOOR_PIECE_HEIGHT: f32 = RADAR_HEIGHT * 0.2;
+const RADAR_HEIGHT: f32 = -SELECTION_HEIGHT * 0.7;
+const FLOOR_PIECE_HEIGHT: f32 = -RADAR_HEIGHT * 0.2;
 
 pub type PieceIndex = usize;
 pub type PieceIndexSmall = u8;
@@ -324,12 +324,16 @@ impl Board {
     /// assumes 3d camera is enabled
     pub fn draw_world(&self, theme: &Theme) {
         let mut meshes = Vec::new();
+        meshes.extend(self.referee_meshes(theme));
+        for mesh in &meshes {
+            draw_mesh(mesh); // can't render cursor and figures online because of intersecting quads with transparencies
+        }
+        meshes.clear();
         self.draw_floor(theme);
 
         meshes.extend(self.selection_meshes(Team::White, theme));
         meshes.extend(self.selection_meshes(Team::Black, theme));
         meshes.extend(self.piece_meshes(theme));
-        meshes.extend(self.referee_meshes(theme));
         meshes.extend(self.possible_moves_meshes(Team::White, theme));
         meshes.extend(self.possible_moves_meshes(Team::Black, theme));
         meshes.extend(self.checks_meshes(theme));
@@ -463,7 +467,7 @@ impl Board {
         theme
             .material
             .set_uniform(COLOR_WHITE, theme.palette.tiles_white);
-        let radar = self.referee.radar_v2();
+        let radar = self.referee.radar_v2_offset();
         theme.material.set_uniform_array(RADAR, &radar);
 
         let corners = horizontal_quad(

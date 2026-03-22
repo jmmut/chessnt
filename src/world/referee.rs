@@ -165,6 +165,15 @@ impl Referee {
         let coords = self.radar();
         [coords[0].into(), coords[1].into(), coords[2].into()]
     }
+    pub fn radar_v2_offset(&self) -> [Vec2; 3] {
+        let coords = self.radar();
+        let offset = vec2(0.5, 0.5);
+        [
+            coords[0].into::<Vec2>() + offset,
+            coords[1].into::<Vec2>() + offset,
+            coords[2].into::<Vec2>() + offset,
+        ]
+    }
     pub fn dir_v3(&self) -> Vec3 {
         vec3(self.direction.x, 0.0, self.direction.y) * DIR_MULTIPLIER
     }

@@ -33,9 +33,17 @@ void main() {
     int manhattan_distance = tile_i.x + tile_i.y;
     bool is_even = manhattan_distance / 2 * 2 == manhattan_distance;
     bool inside_radar = triangle_contains(radar, tile);
-    if (is_even ^^ inside_radar){
-        gl_FragColor = color_white;
+    if (inside_radar) {
+        if (is_even) {
+            gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+        } else {
+            gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+        }
     } else {
-        gl_FragColor = color_black;
+        if (is_even ^^ inside_radar){
+            gl_FragColor = color_white;
+        } else {
+            gl_FragColor = color_black;
+        }
     }
 }
