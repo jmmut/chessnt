@@ -11,7 +11,7 @@ use crate::screen::ui;
 use crate::screen::ui::{
     render_button_dev_mut, render_slider, render_text_dev, render_text_dev_mut, rightwards,
 };
-use crate::screen::ui_board::Message;
+use crate::world::board::board_ui::Message;
 use crate::world::board::{Board, DEFAULT_PIECE_SIZE};
 use crate::world::bot::Bots;
 use crate::world::bot_chess::evaluate_pieces;

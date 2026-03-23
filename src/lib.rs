@@ -18,7 +18,6 @@ pub mod screen {
     pub mod shader;
     pub mod theme;
     pub mod ui;
-    pub mod ui_board;
     pub mod ui_dev;
 }
 pub mod world {
