@@ -37,21 +37,22 @@ impl Board {
     }
     pub fn new_chess(cursor_white: Coord, cursor_black: Coord) -> Self {
         let back_column = vec![
-            (0, Move::Rook),
-            (1, Move::Knight),
-            (2, Move::Bishop),
-            (3, Move::Queen),
-            (4, Move::King),
-            (5, Move::Bishop),
-            (6, Move::Knight),
-            (7, Move::Rook),
+            Move::Rook,
+            Move::Knight,
+            Move::Bishop,
+            Move::King,
+            Move::Queen,
+            Move::Bishop,
+            Move::Knight,
+            Move::Rook,
         ];
         let mut pieces = Vec::new();
-        for (row, movement) in &back_column {
-            pieces.push(Piece::new(Coord::new_i(7, *row), Team::White, *movement));
-            pieces.push(Piece::new(Coord::new_i(0, *row), Team::Black, *movement));
-            pieces.push(Piece::new(Coord::new_i(6, *row), Team::White, Move::Pawn));
-            pieces.push(Piece::new(Coord::new_i(1, *row), Team::Black, Move::Pawn));
+        for (row, movement) in back_column.into_iter().enumerate() {
+            let row = row as i32;
+            pieces.push(Piece::new(Coord::new_i(7, row), Team::White, movement));
+            pieces.push(Piece::new(Coord::new_i(0, row), Team::Black, movement));
+            pieces.push(Piece::new(Coord::new_i(6, row), Team::White, Move::Pawn));
+            pieces.push(Piece::new(Coord::new_i(1, row), Team::Black, Move::Pawn));
         }
         let size = ICoord::new_i(8, 8);
         Self::new(cursor_white, cursor_black, size, pieces)
@@ -101,6 +102,13 @@ impl Board {
             piece.moved = true;
         }
         *self.cursor_mut(team) += delta;
+    }
+    pub fn move_cursor_abs(&mut self, new_pos: Coord, team: Team) {
+        if let Some(piece) = self.get_selected_piece_mut(team) {
+            piece.set_pos(new_pos);
+            piece.moved = true;
+        }
+        *self.cursor_mut(team) = new_pos;
     }
     pub fn select(&mut self, team: Team) {
         let new_selection = self.cursor(team).round();
@@ -280,6 +288,14 @@ pub fn find_first(team: Team, move_type: Move, pieces: &Vec<Piece>) -> Option<Pi
     let moveset = vec![move_type];
     for (i, piece) in pieces.iter().enumerate() {
         if piece.team == team && piece.moveset == moveset {
+            return Some(i);
+        }
+    }
+    None
+}
+pub fn find_at(pos: ICoord, pieces: &Vec<Piece>) -> Option<PieceIndex> {
+    for (i, piece) in pieces.iter().enumerate() {
+        if piece.initial_pos == pos {
             return Some(i);
         }
     }

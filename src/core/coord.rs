@@ -1,5 +1,5 @@
 use macroquad::math::{IVec2, Vec2, Vec3, f32, ivec2, vec2, vec3};
-use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
 pub struct Coord {
@@ -123,6 +123,13 @@ impl AddAssign<f32> for Coord {
         self.row += rhs;
     }
 }
+impl Neg for Coord {
+    type Output = Coord;
+
+    fn neg(self) -> Self::Output {
+        self * -1.0
+    }
+}
 impl Sub<Coord> for Coord {
     type Output = Coord;
     fn sub(mut self, other: Coord) -> Self::Output {
@@ -172,7 +179,7 @@ pub fn fmt_vec2(v: Vec2) -> String {
     format!("[{:7.4}, {:7.4}]", v.x, v.y)
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ICoord {
     pub column: i32,
     pub row: i32,
@@ -276,6 +283,13 @@ impl AddAssign<i32> for ICoord {
     fn add_assign(&mut self, rhs: i32) {
         self.column += rhs;
         self.row += rhs;
+    }
+}
+impl Neg for ICoord {
+    type Output = ICoord;
+
+    fn neg(self) -> Self::Output {
+        self * -1
     }
 }
 impl Sub<ICoord> for ICoord {

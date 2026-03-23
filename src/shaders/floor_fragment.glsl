@@ -35,15 +35,15 @@ void main() {
     bool inside_radar = triangle_contains(radar, tile);
     if (inside_radar) {
         if (is_even) {
-            gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-        } else {
             gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+        } else {
+            gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
         }
     } else {
         if (is_even ^^ inside_radar){
-            gl_FragColor = color_white;
-        } else {
             gl_FragColor = color_black;
+        } else {
+            gl_FragColor = color_white;
         }
     }
 }

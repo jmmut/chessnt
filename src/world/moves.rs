@@ -79,16 +79,6 @@ fn piece_moves_matrix_mut(
     board_size: ICoord,
     moves: &mut Vec<ICoord>,
 ) {
-    const KING: &[ICoord] = &[
-        ICoord::new_i(-1, 0),
-        ICoord::new_i(1, 0),
-        ICoord::new_i(0, -1),
-        ICoord::new_i(0, 1),
-        ICoord::new_i(-1, -1),
-        ICoord::new_i(1, -1),
-        ICoord::new_i(1, 1),
-        ICoord::new_i(-1, 1),
-    ];
     const KNIGHT: &[ICoord] = &[
         ICoord::new_i(-2, -1),
         ICoord::new_i(-1, -2),
@@ -108,7 +98,7 @@ fn piece_moves_matrix_mut(
         Move::Bishop => get_bishop_positions_mut(piece, occupied, board_size, moves),
         Move::Knight => get_positions_mut(piece, KNIGHT, occupied, board_size, moves),
         Move::Rook => get_rook_positions_mut(piece, occupied, board_size, moves),
-        Move::King => get_positions_mut(piece, KING, occupied, board_size, moves),
+        Move::King => get_king_positions_mut(piece, occupied, board_size, moves),
         Move::Queen => {
             get_rook_positions_mut(piece, occupied, board_size, moves);
             get_bishop_positions_mut(piece, occupied, board_size, moves)
@@ -211,6 +201,27 @@ fn get_bishop_positions_mut(
     for dir in DIRECTIONS {
         add_direction(piece, board_size, &occupied, dir, positions);
     }
+}
+fn get_king_positions_mut(
+    piece: &Piece,
+    occupied: &Vec<Vec<Option<Team>>>,
+    board_size: ICoord,
+    positions: &mut Vec<ICoord>,
+) {
+    const KING: &[ICoord] = &[
+        ICoord::new_i(-1, 0),
+        ICoord::new_i(1, 0),
+        ICoord::new_i(0, -1),
+        ICoord::new_i(0, 1),
+        ICoord::new_i(-1, -1),
+        ICoord::new_i(1, -1),
+        ICoord::new_i(1, 1),
+        ICoord::new_i(-1, 1),
+        ICoord::new_i(0, -2),
+        ICoord::new_i(0, 2),
+    ];
+    get_positions_mut(piece, KING, occupied, board_size, positions);
+    
 }
 
 pub fn to_occupied_matrix(pieces: &Vec<Piece>, board_size: ICoord) -> Vec<Vec<Option<Team>>> {
@@ -418,8 +429,9 @@ pub fn board_to_str(pieces: &Vec<Piece>) -> String {
 pub mod tests {
     use super::*;
     use crate::core::coord::Coord;
-    use crate::world::board::find_first;
+    use crate::world::board::{Board, find_at, find_first};
     use crate::world::piece::Piece;
+    use crate::world::referee::rotate_90;
     use crate::world::team::Team;
     use Move::*;
     use Team::*;
@@ -587,5 +599,44 @@ pub mod tests {
         let white_pawn = find_first(White, Pawn, &pieces).unwrap();
         let moves = possible_moves(board_size, &pieces, white_pawn);
         assert_eq!(moves, vec![]);
+    }
+    #[test]
+    fn test_castle() {
+        let mut board = Board::new_chess(Coord::new_i(0, 0), Coord::new_i(0, 0));
+        let king = find_first(Team::White, Move::King, board.pieces()).unwrap();
+        let queen = find_first(Team::White, Move::Queen, board.pieces()).unwrap();
+        let king_pos = board.pieces()[king].initial_pos;
+        let to_queen = board.pieces()[queen].initial_pos - king_pos;
+        let close_tower = find_at(king_pos - to_queen * 3, board.pieces()).unwrap();
+        let close_knight = find_at(king_pos - to_queen * 2, board.pieces()).unwrap();
+        let close_bishop = find_at(king_pos - to_queen * 1, board.pieces()).unwrap();
+        let far_bishop = find_at(king_pos + to_queen * 2, board.pieces()).unwrap();
+        let far_knight = find_at(king_pos + to_queen * 3, board.pieces()).unwrap();
+        let far_tower = find_at(king_pos + to_queen * 4, board.pieces()).unwrap();
+        let to_pawn_candidate: ICoord = rotate_90(to_queen.into()).into();
+        let to_pawn = if find_at(king_pos + to_pawn_candidate, board.pieces()).is_some() {
+            to_pawn_candidate
+        } else if find_at(king_pos - to_pawn_candidate, board.pieces()).is_some() {
+            -to_pawn_candidate
+        } else {
+            panic!("can't find pawn next to king");
+        };
+        for index in [close_knight, close_bishop, far_bishop, far_knight, queen] {
+            board.move_cursor_abs((board.pieces()[index].initial_pos).into(), Team::White);
+            board.select(Team::White);
+            board.move_cursor_rel((to_pawn * 2).into(), Team::White);
+            board.deselect(Team::White);
+        }
+        let mut moves = possible_moves(board.size(), board.pieces(), king);
+        moves.sort();
+        let mut expected = vec![
+            king_pos + to_queen,
+            king_pos + to_queen * 2,
+            king_pos - to_queen,
+            king_pos - to_queen * 2,
+        ];
+        expected.sort();
+        assert_eq!(moves, expected)
+        // board.move_cursor_abs(king_pos.into(), Team::White);
     }
 }
