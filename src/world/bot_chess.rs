@@ -100,7 +100,7 @@ pub fn choose_target_score_mut(
                     "{}. where to move piece {} {:?} at {:?}?",
                     ".*".repeat(depth as usize - 1),
                     pieces[i].team,
-                    pieces[i].moveset.first().unwrap(),
+                    pieces[i].moveset.single(),
                     pieces[i].initial_pos
                 );
             }
@@ -121,7 +121,7 @@ pub fn choose_target_score_mut(
                 "{} chose moving {} {:?} to {:?} with score {}",
                 ".*".repeat(depth as usize),
                 pieces[best_i].team,
-                pieces[best_i].moveset.first().unwrap(),
+                pieces[best_i].moveset.single(),
                 best_move,
                 best_score
             );
@@ -270,10 +270,10 @@ fn print_decision_kill(
         "{}moving {} {:?} to {:?} (kill {} {:?}) has better score {}",
         ".".repeat(depth as usize),
         piece.team,
-        piece.moveset.first().unwrap(),
+        piece.moveset.single(),
         movement,
         pieces[*other_i].team,
-        pieces[*other_i].moveset.first().unwrap(),
+        pieces[*other_i].moveset.single(),
         future_score
     );
 }
@@ -291,7 +291,7 @@ fn print_decision(
         "{}moving {} {:?} to {:?} has better score {}",
         ".".repeat(depth as usize),
         piece.team,
-        piece.moveset.first().unwrap(),
+        piece.moveset.single(),
         movement,
         future_score
     );
@@ -316,7 +316,7 @@ pub fn choose_first_target_inner(
 /// if the team matches returns a positive number. opposite team return negative
 pub fn piece_value(piece: &Piece, team: Team) -> f32 {
     if piece.alive {
-        let movement = piece.moveset.first().unwrap();
+        let movement = piece.moveset.single();
         let my_team = (piece.team == team) as i32 as f32 * 2.0 - 1.0;
         let magnitude = match movement {
             Move::Pawn => 1.0,

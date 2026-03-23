@@ -1,6 +1,7 @@
 use crate::core::coord::Coord;
 use std::ops::{Add, Mul};
 
+#[derive(Clone)]
 pub struct Interpolation<T> {
     start: T,
     end: T,

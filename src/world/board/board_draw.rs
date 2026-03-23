@@ -85,7 +85,7 @@ impl Board {
             meshes.push(mesh_texture_quad(
                 floor_corners(piece.pos_i(), FLOOR_PIECE_HEIGHT, 1.0),
                 WHITE,
-                Some(theme.textures.pieces[&(piece.team, piece.moveset[0])].clone()),
+                Some(theme.textures.pieces[&(piece.team, piece.moveset.single())].clone()),
                 piece.team.is_white(),
                 true,
             ));

@@ -2,7 +2,7 @@ pub mod board_draw;
 pub mod board_ui;
 
 use crate::core::coord::{Coord, ICoord};
-use crate::world::moves::{Move, compute_attackers, inside_f, possible_moves};
+use crate::world::moves::{Move, Moveset, compute_attackers, inside_f, possible_moves};
 use crate::world::piece::Piece;
 use crate::world::referee::Referee;
 use crate::world::team::{OneForEachTeam, Team};
@@ -11,6 +11,7 @@ use macroquad::math::{Vec2, vec2};
 pub type PieceIndex = usize;
 pub type PieceIndexSmall = u8;
 
+#[derive(Clone)]
 pub struct Board {
     cursor: OneForEachTeam<Coord>,
     selected: OneForEachTeam<Option<PieceIndex>>,
@@ -145,8 +146,8 @@ impl Board {
                 overlaps_i.len() <= 1,
                 "killing several pieces in the same tile is unsupported"
             );
+            let moves = possible_moves(self.size, &self.pieces, selected_i);
             if let Some(overlap_i) = overlaps_i.last().cloned() {
-                let moves = possible_moves(self.size, &self.pieces, selected_i);
                 let referee_saw = self.referee.saw_any_piece(&self.pieces, vec![selected_i]);
                 let rounded_overlap_initial = self.pieces[overlap_i].pos_initial_i();
                 let overlap_team = self.pieces[overlap_i].team;
@@ -182,8 +183,27 @@ impl Board {
             } else {
                 let rounded_pos = self.pieces[selected_i].pos_i().into::<ICoord>(); // TODO: leave positions unrounded
                 let initial_pos = self.pieces[selected_i].initial_pos;
-                let moves = possible_moves(self.size, &self.pieces, selected_i);
                 let referee_saw = self.referee.saw_any_piece(&self.pieces, vec![selected_i]);
+                if self.pieces[selected_i].moveset.single() == Move::King
+                    && (rounded_pos - initial_pos).length_squared() == 2 * 2
+                {
+                    // castling
+                    let mut rooks = Vec::new();
+                    for i in 0..self.pieces.len() {
+                        let piece = &self.pieces[i];
+                        if piece.alive && piece.team == team && piece.moveset.single() == Move::Rook
+                        {
+                            rooks.push(i);
+                        }
+                    }
+                    let to_rook = (rounded_pos - initial_pos) / 2;
+                    let rook_index =
+                        find_at(rounded_pos + to_rook, &self.pieces).unwrap_or_else(|| {
+                            find_at(rounded_pos + to_rook * 2, &self.pieces).unwrap()
+                        });
+                    assert_eq!(self.pieces[rook_index].moveset, vec![Move::Rook].into());
+                    self.pieces[rook_index].set_pos_and_initial_i(rounded_pos - to_rook);
+                }
                 self.pieces[selected_i].set_pos_and_initial_i(rounded_pos);
                 if referee_saw {
                     if initial_pos == rounded_pos {
@@ -285,7 +305,7 @@ impl Board {
 }
 
 pub fn find_first(team: Team, move_type: Move, pieces: &Vec<Piece>) -> Option<PieceIndex> {
-    let moveset = vec![move_type];
+    let moveset: Moveset = vec![move_type].into();
     for (i, piece) in pieces.iter().enumerate() {
         if piece.team == team && piece.moveset == moveset {
             return Some(i);
@@ -351,7 +371,7 @@ mod tests {
         assert_eq!(
             at_5_0,
             vec![
-                &PieceMock::new(expected_pos, vec![Move::Pawn], Team::White)
+                &PieceMock::new(expected_pos, vec![Move::Pawn].into(), Team::White)
                     .cooldown(Some(0.0))
                     .moved(true)
                     .into()

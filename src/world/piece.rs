@@ -90,7 +90,7 @@ impl Piece {
         Self {
             initial_pos: pos.into(),
             pos,
-            moveset: vec![movement],
+            moveset: vec![movement].into(),
             team,
             moved: false,
             alive: true,

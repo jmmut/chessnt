@@ -7,6 +7,7 @@ use crate::world::piece::Piece;
 use crate::world::team::Team;
 use macroquad::math::{Vec2, Vec3, vec2, vec3};
 
+#[derive(Clone)]
 pub struct Referee {
     position: Vec2,
     prev_position: Vec2,

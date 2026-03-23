@@ -32,6 +32,7 @@ impl Display for Team {
     }
 }
 
+#[derive(Clone)]
 pub struct OneForEachTeam<T> {
     white: T,
     black: T,

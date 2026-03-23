@@ -1,5 +1,5 @@
 use macroquad::math::{IVec2, Vec2, Vec3, f32, ivec2, vec2, vec3};
-use std::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
 pub struct Coord {
@@ -216,6 +216,9 @@ impl ICoord {
         let v: Vec2 = self.into();
         v.normalize().into()
     }
+    pub fn length_squared(self) -> i32 {
+        self.row * self.row + self.column * self.column
+    }
     pub fn to_vec3(&self, y: f32) -> Vec3 {
         vec3(self.column_f(), y, self.row_f())
     }
@@ -333,5 +336,34 @@ impl MulAssign<i32> for ICoord {
     fn mul_assign(&mut self, other: i32) {
         self.column *= other;
         self.row *= other;
+    }
+}
+impl Div<ICoord> for ICoord {
+    type Output = ICoord;
+
+    fn div(mut self, other: ICoord) -> Self::Output {
+        self /= other;
+        self
+    }
+}
+impl Div<i32> for ICoord {
+    type Output = ICoord;
+
+    fn div(mut self, other: i32) -> Self::Output {
+        self.column /= other;
+        self.row /= other;
+        self
+    }
+}
+impl DivAssign<ICoord> for ICoord {
+    fn div_assign(&mut self, other: ICoord) {
+        self.column /= other.column;
+        self.row /= other.row;
+    }
+}
+impl DivAssign<i32> for ICoord {
+    fn div_assign(&mut self, other: i32) {
+        self.column /= other;
+        self.row /= other;
     }
 }
