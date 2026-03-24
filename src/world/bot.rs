@@ -1,3 +1,4 @@
+use crate::AnyResult;
 use crate::core::coord::{Coord, ICoord};
 use crate::world::board::{Board, PieceIndex, other_pieces_at};
 use crate::world::bot_chess;
@@ -17,12 +18,13 @@ impl Bots {
             bots: OneForEachTeam::new_from_factory(Bot::new),
         }
     }
-    pub fn tick(&mut self, delta_s: f64, board: &mut Board) {
+    pub fn tick(&mut self, delta_s: f64, board: &mut Board) -> AnyResult<()> {
         for bot in self.bots.iter_mut() {
             if bot.enabled {
-                bot.tick(delta_s, board)
+                bot.tick(delta_s, board)?
             }
         }
+        Ok(())
     }
     pub fn restart(&mut self) {
         for bot in self.bots.iter_mut() {
@@ -121,24 +123,29 @@ impl Bot {
         self.enabled = !self.enabled;
     }
 
-    pub fn tick(&mut self, _delta_s: f64, board: &mut Board) {
-        self.plan = advance_plan(self.plan, self.team, board);
+    pub fn tick(&mut self, _delta_s: f64, board: &mut Board) -> AnyResult<()> {
+        self.plan = advance_plan(self.plan, self.team, board)?;
+        Ok(())
     }
 }
 
-fn advance_plan(plan_opt: Option<Plan>, team: Team, board: &mut Board) -> Option<Plan> {
+fn advance_plan(plan_opt: Option<Plan>, team: Team, board: &mut Board) -> AnyResult<Option<Plan>> {
     match plan_opt {
-        None => choose_target(board, team), // if returns None, nothing to do...?
+        None => Ok(choose_target(board, team)), // if returns None, nothing to do...?
         Some(plan) => {
             if let Some(selected) = board.selected(team) {
                 if selected == plan.piece_index() {
                     advance_plan_move(plan.piece_index(), plan.destination(), team, board)
                 } else {
-                    board.deselect(team);
-                    Some(Plan::Select(PlanSelect::raw_from(plan)))
+                    board.deselect(team)?;
+                    Ok(Some(Plan::Select(PlanSelect::raw_from(plan))))
                 }
             } else {
-                Some(advance_plan_select(PlanSelect::raw_from(plan), team, board))
+                Ok(Some(advance_plan_select(
+                    PlanSelect::raw_from(plan),
+                    team,
+                    board,
+                )))
             }
         }
     }
@@ -167,7 +174,7 @@ fn advance_plan_move(
     destination: ICoord,
     team: Team,
     board: &mut Board,
-) -> Option<Plan> {
+) -> AnyResult<Option<Plan>> {
     let cursor_pos = board.cursor(team);
     if close_to_center_of(cursor_pos, destination) {
         // at destination. should deselect now or wait?
@@ -180,15 +187,15 @@ fn advance_plan_move(
             );
         }
         if finished_moving(piece_index, team, board, others) {
-            board.deselect(team);
-            None
+            board.deselect(team)?;
+            Ok(None)
         } else {
-            Some(PlanMove::new(piece_index, destination))
+            Ok(Some(PlanMove::new(piece_index, destination)))
         }
     } else {
         // selected but not in destination, need to move
         move_selected(cursor_pos, destination, team, board);
-        Some(PlanMove::new(piece_index, destination))
+        Ok(Some(PlanMove::new(piece_index, destination)))
     }
 }
 

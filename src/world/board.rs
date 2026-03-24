@@ -1,8 +1,11 @@
 pub mod board_draw;
 pub mod board_ui;
 
+use crate::AnyResult;
 use crate::core::coord::{Coord, ICoord};
-use crate::world::moves::{Move, Moveset, compute_attackers, inside_f, possible_moves};
+use crate::world::moves::{
+    Move, Moveset, board_to_str, compute_attackers, inside_f, possible_moves,
+};
 use crate::world::piece::Piece;
 use crate::world::referee::Referee;
 use crate::world::team::{OneForEachTeam, Team};
@@ -137,7 +140,7 @@ impl Board {
             }
         }
     }
-    pub fn deselect(&mut self, team: Team) {
+    pub fn deselect(&mut self, team: Team) -> AnyResult<()> {
         if let Some(selected_i) = self.selected(team) {
             self.pieces[selected_i].cooldown_s = Some(0.0);
             let initial = self.pieces[selected_i].initial_pos;
@@ -186,6 +189,7 @@ impl Board {
                 let referee_saw = self.referee.saw_any_piece(&self.pieces, vec![selected_i]);
                 if self.pieces[selected_i].moveset.single() == Move::King
                     && (rounded_pos - initial_pos).length_squared() == 2 * 2
+                    && moves.contains(&rounded_pos)
                 {
                     // castling
                     let mut rooks = Vec::new();
@@ -197,11 +201,22 @@ impl Board {
                         }
                     }
                     let to_rook = (rounded_pos - initial_pos) / 2;
-                    let rook_index =
-                        find_at(rounded_pos + to_rook, &self.pieces).unwrap_or_else(|| {
-                            find_at(rounded_pos + to_rook * 2, &self.pieces).unwrap()
-                        });
-                    assert_eq!(self.pieces[rook_index].moveset, vec![Move::Rook].into());
+                    let rook_1 = rounded_pos + to_rook;
+                    let rook_2 = rounded_pos + to_rook * 2;
+                    let rook_index = find_at(rook_1, &self.pieces)
+                        .or_else(|| find_at(rook_2, &self.pieces))
+                        .ok_or_else(|| {
+                            format!(
+                                "invalid castle, from {:?} to {:?} with board\n{}",
+                                initial_pos,
+                                rounded_pos,
+                                board_to_str(&self.pieces)
+                            )
+                        })?;
+                    if self.pieces[rook_index].moveset != vec![Move::Rook].into() {
+                        return Err(format!("invalid castle, from {:?} to {:?}, expected rook at {:?} or {:?} with board:\n{}", initial_pos, rounded_pos, rook_1, rook_2,  board_to_str(&self.pieces)).into());
+                    }
+
                     self.pieces[rook_index].set_pos_and_initial_i(rounded_pos - to_rook);
                 }
                 self.pieces[selected_i].set_pos_and_initial_i(rounded_pos);
@@ -226,17 +241,19 @@ impl Board {
             *self.selected_mut(team) = None;
             *self.cursor_mut(team) = self.cursor(team).round();
         } else {
-            panic!("logic error: deselecting but there was no selection");
+            return Err("logic error: deselecting but there was no selection".into());
         }
+        Ok(())
     }
     pub fn is_selected(&self, team: Team) -> bool {
         self.selected(team).is_some()
     }
-    pub fn toggle_select(&mut self, team: Team) {
+    pub fn toggle_select(&mut self, team: Team) -> AnyResult<()> {
         if self.is_selected(team) {
-            self.deselect(team);
+            self.deselect(team)
         } else {
             self.select(team);
+            Ok(())
         }
     }
     pub fn selected(&self, team: Team) -> Option<PieceIndex> {
@@ -280,6 +297,9 @@ impl Board {
     }
     pub fn pieces(&self) -> &Vec<Piece> {
         &self.pieces
+    }
+    pub fn pieces_mut(&mut self) -> &mut Vec<Piece> {
+        &mut self.pieces
     }
     pub fn in_check(&self) -> Vec<(Team, PieceIndex)> {
         let mut checks = Vec::new();
@@ -365,7 +385,7 @@ mod tests {
         let mut board = Board::new_chess(Coord::new_i(6, 0), Coord::new_i(1, 0));
         board.select(Team::White);
         board.move_cursor_rel(Coord::new_i(-1, 0), Team::White);
-        board.deselect(Team::White);
+        board.deselect(Team::White).unwrap();
         let expected_pos = Coord::new_i(5, 0);
         let at_5_0 = pieces_at(expected_pos, &board.pieces);
         assert_eq!(
@@ -393,7 +413,7 @@ mod tests {
         let mock = mock.into();
         let expected_black = Some(&mock);
         assert_eq!(black_piece, expected_black);
-        board.deselect(Team::White);
+        board.deselect(Team::White).unwrap();
         assert_eq!(board.cursor(Team::Black), Coord::new_f(1.0, 0.0));
         assert_eq!(board.get_selected_piece(Team::Black), None);
     }
@@ -425,7 +445,7 @@ mod tests {
         board.move_cursor_rel(Coord::new_i(2, 0), Team::White);
         board.move_cursor_rel(Coord::new_i(-1, 1), Team::Black);
 
-        board.deselect(Team::White);
+        board.deselect(Team::White).unwrap();
         assert_eq!(
             team_alive_pos(&board.pieces),
             vec![
@@ -441,11 +461,11 @@ mod tests {
         assert_eq!(board.referee.turn, Team::White);
         board.select(Team::White);
         board.tick(0.1);
-        board.deselect(Team::White);
+        board.deselect(Team::White).unwrap();
         assert_eq!(board.referee.turn, Team::White);
         board.select(Team::Black);
         board.tick(0.1);
-        board.deselect(Team::Black);
+        board.deselect(Team::Black).unwrap();
         assert_eq!(board.referee.turn, Team::White);
         assert_eq!(
             team_alive_pos(&board.pieces),

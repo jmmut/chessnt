@@ -1,3 +1,4 @@
+use crate::AnyResult;
 use crate::core::coord::Coord;
 use crate::world::board::Board;
 use crate::world::bot::quantize;
@@ -73,19 +74,21 @@ impl Gamepads {
             });
         }
     }
-    pub fn move_cursor_or_piece(&mut self, board: &mut Board) {
-        maybe_move_team(self.cached.get_mut(0), board);
-        maybe_move_team(self.cached.get_mut(1), board);
+    pub fn move_cursor_or_piece(&mut self, board: &mut Board) -> AnyResult<()> {
+        maybe_move_team(self.cached.get_mut(0), board)?;
+        maybe_move_team(self.cached.get_mut(1), board)
     }
 }
 
-fn maybe_move_team(gamepad: Option<&mut Gamepad>, board: &mut Board) {
+fn maybe_move_team(gamepad: Option<&mut Gamepad>, board: &mut Board) -> AnyResult<()> {
     if let Some(gamepad) = gamepad {
-        move_team(gamepad, board);
+        move_team(gamepad, board)
+    } else {
+        Ok(())
     }
 }
 
-fn move_team(gamepad_outer: &mut Gamepad, board: &mut Board) {
+fn move_team(gamepad_outer: &mut Gamepad, board: &mut Board) -> AnyResult<()> {
     let mut delta = gamepad_outer.left_stick();
     delta += gamepad_outer.right_stick();
     let gamepad = &mut gamepad_outer.inner;
@@ -95,7 +98,7 @@ fn move_team(gamepad_outer: &mut Gamepad, board: &mut Board) {
         || gamepad.is_just_pressed(Button::FrontLeftUpper)
         || gamepad.is_just_pressed(Button::FrontRightUpper)
     {
-        board.toggle_select(team);
+        board.toggle_select(team)?
     }
     if board.is_selected(team) {
         gamepad_outer.joystick_rest = true;
@@ -139,6 +142,7 @@ fn move_team(gamepad_outer: &mut Gamepad, board: &mut Board) {
             board.move_cursor_rel(Coord::new_i(0, 1), team);
         }
     }
+    Ok(())
 }
 
 fn maybe_move_joystick(joystick_rest: &mut bool, delta: Vec2) -> Option<Coord> {

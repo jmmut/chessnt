@@ -8,6 +8,13 @@ use crate::world::team::Team;
 use macroquad::math::{Vec2, Vec3, vec2, vec3};
 
 #[derive(Clone)]
+pub enum Sight {
+    AllSeeing,
+    Normal,
+    Blind,
+}
+
+#[derive(Clone)]
 pub struct Referee {
     position: Vec2,
     prev_position: Vec2,
@@ -20,7 +27,7 @@ pub struct Referee {
     pub trip_time: f64,
     pub referee_paused: bool,
     pub render_radar: bool,
-    all_seeing: bool,
+    sight: Sight,
 }
 
 #[derive(Copy, Clone)]
@@ -56,7 +63,7 @@ impl Referee {
             trip_time: (trip.column.abs() / REFEREE_SPEED) as f64,
             referee_paused: false,
             render_radar: false,
-            all_seeing: false,
+            sight: Sight::Normal,
         }
     }
     pub fn tick(&mut self, delta_s: f64, pieces: &Vec<Piece>) {
@@ -180,16 +187,25 @@ impl Referee {
     }
 
     pub fn set_all_seeing(&mut self, value: bool) {
-        self.all_seeing = value;
+        self.sight = if value {
+            Sight::AllSeeing
+        } else {
+            Sight::Normal
+        };
+    }
+    pub fn set_sight(&mut self, sight: Sight) {
+        self.sight = sight;
     }
     pub fn saw_any_piece(&self, pieces: &Vec<Piece>, indexes: Vec<PieceIndex>) -> bool {
-        if self.all_seeing {
-            true
-        } else {
-            let radar = self.radar();
-            indexes
-                .iter()
-                .any(|index| triangle_contains(radar, pieces[*index].pos_f()))
+        match self.sight {
+            Sight::AllSeeing => true,
+            Sight::Normal => {
+                let radar = self.radar();
+                indexes
+                    .iter()
+                    .any(|index| triangle_contains(radar, pieces[*index].pos_f()))
+            }
+            Sight::Blind => false,
         }
     }
     pub fn saw_piece(&self, pieces: &Vec<Piece>, piece_index: PieceIndex) -> bool {

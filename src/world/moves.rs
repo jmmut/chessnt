@@ -229,25 +229,38 @@ fn get_bishop_positions_mut(
         add_direction(piece, board_size, &occupied, dir, positions);
     }
 }
+const KING: &[ICoord] = &[
+    ICoord::new_i(-1, 0),
+    ICoord::new_i(1, 0),
+    ICoord::new_i(0, -1),
+    ICoord::new_i(0, 1),
+    ICoord::new_i(-1, -1),
+    ICoord::new_i(1, -1),
+    ICoord::new_i(1, 1),
+    ICoord::new_i(-1, 1),
+];
 fn get_king_positions_mut(
     piece: &Piece,
     occupied: &Vec<Vec<Option<Team>>>,
     board_size: ICoord,
     positions: &mut Vec<ICoord>,
 ) {
-    const KING: &[ICoord] = &[
-        ICoord::new_i(-1, 0),
-        ICoord::new_i(1, 0),
-        ICoord::new_i(0, -1),
-        ICoord::new_i(0, 1),
-        ICoord::new_i(-1, -1),
-        ICoord::new_i(1, -1),
-        ICoord::new_i(1, 1),
-        ICoord::new_i(-1, 1),
-        ICoord::new_i(0, -2),
-        ICoord::new_i(0, 2),
-    ];
     get_positions_mut(piece, KING, occupied, board_size, positions);
+    let sideways = ICoord::new_i(0, -1);
+    let mut add_castle = |sideways: ICoord| {
+        let adjacent = sideways + piece.initial_pos;
+        let jump = sideways * 2 + piece.initial_pos;
+        if inside(adjacent, board_size)
+            && inside(jump, board_size)
+            && is_occupied(adjacent, occupied).is_none()
+            && is_occupied(jump, occupied).is_none()
+        {
+            positions.push(jump);
+        }
+    };
+    add_castle(sideways);
+    let sideways = -sideways;
+    add_castle(sideways);
 }
 
 pub fn to_occupied_matrix(pieces: &Vec<Piece>, board_size: ICoord) -> Vec<Vec<Option<Team>>> {
@@ -386,10 +399,11 @@ pub fn is_better<T, U>(best: &Option<T>, new: U, right_better: fn(&T, &U) -> boo
         true
     }
 }
-pub fn store_better<T>(max: &mut Option<T>, new: T, right_better: impl Fn(&T, &T) -> bool)
-where
-    T: PartialOrd<T>,
-{
+pub fn store_better<T: PartialOrd<T>>(
+    max: &mut Option<T>,
+    new: T,
+    right_better: impl Fn(&T, &T) -> bool,
+) {
     if let Some(current_max) = max {
         if right_better(current_max, &new) {
             *max = Some(new);
@@ -399,10 +413,7 @@ where
     }
 }
 
-pub fn store_max<T>(max: &mut Option<T>, new: T)
-where
-    T: PartialOrd<T>,
-{
+pub fn store_max<T: PartialOrd<T>>(max: &mut Option<T>, new: T) {
     store_better(max, new, |a, b| a < b)
 }
 
@@ -457,7 +468,7 @@ pub mod tests {
     use crate::core::coord::Coord;
     use crate::world::board::{Board, find_at, find_first};
     use crate::world::piece::Piece;
-    use crate::world::referee::rotate_90;
+    use crate::world::referee::{Sight, rotate_90};
     use crate::world::team::Team;
     use Move::*;
     use Team::*;
@@ -629,6 +640,7 @@ pub mod tests {
     #[test]
     fn test_castle() {
         let mut board = Board::new_chess(Coord::new_i(0, 0), Coord::new_i(0, 0));
+        board.referee.set_sight(Sight::Blind);
         let king = find_first(Team::White, Move::King, board.pieces()).unwrap();
         let queen = find_first(Team::White, Move::Queen, board.pieces()).unwrap();
         let king_pos = board.pieces()[king].initial_pos;
@@ -648,44 +660,80 @@ pub mod tests {
             panic!("can't find pawn next to king");
         };
 
+        // setup
         for index in [close_knight, far_bishop, far_knight] {
             move_rel(index, to_pawn * 2, &mut board);
         }
         let mut moves = possible_moves(board.size(), board.pieces(), king);
         let mut expected = vec![];
-        assert_eq_sorted(&mut moves, &mut expected);
+        assert_eq_sorted(&mut moves, &mut expected, board.pieces());
 
+        // short castle
         let board_copy = board.clone();
         move_rel(close_bishop, to_pawn * 2, &mut board);
         let mut moves = possible_moves(board.size(), board.pieces(), king);
         let mut expected = vec![king_pos - to_queen, king_pos - to_queen * 2];
-        assert_eq_sorted(&mut moves, &mut expected);
+        assert_eq_sorted(&mut moves, &mut expected, board.pieces());
 
         move_rel(king, -to_queen * 2, &mut board);
         let expected_tower_pos = king_pos - to_queen;
-        assert_eq!(board.pieces()[far_rook].initial_pos, expected_tower_pos);
+        assert_eq!(board.pieces()[close_rook].initial_pos, expected_tower_pos);
 
+        // long castle
         board = board_copy.clone();
         move_rel(queen, to_pawn * 2, &mut board);
         let mut moves = possible_moves(board.size(), board.pieces(), king);
         let mut expected = vec![king_pos + to_queen, king_pos + to_queen * 2];
-        assert_eq_sorted(&mut moves, &mut expected);
+        assert_eq_sorted(&mut moves, &mut expected, board.pieces());
 
         move_rel(king, to_queen * 2, &mut board);
         let expected_tower_pos = king_pos + to_queen;
         assert_eq!(board.pieces()[far_rook].initial_pos, expected_tower_pos);
+
+        board = board_copy.clone();
+        move_rel(queen, to_pawn * 2, &mut board);
+        move_rel(king, to_queen, &mut board);
+        move_rel(king, -to_queen, &mut board);
+        let mut moves = possible_moves(board.size(), board.pieces(), king);
+        let king_pos = board.pieces()[king].initial_pos;
+        let mut expected = vec![king_pos + to_queen];
+        assert_eq_sorted(&mut moves, &mut expected, board.pieces()); // requires memory of moved pieces 
+
+        board = board_copy.clone();
+        move_rel(queen, to_pawn * 2, &mut board);
+        move_rel(far_rook, -to_queen, &mut board);
+        move_rel(far_rook, to_queen, &mut board);
+        let mut moves = possible_moves(board.size(), board.pieces(), king);
+        let king_pos = board.pieces()[king].initial_pos;
+        let mut expected = vec![king_pos + to_queen];
+        assert_eq_sorted(&mut moves, &mut expected, board.pieces()); // requires memory of moved pieces 
+
+        board = board_copy.clone();
+        move_rel(queen, to_pawn * 2, &mut board);
+        move_rel(far_knight, -to_pawn * 2, &mut board);
+        let mut moves = possible_moves(board.size(), board.pieces(), king);
+        let king_pos = board.pieces()[king].initial_pos;
+        let mut expected = vec![king_pos + to_queen];
+        assert_eq_sorted(&mut moves, &mut expected, board.pieces()); // requires checking pieces in the path of the rook
     }
 
     fn move_rel(index: PieceIndex, movement: ICoord, board: &mut Board) {
         board.move_cursor_abs(board.pieces()[index].initial_pos.into(), Team::White);
         board.select(Team::White);
         board.move_cursor_rel(movement.into(), Team::White);
-        board.deselect(Team::White);
+        board.deselect(Team::White).unwrap();
+        board.pieces_mut()[index].cooldown_s = None;
     }
 
-    fn assert_eq_sorted(moves: &mut Vec<ICoord>, expected: &mut Vec<ICoord>) {
+    fn assert_eq_sorted(moves: &mut Vec<ICoord>, expected: &mut Vec<ICoord>, pieces: &Vec<Piece>) {
         moves.sort();
         expected.sort();
-        assert_eq!(moves, expected);
+        assert_eq!(moves, expected, "board:\n{}", board_to_str(pieces));
+    }
+
+    #[test]
+    #[ignore]
+    fn test_castle_piece_in_path_of_rook() {
+        todo!()
     }
 }

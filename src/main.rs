@@ -58,9 +58,9 @@ async fn fallible_main() -> AnyResult<()> {
         let screen = vec2(screen_width(), screen_height());
         theme.update_screen_size(screen);
 
-        let mut messages = handle_inputs_shoud_exit(&mut board, &mut gamepads, &mut dev_ui);
+        let mut messages = handle_inputs_shoud_exit(&mut board, &mut gamepads, &mut dev_ui)?;
         board.tick(time.delta());
-        bots.tick(time.delta(), &mut board);
+        bots.tick(time.delta(), &mut board)?;
 
         set_3d_camera(&camera);
         clear_background(theme.palette.background);
@@ -147,7 +147,7 @@ fn handle_inputs_shoud_exit(
     board: &mut Board,
     gamepads: &mut Gamepads,
     dev_ui: &mut DevUi,
-) -> Vec<Message> {
+) -> AnyResult<Vec<Message>> {
     if is_key_pressed(KeyCode::Slash)
         || is_key_pressed(KeyCode::KpDivide)
         || is_key_pressed(KeyCode::LeftBracket)
@@ -155,10 +155,10 @@ fn handle_inputs_shoud_exit(
         dev_ui.toggle();
     }
 
-    move_cursor_or_piece(board, gamepads);
+    move_cursor_or_piece(board, gamepads)?;
 
-    select(board, &[KeyCode::Space], Team::Black);
-    select(board, &[KeyCode::KpEnter, KeyCode::Enter], Team::White);
+    select(board, &[KeyCode::Space], Team::Black)?;
+    select(board, &[KeyCode::KpEnter, KeyCode::Enter], Team::White)?;
 
     if is_key_pressed(KeyCode::KpAdd) {
         unsafe {
@@ -192,7 +192,7 @@ fn handle_inputs_shoud_exit(
     if is_key_pressed(KeyCode::V) {
         messages.push(Message::ToggleBot(Team::White));
     }
-    messages
+    Ok(messages)
 }
 
 struct Directions {
@@ -201,7 +201,7 @@ struct Directions {
     up: KeyCode,
     down: KeyCode,
 }
-fn move_cursor_or_piece(board: &mut Board, gamepads: &mut Gamepads) {
+fn move_cursor_or_piece(board: &mut Board, gamepads: &mut Gamepads) -> AnyResult<()> {
     const WASD: Directions = Directions {
         up: KeyCode::W,
         down: KeyCode::S,
@@ -218,7 +218,7 @@ fn move_cursor_or_piece(board: &mut Board, gamepads: &mut Gamepads) {
     move_cursor_or_piece_team(board, Team::Black, WASD);
 
     // println!("before gamepads");
-    gamepads.move_cursor_or_piece(board);
+    gamepads.move_cursor_or_piece(board)
     // println!("after gamepads");
 }
 
@@ -259,12 +259,13 @@ fn move_cursor_or_piece_team(board: &mut Board, team: Team, directions: Directio
     }
 }
 
-fn select(board: &mut Board, keys: &[KeyCode], team: Team) {
+fn select(board: &mut Board, keys: &[KeyCode], team: Team) -> AnyResult<()> {
     for key in keys {
         if is_key_pressed(*key) {
-            board.toggle_select(team);
+            board.toggle_select(team)?;
         }
     }
+    Ok(())
 }
 
 fn window_conf() -> Conf {
