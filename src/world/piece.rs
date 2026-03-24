@@ -4,6 +4,8 @@ use crate::world::team::Team;
 
 pub const COOLDOWN: f64 = 2.0;
 
+pub type Pieces = Vec<Piece>;
+
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub struct Piece {
     pub initial_pos: ICoord,

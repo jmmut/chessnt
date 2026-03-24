@@ -1,5 +1,5 @@
 use crate::core::coord::{Coord, ICoord};
-use crate::world::board::{PieceIndex, PieceIndexSmall};
+use crate::world::board::{EverMoved, PieceIndex, PieceIndexSmall};
 use crate::world::piece::Piece;
 use crate::world::team::Team;
 
@@ -71,39 +71,62 @@ fn move_to_string(movement: Move) -> String {
     .to_string()
 }
 
-pub fn possible_moves(size: ICoord, pieces: &Vec<Piece>, piece_index: usize) -> Vec<ICoord> {
+pub fn possible_moves(
+    piece_index: usize,
+    pieces: &Vec<Piece>,
+    size: ICoord,
+    ever_moved: &EverMoved,
+) -> Vec<ICoord> {
     let occupied = &to_occupied_matrix(pieces, size);
-    possible_moves_matrix(size, pieces, piece_index, occupied)
+    possible_moves_matrix(piece_index, pieces, size, ever_moved, occupied)
 }
 pub fn possible_moves_matrix(
-    size: ICoord,
-    pieces: &Vec<Piece>,
     piece_index: usize,
+    pieces: &Vec<Piece>,
+    size: ICoord,
+    ever_moved: &EverMoved,
     occupied: &Vec<Vec<Option<Team>>>,
 ) -> Vec<ICoord> {
     let mut valid_moves = Vec::new();
-    possible_moves_matrix_mut(size, pieces, piece_index, occupied, &mut valid_moves);
+    possible_moves_matrix_mut(
+        piece_index,
+        pieces,
+        size,
+        occupied,
+        ever_moved,
+        &mut valid_moves,
+    );
     valid_moves
 }
 pub fn possible_moves_matrix_mut(
-    size: ICoord,
-    pieces: &Vec<Piece>,
     piece_index: usize,
+    pieces: &Vec<Piece>,
+    size: ICoord,
     occupied: &Vec<Vec<Option<Team>>>,
+    ever_moved: &EverMoved,
     valid_moves: &mut Vec<ICoord>,
 ) {
     let piece = &pieces[piece_index];
     for movement in piece.moveset.iter() {
-        piece_moves_matrix_mut(movement, pieces, piece_index, occupied, size, valid_moves);
+        piece_moves_matrix_mut(
+            piece_index,
+            movement,
+            pieces,
+            size,
+            occupied,
+            ever_moved,
+            valid_moves,
+        );
     }
 }
 
 fn piece_moves_matrix_mut(
+    piece_index: usize,
     movement: &Move,
     pieces: &Vec<Piece>,
-    piece_index: usize,
-    occupied: &Vec<Vec<Option<Team>>>,
     board_size: ICoord,
+    occupied: &Vec<Vec<Option<Team>>>,
+    ever_moved: &EverMoved,
     moves: &mut Vec<ICoord>,
 ) {
     const KNIGHT: &[ICoord] = &[
@@ -125,7 +148,7 @@ fn piece_moves_matrix_mut(
         Move::Bishop => get_bishop_positions_mut(piece, occupied, board_size, moves),
         Move::Knight => get_positions_mut(piece, KNIGHT, occupied, board_size, moves),
         Move::Rook => get_rook_positions_mut(piece, occupied, board_size, moves),
-        Move::King => get_king_positions_mut(piece, occupied, board_size, moves),
+        Move::King => get_king_positions_mut(piece, occupied, board_size, ever_moved, moves),
         Move::Queen => {
             get_rook_positions_mut(piece, occupied, board_size, moves);
             get_bishop_positions_mut(piece, occupied, board_size, moves)
@@ -243,24 +266,28 @@ fn get_king_positions_mut(
     piece: &Piece,
     occupied: &Vec<Vec<Option<Team>>>,
     board_size: ICoord,
+    ever_moved: &EverMoved,
     positions: &mut Vec<ICoord>,
 ) {
     get_positions_mut(piece, KING, occupied, board_size, positions);
-    let sideways = ICoord::new_i(0, -1);
-    let mut add_castle = |sideways: ICoord| {
-        let adjacent = sideways + piece.initial_pos;
-        let jump = sideways * 2 + piece.initial_pos;
-        if inside(adjacent, board_size)
-            && inside(jump, board_size)
-            && is_occupied(adjacent, occupied).is_none()
-            && is_occupied(jump, occupied).is_none()
-        {
-            positions.push(jump);
-        }
-    };
-    add_castle(sideways);
-    let sideways = -sideways;
-    add_castle(sideways);
+    if ever_moved.castle_allowed(piece.team) {
+        // TODO: need to get the correct rook
+        let sideways = ICoord::new_i(0, -1);
+        let mut add_castle = |sideways: ICoord| {
+            let adjacent = sideways + piece.initial_pos;
+            let jump = sideways * 2 + piece.initial_pos;
+            if inside(adjacent, board_size)
+                && inside(jump, board_size)
+                && is_occupied(adjacent, occupied).is_none()
+                && is_occupied(jump, occupied).is_none()
+            {
+                positions.push(jump);
+            }
+        };
+        add_castle(sideways);
+        let sideways = -sideways;
+        add_castle(sideways);
+    }
 }
 
 pub fn to_occupied_matrix(pieces: &Vec<Piece>, board_size: ICoord) -> Vec<Vec<Option<Team>>> {
@@ -368,15 +395,16 @@ pub fn inside(pos: ICoord, board_size: ICoord) -> bool {
 
 pub fn compute_attackers(
     i: PieceIndex,
-    board_size: ICoord,
     pieces: &Vec<Piece>,
+    board_size: ICoord,
+    ever_moved: &EverMoved,
 ) -> Vec<PieceIndex> {
     let target = &pieces[i];
     let target_pos = target.pos_initial_i();
     let mut attackers = Vec::new();
     for (other_i, _other_piece) in pieces.iter().enumerate() {
         if i != other_i && target.team != pieces[other_i].team {
-            let moves = possible_moves(board_size, pieces, other_i);
+            let moves = possible_moves(other_i, pieces, board_size, ever_moved);
             if moves.contains(&target_pos) {
                 attackers.push(other_i)
             };
@@ -473,12 +501,12 @@ pub mod tests {
     use Move::*;
     use Team::*;
 
-    pub fn parse_board(text: &str) -> (ICoord, Vec<Piece>) {
-        let (size, pieces, _, _) = parse_board_cursor(text);
-        (size, pieces)
+    pub fn parse_board(text: &str) -> (ICoord, Vec<Piece>, EverMoved) {
+        let (size, pieces, _, _, ever_moved) = parse_board_cursor(text);
+        (size, pieces, ever_moved)
     }
 
-    pub fn parse_board_cursor(text: &str) -> (ICoord, Vec<Piece>, Coord, Coord) {
+    pub fn parse_board_cursor(text: &str) -> (ICoord, Vec<Piece>, Coord, Coord, EverMoved) {
         let mut max_columns = None;
         let mut white_cursor = Coord::new_i(0, 0);
         let mut black_cursor = Coord::new_i(0, 0);
@@ -542,12 +570,13 @@ pub mod tests {
             }
         }
         let size = ICoord::new_i(max_columns.unwrap_or(0), line_count);
-        (size, pieces, white_cursor, black_cursor)
+        let ever_moved = EverMoved::new_from(&pieces);
+        (size, pieces, white_cursor, black_cursor, ever_moved)
     }
     #[test]
     fn test_parse_board() {
         #[rustfmt::skip]
-        let (size, parsed_pieces) = parse_board("
+        let (size, parsed_pieces, _) = parse_board("
             -- -- wb --
             -- -- -- wr
             bk -- -- --
@@ -568,7 +597,7 @@ pub mod tests {
     #[test]
     fn test_parse_board_cursor() {
         #[rustfmt::skip]
-        let (size, parsed_pieces) = parse_board("
+        let (size, parsed_pieces, _) = parse_board("
             --- --- wbX ---
             --- --- --- wr-
             bk- --- --- ---
@@ -589,7 +618,7 @@ pub mod tests {
     #[test]
     fn test_check() {
         #[rustfmt::skip]
-        let (board_size, pieces) = parse_board("
+        let (board_size, pieces, ever_moved) = parse_board("
             br -- wb --
             -- -- -- wr
             bk -- -- --
@@ -598,43 +627,43 @@ pub mod tests {
         let king_index = find_first(Black, King, &pieces).unwrap();
         let bishop_index = find_first(White, Bishop, &pieces).unwrap();
         let pawn_index = find_first(White, Pawn, &pieces).unwrap();
-        let attackers = compute_attackers(king_index, board_size, &pieces);
+        let attackers = compute_attackers(king_index, &pieces, board_size, &ever_moved);
         assert_eq!(attackers, vec![bishop_index, pawn_index]);
     }
     #[test]
     fn test_jumping_pieces() {
         #[rustfmt::skip]
-        let (board_size, pieces) = parse_board("
+        let (board_size, pieces, ever_moved) = parse_board("
             bk bp wr wq
             -- bp -- --
             -- wh wb --
         ");
         let king_index = find_first(Black, King, &pieces).unwrap();
         let knight_index = find_first(White, Knight, &pieces).unwrap();
-        let attackers = compute_attackers(king_index, board_size, &pieces);
+        let attackers = compute_attackers(king_index, &pieces, board_size, &ever_moved);
         assert_eq!(attackers, vec![knight_index]);
     }
 
     #[test]
     fn test_pawn_movement() {
         #[rustfmt::skip]
-        let (board_size, pieces) = parse_board("
+        let (board_size, pieces, ever_moved) = parse_board("
             -- wh -- --
             -- wr wp --
             -- bp -- --
         ");
         let white_pawn = find_first(White, Pawn, &pieces).unwrap();
-        let moves = possible_moves(board_size, &pieces, white_pawn);
+        let moves = possible_moves(white_pawn, &pieces, board_size, &ever_moved);
         assert_eq!(moves, vec![ICoord::new_i(1, 2)]);
     }
     #[test]
     fn test_pawn_movement_border() {
         #[rustfmt::skip]
-        let (board_size, pieces) = parse_board("
+        let (board_size, pieces, ever_moved) = parse_board("
             wp --
         ");
         let white_pawn = find_first(White, Pawn, &pieces).unwrap();
-        let moves = possible_moves(board_size, &pieces, white_pawn);
+        let moves = possible_moves(white_pawn, &pieces, board_size, &ever_moved);
         assert_eq!(moves, vec![]);
     }
     #[test]
@@ -664,14 +693,14 @@ pub mod tests {
         for index in [close_knight, far_bishop, far_knight] {
             move_rel(index, to_pawn * 2, &mut board);
         }
-        let mut moves = possible_moves(board.size(), board.pieces(), king);
+        let mut moves = possible_moves(king, board.pieces(), board.size(), board.ever_moved());
         let mut expected = vec![];
         assert_eq_sorted(&mut moves, &mut expected, board.pieces());
 
         // short castle
         let board_copy = board.clone();
         move_rel(close_bishop, to_pawn * 2, &mut board);
-        let mut moves = possible_moves(board.size(), board.pieces(), king);
+        let mut moves = possible_moves(king, board.pieces(), board.size(), board.ever_moved());
         let mut expected = vec![king_pos - to_queen, king_pos - to_queen * 2];
         assert_eq_sorted(&mut moves, &mut expected, board.pieces());
 
@@ -682,7 +711,7 @@ pub mod tests {
         // long castle
         board = board_copy.clone();
         move_rel(queen, to_pawn * 2, &mut board);
-        let mut moves = possible_moves(board.size(), board.pieces(), king);
+        let mut moves = possible_moves(king, board.pieces(), board.size(), board.ever_moved());
         let mut expected = vec![king_pos + to_queen, king_pos + to_queen * 2];
         assert_eq_sorted(&mut moves, &mut expected, board.pieces());
 
@@ -694,7 +723,7 @@ pub mod tests {
         move_rel(queen, to_pawn * 2, &mut board);
         move_rel(king, to_queen, &mut board);
         move_rel(king, -to_queen, &mut board);
-        let mut moves = possible_moves(board.size(), board.pieces(), king);
+        let mut moves = possible_moves(king, board.pieces(), board.size(), board.ever_moved());
         let king_pos = board.pieces()[king].initial_pos;
         let mut expected = vec![king_pos + to_queen];
         assert_eq_sorted(&mut moves, &mut expected, board.pieces()); // requires memory of moved pieces 
@@ -703,7 +732,7 @@ pub mod tests {
         move_rel(queen, to_pawn * 2, &mut board);
         move_rel(far_rook, -to_queen, &mut board);
         move_rel(far_rook, to_queen, &mut board);
-        let mut moves = possible_moves(board.size(), board.pieces(), king);
+        let mut moves = possible_moves(king, board.pieces(), board.size(), board.ever_moved());
         let king_pos = board.pieces()[king].initial_pos;
         let mut expected = vec![king_pos + to_queen];
         assert_eq_sorted(&mut moves, &mut expected, board.pieces()); // requires memory of moved pieces 
@@ -711,7 +740,7 @@ pub mod tests {
         board = board_copy.clone();
         move_rel(queen, to_pawn * 2, &mut board);
         move_rel(far_knight, -to_pawn * 2, &mut board);
-        let mut moves = possible_moves(board.size(), board.pieces(), king);
+        let mut moves = possible_moves(king, board.pieces(), board.size(), board.ever_moved());
         let king_pos = board.pieces()[king].initial_pos;
         let mut expected = vec![king_pos + to_queen];
         assert_eq_sorted(&mut moves, &mut expected, board.pieces()); // requires checking pieces in the path of the rook
@@ -729,11 +758,5 @@ pub mod tests {
         moves.sort();
         expected.sort();
         assert_eq!(moves, expected, "board:\n{}", board_to_str(pieces));
-    }
-
-    #[test]
-    #[ignore]
-    fn test_castle_piece_in_path_of_rook() {
-        todo!()
     }
 }

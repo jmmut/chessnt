@@ -6,13 +6,117 @@ use crate::core::coord::{Coord, ICoord};
 use crate::world::moves::{
     Move, Moveset, board_to_str, compute_attackers, inside_f, possible_moves,
 };
-use crate::world::piece::Piece;
+use crate::world::piece::{Piece, Pieces};
 use crate::world::referee::Referee;
 use crate::world::team::{OneForEachTeam, Team};
 use macroquad::math::{Vec2, vec2};
 
 pub type PieceIndex = usize;
 pub type PieceIndexSmall = u8;
+type IndexesMoves = Vec<i32>;
+
+#[derive(Clone, Copy)]
+pub struct RooksKing {
+    king_index: PieceIndex,
+    rook_1_index: PieceIndex,
+    rook_2_index: PieceIndex,
+}
+pub struct RooksKingBuilder {
+    rooks_index: Vec<PieceIndex>,
+    king_index: Option<PieceIndex>,
+}
+impl RooksKingBuilder {
+    pub fn new() -> Self {
+        Self {
+            rooks_index: Vec::new(),
+            king_index: None,
+        }
+    }
+    pub fn add(&mut self, piece_index: PieceIndex, move_type: Move) {
+        if move_type == Move::Rook {
+            self.rooks_index.push(piece_index);
+        }
+        if move_type == Move::King {
+            self.king_index = Some(piece_index);
+        }
+    }
+    pub fn build(self) -> Option<RooksKing> {
+        if let (Some(king_index), Ok([rook_1_index, rook_2_index])) = (
+            self.king_index,
+            <[PieceIndex; 2]>::try_from(self.rooks_index),
+        ) {
+            Some(RooksKing {
+                king_index,
+                rook_1_index,
+                rook_2_index,
+            })
+        } else {
+            None
+        }
+    }
+}
+#[derive(Clone)]
+pub struct EverMoved {
+    indexes_moves: IndexesMoves,
+    // castle_allowed: OneForEachTeam<Option<bool>>,
+    rooks_king: OneForEachTeam<Option<RooksKing>>,
+}
+
+impl EverMoved {
+    pub fn new_from(pieces: &Pieces) -> Self {
+        let mut indexes_moves = Vec::new();
+        indexes_moves.resize(pieces.len(), 0);
+        // let castle_allowed = OneForEachTeam::new(Some(true), Some(true));
+        let mut rooks_king_opt =
+            OneForEachTeam::new(RooksKingBuilder::new(), RooksKingBuilder::new());
+
+        for piece_index in 0..pieces.len() {
+            let move_type = pieces[piece_index].moveset.single();
+            if [Move::King, Move::Rook].contains(&move_type) {
+                let team = pieces[piece_index].team;
+                // indexes_moves[piece_index] = 0;
+                rooks_king_opt.get_mut(team).add(piece_index, move_type)
+            }
+        }
+        let [white, black] = rooks_king_opt.take();
+        let rooks_king = OneForEachTeam::new(white.build(), black.build());
+        Self {
+            indexes_moves,
+            // castle_allowed,
+            rooks_king,
+        }
+    }
+
+    pub fn register_movement(&mut self, piece_index: PieceIndex) {
+        let count = &mut self.indexes_moves[piece_index];
+        *count += 1;
+    }
+    pub fn undo_movement(&mut self, piece_index: PieceIndex) {
+        let count = &mut self.indexes_moves[piece_index];
+        *count -= 1;
+    }
+    pub fn castle_allowed_rook(&self, team: Team, rook_index: PieceIndex) -> bool {
+        if let Some(RooksKing { king_index, .. }) = self.rooks_king.get(team) {
+            self.indexes_moves[*king_index] == 0 && self.indexes_moves[rook_index] == 0
+        } else {
+            false
+        }
+    }
+    pub fn castle_allowed(&self, team: Team) -> bool {
+        if let Some(RooksKing {
+            rook_1_index,
+            rook_2_index,
+            king_index,
+        }) = self.rooks_king.get(team)
+        {
+            self.indexes_moves[*king_index] == 0
+                && (self.indexes_moves[*rook_1_index] == 0
+                    || self.indexes_moves[*rook_2_index] == 0)
+        } else {
+            false
+        }
+    }
+}
 
 #[derive(Clone)]
 pub struct Board {
@@ -23,12 +127,19 @@ pub struct Board {
     pub referee: Referee,
     pub piece_size: Vec2,
     pub winning_team: Option<Team>,
+    ever_moved: EverMoved,
 }
 
 pub const DEFAULT_PIECE_SIZE: Vec2 = vec2(0.3, 1.0);
 
 impl Board {
-    pub fn new(cursor_white: Coord, cursor_black: Coord, size: ICoord, pieces: Vec<Piece>) -> Self {
+    pub fn new(
+        cursor_white: Coord,
+        cursor_black: Coord,
+        size: ICoord,
+        pieces: Vec<Piece>,
+        ever_moved: EverMoved,
+    ) -> Self {
         Self {
             cursor: OneForEachTeam::new(cursor_white, cursor_black),
             selected: OneForEachTeam::new(None, None),
@@ -37,6 +148,7 @@ impl Board {
             piece_size: DEFAULT_PIECE_SIZE,
             referee: Referee::new(),
             winning_team: None,
+            ever_moved,
         }
     }
     pub fn new_chess(cursor_white: Coord, cursor_black: Coord) -> Self {
@@ -59,7 +171,8 @@ impl Board {
             pieces.push(Piece::new(Coord::new_i(1, row), Team::Black, Move::Pawn));
         }
         let size = ICoord::new_i(8, 8);
-        Self::new(cursor_white, cursor_black, size, pieces)
+        let ever_moved = EverMoved::new_from(&pieces);
+        Self::new(cursor_white, cursor_black, size, pieces, ever_moved)
     }
     pub fn reset(&mut self) {
         *self = Self::new_chess(
@@ -143,13 +256,14 @@ impl Board {
     pub fn deselect(&mut self, team: Team) -> AnyResult<()> {
         if let Some(selected_i) = self.selected(team) {
             self.pieces[selected_i].cooldown_s = Some(0.0);
-            let initial = self.pieces[selected_i].initial_pos;
+            let initial_pos = self.pieces[selected_i].initial_pos;
+            let final_pos = self.pieces[selected_i].pos_ii();
             let overlaps_i = self.overlapping_pieces(selected_i);
             assert!(
                 overlaps_i.len() <= 1,
                 "killing several pieces in the same tile is unsupported"
             );
-            let moves = possible_moves(self.size, &self.pieces, selected_i);
+            let moves = possible_moves(selected_i, &self.pieces, self.size, self.ever_moved());
             if let Some(overlap_i) = overlaps_i.last().cloned() {
                 let referee_saw = self.referee.saw_any_piece(&self.pieces, vec![selected_i]);
                 let rounded_overlap_initial = self.pieces[overlap_i].pos_initial_i();
@@ -168,11 +282,10 @@ impl Board {
                             self.kill(selected_i);
                         }
                     } else {
-                        self.pieces[selected_i].set_pos_and_initial_i(initial);
+                        self.pieces[selected_i].set_pos_and_initial_i(initial_pos);
                     }
                 } else {
-                    let initial = self.pieces[selected_i].initial_pos;
-                    self.pieces[overlap_i].set_pos_and_initial_i(initial);
+                    self.pieces[overlap_i].set_pos_and_initial_i(initial_pos);
                     self.pieces[selected_i].set_pos_and_initial_i(rounded_overlap_initial);
                     if self
                         .referee
@@ -184,12 +297,10 @@ impl Board {
                     }
                 }
             } else {
-                let rounded_pos = self.pieces[selected_i].pos_i().into::<ICoord>(); // TODO: leave positions unrounded
-                let initial_pos = self.pieces[selected_i].initial_pos;
                 let referee_saw = self.referee.saw_any_piece(&self.pieces, vec![selected_i]);
                 if self.pieces[selected_i].moveset.single() == Move::King
-                    && (rounded_pos - initial_pos).length_squared() == 2 * 2
-                    && moves.contains(&rounded_pos)
+                    && (final_pos - initial_pos).length_squared() == 2 * 2
+                    && moves.contains(&final_pos)
                 {
                     // castling
                     let mut rooks = Vec::new();
@@ -200,32 +311,32 @@ impl Board {
                             rooks.push(i);
                         }
                     }
-                    let to_rook = (rounded_pos - initial_pos) / 2;
-                    let rook_1 = rounded_pos + to_rook;
-                    let rook_2 = rounded_pos + to_rook * 2;
+                    let to_rook = (final_pos - initial_pos) / 2;
+                    let rook_1 = final_pos + to_rook;
+                    let rook_2 = final_pos + to_rook * 2;
                     let rook_index = find_at(rook_1, &self.pieces)
                         .or_else(|| find_at(rook_2, &self.pieces))
                         .ok_or_else(|| {
                             format!(
                                 "invalid castle, from {:?} to {:?} with board\n{}",
                                 initial_pos,
-                                rounded_pos,
+                                final_pos,
                                 board_to_str(&self.pieces)
                             )
                         })?;
                     if self.pieces[rook_index].moveset != vec![Move::Rook].into() {
-                        return Err(format!("invalid castle, from {:?} to {:?}, expected rook at {:?} or {:?} with board:\n{}", initial_pos, rounded_pos, rook_1, rook_2,  board_to_str(&self.pieces)).into());
+                        return Err(format!("invalid castle, from {:?} to {:?}, expected rook at {:?} or {:?} with board:\n{}", initial_pos, final_pos, rook_1, rook_2, board_to_str(&self.pieces)).into());
                     }
 
-                    self.pieces[rook_index].set_pos_and_initial_i(rounded_pos - to_rook);
+                    self.pieces[rook_index].set_pos_and_initial_i(final_pos - to_rook);
                 }
-                self.pieces[selected_i].set_pos_and_initial_i(rounded_pos);
+                self.pieces[selected_i].set_pos_and_initial_i(final_pos);
                 if referee_saw {
-                    if initial_pos == rounded_pos {
+                    if initial_pos == final_pos {
                         // grabbed and dropped in the same place: ok for both teams
                     } else if !self.pieces[selected_i].alive {
                         self.kill(selected_i);
-                    } else if !moves.contains(&rounded_pos) {
+                    } else if !moves.contains(&final_pos) {
                         self.kill(selected_i);
                     } else if self.referee.turn != self.pieces[selected_i].team {
                         self.kill(selected_i);
@@ -237,6 +348,9 @@ impl Board {
                         self.pieces[selected_i].alive = true;
                     }
                 }
+            }
+            if initial_pos != final_pos {
+                self.ever_moved.register_movement(selected_i);
             }
             *self.selected_mut(team) = None;
             *self.cursor_mut(team) = self.cursor(team).round();
@@ -301,6 +415,9 @@ impl Board {
     pub fn pieces_mut(&mut self) -> &mut Vec<Piece> {
         &mut self.pieces
     }
+    pub fn ever_moved(&self) -> &EverMoved {
+        &self.ever_moved
+    }
     pub fn in_check(&self) -> Vec<(Team, PieceIndex)> {
         let mut checks = Vec::new();
         self.add_check(Team::White, &mut checks);
@@ -315,7 +432,7 @@ impl Board {
     }
     pub fn is_in_check(&self, team: Team) -> Option<PieceIndex> {
         if let Some(king) = find_first(team, Move::King, self.pieces()) {
-            let attacks = compute_attackers(king, self.size, &self.pieces);
+            let attacks = compute_attackers(king, &self.pieces, self.size, self.ever_moved());
             if attacks.len() > 0 {
                 return Some(king);
             }
@@ -374,8 +491,8 @@ mod tests {
     }
 
     fn build_board(text: &str) -> Board {
-        let (size, pieces, white_cursor, black_cursor) = parse_board_cursor(text);
-        let mut board = Board::new(white_cursor, black_cursor, size, pieces);
+        let (size, pieces, white_cursor, black_cursor, ever_moved) = parse_board_cursor(text);
+        let mut board = Board::new(white_cursor, black_cursor, size, pieces, ever_moved);
         board.set_all_seeing_referee(true);
         board
     }

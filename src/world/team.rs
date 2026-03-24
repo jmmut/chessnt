@@ -62,6 +62,9 @@ impl<T> OneForEachTeam<T> {
             &mut self.black
         }
     }
+    pub fn take(self) -> [T; 2] {
+        [self.white, self.black]
+    }
     pub fn iter(&self) -> impl IntoIterator<Item = &T> {
         [&self.white, &self.black]
     }

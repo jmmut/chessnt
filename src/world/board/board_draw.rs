@@ -140,7 +140,7 @@ impl Board {
                 theme.palette.ghost,
                 SELECTION_HEIGHT,
             ));
-            for movement in possible_moves(self.size, &self.pieces, index) {
+            for movement in possible_moves(index, &self.pieces, self.size, self.ever_moved()) {
                 meshes.extend(mesh_cursor(
                     movement.into(),
                     theme.palette.selection,
