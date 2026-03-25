@@ -92,6 +92,12 @@ impl EverMoved {
             rooks_king,
         }
     }
+    pub const fn new_forbidden() -> Self {
+        Self {
+            indexes_moves: Vec::new(),
+            rooks_king: OneForEachTeam::new(None, None),
+        }
+    }
 
     pub fn register_movement(&mut self, piece_index: PieceIndex) {
         let count = &mut self.indexes_moves[piece_index];

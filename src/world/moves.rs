@@ -272,6 +272,7 @@ fn get_king_positions_mut(
     ever_moved: &EverMoved,
     positions: &mut Vec<ICoord>,
 ) {
+    const SKIP_CASTLE: EverMoved = EverMoved::new_forbidden();
     get_positions_mut(piece, KING, occupied, board_size, positions);
     if ever_moved.castle_allowed_king(piece.team) {
         let sideways = ICoord::new_i(0, -1); // TODO: fails if board is rotated
@@ -291,23 +292,9 @@ fn get_king_positions_mut(
                         ever_moved.castle_allowed_rook_pos(team, rook_close, pieces);
                     match allowed_castle {
                         AllowedCastle::Yes => {
-                            if compute_attackers_2(
-                                &piece.initial_pos,
-                                team,
-                                pieces,
-                                board_size,
-                                ever_moved,
-                            )
-                            .len()
-                                == 0
-                                && compute_attackers_2(
-                                    &adjacent, team, pieces, board_size, ever_moved,
-                                )
-                                .len()
-                                    == 0
-                                && compute_attackers_2(&jump, team, pieces, board_size, ever_moved)
-                                    .len()
-                                    == 0
+                            if is_attacked(piece.initial_pos, team, pieces, board_size, &SKIP_CASTLE) // TODO: infinite recursion!
+                                && is_attacked(adjacent, team, pieces, board_size, &SKIP_CASTLE)
+                                && is_attacked(jump, team, pieces, board_size, &SKIP_CASTLE)
                             {
                                 positions.push(jump);
                             }
@@ -317,32 +304,15 @@ fn get_king_positions_mut(
                                 && is_occupied(rook_close, occupied).is_none()
                                 && ever_moved.castle_allowed_rook_pos(team, rook_far, pieces)
                                     == AllowedCastle::Yes
-                                && compute_attackers_2(
-                                    &piece.initial_pos,
+                                && is_attacked(
+                                    piece.initial_pos,
                                     team,
                                     pieces,
                                     board_size,
-                                    ever_moved,
+                                    &SKIP_CASTLE,
                                 )
-                                .len()
-                                    == 0
-                                && compute_attackers_2(
-                                    &adjacent, team, pieces, board_size, ever_moved,
-                                )
-                                .len()
-                                    == 0
-                                && compute_attackers_2(&jump, team, pieces, board_size, ever_moved)
-                                    .len()
-                                    == 0
-                                && compute_attackers_2(
-                                    &rook_close,
-                                    team,
-                                    pieces,
-                                    board_size,
-                                    ever_moved,
-                                )
-                                .len()
-                                    == 0
+                                && is_attacked(adjacent, team, pieces, board_size, &SKIP_CASTLE)
+                                && is_attacked(jump, team, pieces, board_size, &SKIP_CASTLE)
                             {
                                 positions.push(jump);
                             }
@@ -357,6 +327,16 @@ fn get_king_positions_mut(
         let sideways = -sideways;
         add_castle(sideways);
     }
+}
+
+fn is_attacked(
+    pos: ICoord,
+    team: Team,
+    pieces: &Pieces,
+    board_size: ICoord,
+    ever_moved: &EverMoved,
+) -> bool {
+    compute_attackers_2(pos, team, pieces, board_size, ever_moved).len() == 0
 }
 
 pub fn to_occupied_matrix(pieces: &Vec<Piece>, board_size: ICoord) -> Vec<Vec<Option<Team>>> {
@@ -471,11 +451,11 @@ pub fn compute_attackers(
     let target = &pieces[i];
     let team = target.team;
     let target_pos = target.pos_initial_i();
-    compute_attackers_2(&target_pos, team, pieces, board_size, ever_moved)
+    compute_attackers_2(target_pos, team, pieces, board_size, ever_moved)
 }
 
 fn compute_attackers_2(
-    target_pos: &ICoord,
+    target_pos: ICoord,
     team: Team,
     pieces: &Vec<Piece>,
     board_size: ICoord,
@@ -862,6 +842,7 @@ pub mod tests {
 
         let mut moves = possible_moves(king, &pieces, board_size, &ever_moved);
         let mut expected = vec![
+            king_pos + to_queen * 2,
             king_pos + to_queen,
             king_pos - to_queen,
             king_pos + to_pawn_diagonal,

@@ -377,4 +377,39 @@ mod tests {
         let king = find_first(Team::Black, Move::King, &pieces).unwrap();
         assert_eq!(plan, Some(PlanSelect::new(king, ICoord::new_i(1, 1))));
     }
+    #[test]
+    fn test_planning_accounts_for_castle() {
+        #[rustfmt::skip]
+        let (size, pieces, ever_moved) = parse_board("
+            -- -- wp wr
+            -- -- wp --
+            -- -- wp --
+            -- -- wp wk
+            -- -- wp --
+            -- -- bp bk
+        ");
+        let plan =
+            choose_target_inner_depth(Team::White, &pieces, size, &ever_moved, Team::White, 3);
+        let king = find_first(Team::White, Move::King, &pieces).unwrap();
+        assert_eq!(plan, Some(PlanSelect::new(king, ICoord::new_i(3, 1))));
+    }
+    #[test]
+    fn test_recursive_castle() {
+        // assert_eq!(1, 0, "need to think how to do this");
+        #[rustfmt::skip]
+        let (size, pieces, ever_moved) = parse_board("
+            br -- -- -- wr
+            -- -- -- -- --
+            -- -- -- -- --
+            bk -- -- -- wk
+            br -- -- -- wr
+        ");
+        let plan =
+            choose_target_inner_depth(Team::White, &pieces, size, &ever_moved, Team::White, 2);
+        let top_white_rook = find_first(Team::White, Move::Rook, &pieces).unwrap();
+        assert_eq!(
+            plan,
+            Some(PlanSelect::new(top_white_rook, ICoord::new_i(0, 0)))
+        );
+    }
 }

@@ -39,7 +39,7 @@ pub struct OneForEachTeam<T> {
 }
 
 impl<T> OneForEachTeam<T> {
-    pub fn new(white: T, black: T) -> Self {
+    pub const fn new(white: T, black: T) -> Self {
         Self { white, black }
     }
     pub fn new_from_factory(factory: fn(Team) -> T) -> Self {
