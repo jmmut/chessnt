@@ -1,6 +1,6 @@
 use crate::core::coord::{Coord, ICoord};
-use crate::world::board::{EverMoved, PieceIndex, PieceIndexSmall};
-use crate::world::piece::Piece;
+use crate::world::board::{AllowedCastle, EverMoved, PieceIndex, PieceIndexSmall};
+use crate::world::piece::{Piece, Pieces};
 use crate::world::team::Team;
 
 #[derive(PartialEq, Clone, Debug, PartialOrd)]
@@ -148,7 +148,9 @@ fn piece_moves_matrix_mut(
         Move::Bishop => get_bishop_positions_mut(piece, occupied, board_size, moves),
         Move::Knight => get_positions_mut(piece, KNIGHT, occupied, board_size, moves),
         Move::Rook => get_rook_positions_mut(piece, occupied, board_size, moves),
-        Move::King => get_king_positions_mut(piece, occupied, board_size, ever_moved, moves),
+        Move::King => {
+            get_king_positions_mut(piece, pieces, occupied, board_size, ever_moved, moves)
+        }
         Move::Queen => {
             get_rook_positions_mut(piece, occupied, board_size, moves);
             get_bishop_positions_mut(piece, occupied, board_size, moves)
@@ -264,24 +266,91 @@ const KING: &[ICoord] = &[
 ];
 fn get_king_positions_mut(
     piece: &Piece,
+    pieces: &Pieces,
     occupied: &Vec<Vec<Option<Team>>>,
     board_size: ICoord,
     ever_moved: &EverMoved,
     positions: &mut Vec<ICoord>,
 ) {
     get_positions_mut(piece, KING, occupied, board_size, positions);
-    if ever_moved.castle_allowed(piece.team) {
-        // TODO: need to get the correct rook
-        let sideways = ICoord::new_i(0, -1);
+    if ever_moved.castle_allowed_king(piece.team) {
+        let sideways = ICoord::new_i(0, -1); // TODO: fails if board is rotated
         let mut add_castle = |sideways: ICoord| {
-            let adjacent = sideways + piece.initial_pos;
-            let jump = sideways * 2 + piece.initial_pos;
+            let adjacent = piece.initial_pos + sideways;
+            let jump = piece.initial_pos + sideways * 2;
+            let rook_close = piece.initial_pos + sideways * 3;
+            let rook_far = piece.initial_pos + sideways * 4;
+            let team = piece.team;
             if inside(adjacent, board_size)
                 && inside(jump, board_size)
                 && is_occupied(adjacent, occupied).is_none()
                 && is_occupied(jump, occupied).is_none()
             {
-                positions.push(jump);
+                if inside(rook_close, board_size) {
+                    let allowed_castle =
+                        ever_moved.castle_allowed_rook_pos(team, rook_close, pieces);
+                    match allowed_castle {
+                        AllowedCastle::Yes => {
+                            if compute_attackers_2(
+                                &piece.initial_pos,
+                                team,
+                                pieces,
+                                board_size,
+                                ever_moved,
+                            )
+                            .len()
+                                == 0
+                                && compute_attackers_2(
+                                    &adjacent, team, pieces, board_size, ever_moved,
+                                )
+                                .len()
+                                    == 0
+                                && compute_attackers_2(&jump, team, pieces, board_size, ever_moved)
+                                    .len()
+                                    == 0
+                            {
+                                positions.push(jump);
+                            }
+                        }
+                        AllowedCastle::RookMissing => {
+                            if inside(rook_far, board_size)
+                                && is_occupied(rook_close, occupied).is_none()
+                                && ever_moved.castle_allowed_rook_pos(team, rook_far, pieces)
+                                    == AllowedCastle::Yes
+                                && compute_attackers_2(
+                                    &piece.initial_pos,
+                                    team,
+                                    pieces,
+                                    board_size,
+                                    ever_moved,
+                                )
+                                .len()
+                                    == 0
+                                && compute_attackers_2(
+                                    &adjacent, team, pieces, board_size, ever_moved,
+                                )
+                                .len()
+                                    == 0
+                                && compute_attackers_2(&jump, team, pieces, board_size, ever_moved)
+                                    .len()
+                                    == 0
+                                && compute_attackers_2(
+                                    &rook_close,
+                                    team,
+                                    pieces,
+                                    board_size,
+                                    ever_moved,
+                                )
+                                .len()
+                                    == 0
+                            {
+                                positions.push(jump);
+                            }
+                        }
+                        AllowedCastle::RookMoved => {}
+                        AllowedCastle::NotChess => {}
+                    }
+                }
             }
         };
         add_castle(sideways);
@@ -400,10 +469,21 @@ pub fn compute_attackers(
     ever_moved: &EverMoved,
 ) -> Vec<PieceIndex> {
     let target = &pieces[i];
+    let team = target.team;
     let target_pos = target.pos_initial_i();
+    compute_attackers_2(&target_pos, team, pieces, board_size, ever_moved)
+}
+
+fn compute_attackers_2(
+    target_pos: &ICoord,
+    team: Team,
+    pieces: &Vec<Piece>,
+    board_size: ICoord,
+    ever_moved: &EverMoved,
+) -> Vec<usize> {
     let mut attackers = Vec::new();
     for (other_i, _other_piece) in pieces.iter().enumerate() {
-        if i != other_i && target.team != pieces[other_i].team {
+        if team != pieces[other_i].team {
             let moves = possible_moves(other_i, pieces, board_size, ever_moved);
             if moves.contains(&target_pos) {
                 attackers.push(other_i)
@@ -719,6 +799,7 @@ pub mod tests {
         let expected_tower_pos = king_pos + to_queen;
         assert_eq!(board.pieces()[far_rook].initial_pos, expected_tower_pos);
 
+        // king moved
         board = board_copy.clone();
         move_rel(queen, to_pawn * 2, &mut board);
         move_rel(king, to_queen, &mut board);
@@ -728,6 +809,7 @@ pub mod tests {
         let mut expected = vec![king_pos + to_queen];
         assert_eq_sorted(&mut moves, &mut expected, board.pieces()); // requires memory of moved pieces 
 
+        // rook moved
         board = board_copy.clone();
         move_rel(queen, to_pawn * 2, &mut board);
         move_rel(far_rook, -to_queen, &mut board);
@@ -758,5 +840,32 @@ pub mod tests {
         moves.sort();
         expected.sort();
         assert_eq!(moves, expected, "board:\n{}", board_to_str(pieces));
+    }
+
+    #[test]
+    fn test_castle_forbidden_path_in_check() {
+        #[rustfmt::skip]
+        let (board_size, pieces, ever_moved) = parse_board("
+            br bp -- -- -- -- -- wr 
+            bh bp bb -- -- -- -- -- 
+            bb bp -- -- -- -- -- -- 
+            bk bp -- -- -- -- wp wk 
+            bq bp -- -- -- -- wp -- 
+            bb bp -- -- -- -- -- -- 
+            bh bp bb -- -- -- -- -- 
+            br bp -- -- -- -- -- wr 
+        ");
+        let king = find_first(Team::White, Move::King, &pieces).unwrap();
+        let king_pos = pieces[king].initial_pos;
+        let to_queen = ICoord::new_i(0, 1);
+        let to_pawn_diagonal = ICoord::new_i(-1, -1);
+
+        let mut moves = possible_moves(king, &pieces, board_size, &ever_moved);
+        let mut expected = vec![
+            king_pos + to_queen,
+            king_pos - to_queen,
+            king_pos + to_pawn_diagonal,
+        ];
+        assert_eq_sorted(&mut moves, &mut expected, &pieces); // requires checking check in the path 
     }
 }

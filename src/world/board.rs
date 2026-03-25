@@ -61,7 +61,13 @@ pub struct EverMoved {
     // castle_allowed: OneForEachTeam<Option<bool>>,
     rooks_king: OneForEachTeam<Option<RooksKing>>,
 }
-
+#[derive(PartialEq)]
+pub enum AllowedCastle {
+    Yes,
+    RookMissing,
+    RookMoved,
+    NotChess,
+}
 impl EverMoved {
     pub fn new_from(pieces: &Pieces) -> Self {
         let mut indexes_moves = Vec::new();
@@ -102,7 +108,39 @@ impl EverMoved {
             false
         }
     }
-    pub fn castle_allowed(&self, team: Team) -> bool {
+    pub fn castle_allowed_rook_pos(
+        &self,
+        team: Team,
+        pos: ICoord,
+        pieces: &Pieces,
+    ) -> AllowedCastle {
+        if let Some(RooksKing {
+            king_index,
+            rook_1_index,
+            rook_2_index,
+        }) = self.rooks_king.get(team)
+        {
+            if pieces[*rook_1_index].initial_pos == pos {
+                if self.indexes_moves[*king_index] == 0 && self.indexes_moves[*rook_1_index] == 0 {
+                    AllowedCastle::Yes
+                } else {
+                    AllowedCastle::RookMoved
+                }
+            } else if pieces[*rook_2_index].initial_pos == pos {
+                if self.indexes_moves[*king_index] == 0 && self.indexes_moves[*rook_2_index] == 0 {
+                    AllowedCastle::Yes
+                } else {
+                    AllowedCastle::RookMoved
+                }
+            } else {
+                AllowedCastle::RookMissing
+            }
+        } else {
+            AllowedCastle::NotChess
+        }
+    }
+    /// This is not enough to allow castling; castle_allowed_rook also has to return true
+    pub fn castle_allowed_king(&self, team: Team) -> bool {
         if let Some(RooksKing {
             rook_1_index,
             rook_2_index,
