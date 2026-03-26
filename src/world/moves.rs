@@ -396,7 +396,42 @@ pub fn index_at(
     test: ICoord,
     occupied: &Vec<Vec<Option<PieceIndexSmall>>>,
 ) -> Option<PieceIndexSmall> {
+    #[cfg(test)]
+    if test.row() < 0
+        || test.row() as usize >= occupied.len()
+        || test.column() < 0
+        || test.column() as usize >= occupied[0].len()
+    {
+        panic!(
+            "index_at should receive coords in range: coord={:?}, occupied size=({}, {})",
+            test,
+            occupied.len(),
+            if occupied.len() > 0 {
+                occupied[0].len()
+            } else {
+                0
+            }
+        );
+    }
     occupied[test.row() as usize][test.column() as usize]
+}
+pub fn checked_index_at(
+    test: ICoord,
+    occupied: &Vec<Vec<Option<PieceIndexSmall>>>,
+) -> Option<PieceIndexSmall> {
+    if test.row() >= 0
+        && let Some(row) = occupied.get(test.row() as usize)
+    {
+        if test.column() >= 0
+            && let Some(tile) = row.get(test.column() as usize)
+        {
+            tile.clone()
+        } else {
+            None
+        }
+    } else {
+        None
+    }
 }
 
 pub fn set_index_at(
@@ -576,13 +611,7 @@ pub mod tests {
             let trimmed = line.trim();
             if trimmed.len() > 0 {
                 let tiles = trimmed.split(' ').collect::<Vec<_>>();
-                if let Some(max) = max_columns {
-                    if tiles.len() as i32 > max {
-                        max_columns = Some(tiles.len() as i32);
-                    }
-                } else {
-                    max_columns = Some(tiles.len() as i32);
-                }
+                store_max(&mut max_columns, tiles.len() as i32);
                 for (column, tile) in tiles.iter().enumerate() {
                     let color = tile.as_bytes()[0];
                     let team = if color == b'w' {

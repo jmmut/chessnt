@@ -131,7 +131,7 @@ impl Bot {
 
 fn advance_plan(plan_opt: Option<Plan>, team: Team, board: &mut Board) -> AnyResult<Option<Plan>> {
     match plan_opt {
-        None => Ok(choose_target(board, team)), // if returns None, nothing to do...?
+        None => choose_target(board, team), // if returns None, nothing to do...?
         Some(plan) => {
             if let Some(selected) = board.selected(team) {
                 if selected == plan.piece_index() {
