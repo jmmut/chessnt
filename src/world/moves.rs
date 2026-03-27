@@ -272,60 +272,66 @@ fn get_king_positions_mut(
     ever_moved: &EverMoved,
     positions: &mut Vec<ICoord>,
 ) {
-    const SKIP_CASTLE: EverMoved = EverMoved::new_forbidden();
     get_positions_mut(piece, KING, occupied, board_size, positions);
     if ever_moved.castle_allowed_king(piece.team) {
         let sideways = ICoord::new_i(0, -1); // TODO: fails if board is rotated
-        let mut add_castle = |sideways: ICoord| {
-            let adjacent = piece.initial_pos + sideways;
-            let jump = piece.initial_pos + sideways * 2;
-            let rook_close = piece.initial_pos + sideways * 3;
-            let rook_far = piece.initial_pos + sideways * 4;
-            let team = piece.team;
-            if inside(adjacent, board_size)
-                && inside(jump, board_size)
-                && is_occupied(adjacent, occupied).is_none()
-                && is_occupied(jump, occupied).is_none()
-            {
-                if inside(rook_close, board_size) {
-                    let allowed_castle =
-                        ever_moved.castle_allowed_rook_pos(team, rook_close, pieces);
-                    match allowed_castle {
-                        AllowedCastle::Yes => {
-                            if is_attacked(piece.initial_pos, team, pieces, board_size, &SKIP_CASTLE) // TODO: infinite recursion!
-                                && is_attacked(adjacent, team, pieces, board_size, &SKIP_CASTLE)
-                                && is_attacked(jump, team, pieces, board_size, &SKIP_CASTLE)
-                            {
-                                positions.push(jump);
-                            }
-                        }
-                        AllowedCastle::RookMissing => {
-                            if inside(rook_far, board_size)
-                                && is_occupied(rook_close, occupied).is_none()
-                                && ever_moved.castle_allowed_rook_pos(team, rook_far, pieces)
-                                    == AllowedCastle::Yes
-                                && is_attacked(
-                                    piece.initial_pos,
-                                    team,
-                                    pieces,
-                                    board_size,
-                                    &SKIP_CASTLE,
-                                )
-                                && is_attacked(adjacent, team, pieces, board_size, &SKIP_CASTLE)
-                                && is_attacked(jump, team, pieces, board_size, &SKIP_CASTLE)
-                            {
-                                positions.push(jump);
-                            }
-                        }
-                        AllowedCastle::RookMoved => {}
-                        AllowedCastle::NotChess => {}
+        add_castle(
+            piece, pieces, occupied, board_size, ever_moved, positions, sideways,
+        );
+        let sideways = -sideways;
+        add_castle(
+            piece, pieces, occupied, board_size, ever_moved, positions, sideways,
+        );
+    }
+}
+
+fn add_castle(
+    piece: &Piece,
+    pieces: &Pieces,
+    occupied: &Vec<Vec<Option<Team>>>,
+    board_size: ICoord,
+    ever_moved: &EverMoved,
+    positions: &mut Vec<ICoord>,
+    sideways: ICoord,
+) {
+    const SKIP_CASTLE: EverMoved = EverMoved::new_forbidden();
+    let adjacent = piece.initial_pos + sideways;
+    let jump = piece.initial_pos + sideways * 2;
+    let rook_close = piece.initial_pos + sideways * 3;
+    let rook_far = piece.initial_pos + sideways * 4;
+    let team = piece.team;
+    if inside(adjacent, board_size)
+        && inside(jump, board_size)
+        && is_occupied(adjacent, occupied).is_none()
+        && is_occupied(jump, occupied).is_none()
+    {
+        if inside(rook_close, board_size) {
+            let allowed_castle = ever_moved.castle_allowed_rook_pos(team, rook_close, pieces);
+            #[rustfmt::skip]
+            match allowed_castle {
+                AllowedCastle::Yes => {
+                    if is_attacked(piece.initial_pos, team, pieces, board_size, &SKIP_CASTLE, occupied)
+                        && is_attacked(adjacent, team, pieces, board_size, &SKIP_CASTLE, occupied)
+                        && is_attacked(jump, team, pieces, board_size, &SKIP_CASTLE, occupied)
+                    {
+                        positions.push(jump);
                     }
                 }
-            }
-        };
-        add_castle(sideways);
-        let sideways = -sideways;
-        add_castle(sideways);
+                AllowedCastle::RookMissing => {
+                    if inside(rook_far, board_size)
+                        && is_occupied(rook_close, occupied).is_none()
+                        && ever_moved.castle_allowed_rook_pos(team, rook_far, pieces) == AllowedCastle::Yes
+                        && is_attacked(piece.initial_pos, team, pieces, board_size, &SKIP_CASTLE, occupied)
+                        && is_attacked(adjacent, team, pieces, board_size, &SKIP_CASTLE, occupied)
+                        && is_attacked(jump, team, pieces, board_size, &SKIP_CASTLE, occupied)
+                    {
+                        positions.push(jump);
+                    }
+                }
+                AllowedCastle::RookMoved => {}
+                AllowedCastle::NotChess => {}
+            };
+        }
     }
 }
 
@@ -335,8 +341,9 @@ fn is_attacked(
     pieces: &Pieces,
     board_size: ICoord,
     ever_moved: &EverMoved,
+    occupied: &Vec<Vec<Option<Team>>>,
 ) -> bool {
-    compute_attackers_2(pos, team, pieces, board_size, ever_moved).len() == 0
+    compute_attackers_matrix(pos, team, pieces, board_size, ever_moved, occupied).len() == 0
 }
 
 pub fn to_occupied_matrix(pieces: &Vec<Piece>, board_size: ICoord) -> Vec<Vec<Option<Team>>> {
@@ -496,10 +503,22 @@ fn compute_attackers_2(
     board_size: ICoord,
     ever_moved: &EverMoved,
 ) -> Vec<usize> {
+    let occupied = &to_occupied_matrix(pieces, board_size);
+    compute_attackers_matrix(target_pos, team, pieces, board_size, ever_moved, occupied)
+}
+
+fn compute_attackers_matrix(
+    target_pos: ICoord,
+    team: Team,
+    pieces: &Vec<Piece>,
+    board_size: ICoord,
+    ever_moved: &EverMoved,
+    occupied: &Vec<Vec<Option<Team>>>,
+) -> Vec<usize> {
     let mut attackers = Vec::new();
     for (other_i, _other_piece) in pieces.iter().enumerate() {
         if team != pieces[other_i].team {
-            let moves = possible_moves(other_i, pieces, board_size, ever_moved);
+            let moves = possible_moves_matrix(other_i, pieces, board_size, ever_moved, occupied);
             if moves.contains(&target_pos) {
                 attackers.push(other_i)
             };
