@@ -3,9 +3,9 @@ use crate::core::coord::{Coord, ICoord};
 use crate::world::board::{Board, EverMoved, PieceIndex, PieceIndexSmall};
 use crate::world::bot::{Plan, PlanSelect};
 use crate::world::moves::{
-    Move, Moveset, board_to_str, checked_index_at, index_at, pieces_to_str, possible_moves,
-    possible_moves_matrix_mut, print_pieces, set_index_at, set_occupied, to_occupied_matrix,
-    to_piece_index_matrix_small,
+    Move, Moveset, board_to_str, board_to_str_indent, checked_index_at, index_at, pieces_to_str,
+    possible_moves, possible_moves_matrix_mut, print_pieces, set_index_at, set_occupied,
+    to_occupied_matrix, to_piece_index_matrix_small,
 };
 use crate::world::piece::Piece;
 use crate::world::team::Team;
@@ -17,7 +17,8 @@ pub const PLANNING_DEPTH: i32 = 4;
 mod debug_level {
     pub const NO: i32 = 0;
     pub const CONCISE: i32 = 10;
-    pub const VERBOSE: i32 = 20;
+    pub const TREE: i32 = 20;
+    pub const VERBOSE: i32 = 30;
 }
 
 #[cfg(test)]
@@ -85,6 +86,7 @@ pub fn choose_target_inner_depth(
         ever_moved,
         turn,
         depth,
+        &None,
         &mut occupied,
         &mut indexes,
     )? {
@@ -105,12 +107,13 @@ pub fn choose_target_score_mut(
     ever_moved: &EverMoved,
     turn: Team,
     depth: i32,
+    overall_best: &Option<(PieceIndex, ICoord, Score)>,
     occupied: &mut Vec<Vec<Option<Team>>>,
     indexes: &mut Vec<Vec<Option<PieceIndexSmall>>>,
 ) -> AnyResult<(Option<(PieceIndex, ICoord)>, Score)> {
-    if DEBUG_PLANNING >= debug_level::CONCISE {
+    if DEBUG_PLANNING >= debug_level::TREE {
         // print!("{}choosing move for board as {}:\n{}", ".".repeat(depth as usize), team, board_to_str(pieces));
-        print!("\n{}", board_to_str(pieces, board_size));
+        print!("\n{}", board_to_str_indent(pieces, board_size, depth - 1));
     }
     if depth <= 0 {
         if DEBUG_PLANNING >= debug_level::VERBOSE {
@@ -127,7 +130,7 @@ pub fn choose_target_score_mut(
     let mut best = None;
     for i in 0..pieces.len() {
         if pieces[i].team == team && pieces[i].alive {
-            if DEBUG_PLANNING > debug_level::CONCISE {
+            if DEBUG_PLANNING >= debug_level::VERBOSE {
                 println!(
                     "{}. where to move piece {} {:?} at {:?}?",
                     ".*".repeat(depth as usize - 1),
@@ -141,8 +144,18 @@ pub fn choose_target_score_mut(
             for movement in &moves {
                 let movement = *movement;
                 evaluate_movement(
-                    team, pieces, board_size, ever_moved, turn, depth, occupied, indexes,
-                    &mut best, i, movement,
+                    team,
+                    pieces,
+                    board_size,
+                    ever_moved,
+                    turn,
+                    depth,
+                    occupied,
+                    indexes,
+                    &mut best,
+                    overall_best,
+                    i,
+                    movement,
                 )?;
             }
         }
@@ -164,6 +177,7 @@ fn evaluate_movement(
     occupied: &mut Vec<Vec<Option<Team>>>,
     indexes: &mut Vec<Vec<Option<PieceIndexSmall>>>,
     best: &mut Option<(PieceIndex, ICoord, Score)>,
+    overall_best: &Option<(PieceIndex, ICoord, Score)>,
     i: usize,
     movement: ICoord,
 ) -> AnyResult<()> {
@@ -215,6 +229,7 @@ fn evaluate_movement(
                     ever_moved,
                     turn.opposite(),
                     depth - 1,
+                    overall_best,
                     occupied,
                     indexes,
                 )?;
@@ -237,7 +252,15 @@ fn evaluate_movement(
                 0.0
             };
             let future_score = -future_score - kill_value + piece_change;
-            maybe_store_better_and_debug(depth, pieces, i, movement, future_score, best);
+            maybe_store_better_and_debug(
+                depth,
+                pieces,
+                i,
+                movement,
+                future_score,
+                overall_best,
+                best,
+            );
         }
     } else {
         // TODO: modify score due to our movement's benefit
@@ -280,6 +303,7 @@ fn evaluate_movement(
                 ever_moved,
                 team.opposite(), // team: not a bug. on the first level we want to evaluate movements out of our turn before the other team moves
                 depth - 1,
+                overall_best,
                 occupied,
                 indexes,
             )?;
@@ -308,7 +332,7 @@ fn evaluate_movement(
         } else {
             0.0
         };
-        maybe_store_better_and_debug(depth, pieces, i, movement, future_score, best);
+        maybe_store_better_and_debug(depth, pieces, i, movement, future_score, overall_best, best);
     }
     Ok(())
 }
@@ -319,12 +343,29 @@ fn maybe_store_better_and_debug(
     i: usize,
     movement: ICoord,
     future_score: Score,
+    overall_best: &Option<(PieceIndex, ICoord, Score)>,
     best: &mut Option<(PieceIndex, ICoord, Score)>,
 ) {
     if DEBUG_PLANNING >= debug_level::CONCISE {
         if let Some((best_i_until_now, best_move_until_now, score_until_now)) = best.clone() {
-            let was_better = maybe_store_better(best, future_score, i, movement);
-            if was_better {
+            let is_better = maybe_store_better(best, future_score, i, movement);
+
+            if let Some((overall_best_i, overall_best_move, overall_best_score)) = overall_best
+                && future_score.max(score_until_now) > *overall_best_score
+            {
+                println!(
+                    "{} chose moving {} {:?} to {:?} with better score overall {} than {} ({} {:?} to {:?})",
+                    ".*".repeat(depth as usize),
+                    pieces[i].team,
+                    pieces[i].moveset.single(),
+                    movement,
+                    future_score,
+                    overall_best_score,
+                    pieces[*overall_best_i].team,
+                    pieces[*overall_best_i].moveset.single(),
+                    overall_best_move,
+                );
+            } else if is_better && DEBUG_PLANNING >= debug_level::TREE {
                 println!(
                     "{} chose moving {} {:?} to {:?} with better score {} than {} ({} {:?} to {:?})",
                     ".*".repeat(depth as usize),

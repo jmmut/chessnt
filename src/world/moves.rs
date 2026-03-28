@@ -583,6 +583,10 @@ pub fn pieces_to_str(pieces: &Vec<Piece>) -> String {
 }
 
 pub fn board_to_str(pieces: &Vec<Piece>, board_size: ICoord) -> String {
+    board_to_str_indent(pieces, board_size, 0)
+}
+
+pub fn board_to_str_indent(pieces: &Vec<Piece>, board_size: ICoord, indent: i32) -> String {
     let mut message = String::new();
     let mut matrix = vec![vec![None; board_size.column as usize]; board_size.row as usize];
     for piece in pieces {
@@ -592,6 +596,7 @@ pub fn board_to_str(pieces: &Vec<Piece>, board_size: ICoord) -> String {
         }
     }
     for row in matrix {
+        message += &"    ".repeat(indent.clamp(0, 20) as usize);
         for cell in row {
             if let Some((team, movement)) = cell {
                 message += &format!(
