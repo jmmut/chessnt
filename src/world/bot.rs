@@ -242,7 +242,7 @@ pub fn quantize(diff: Coord) -> Coord {
 
 // TODO: centralize movement by raising messages instead of modifying the board
 fn move_selected(cursor_pos: Coord, destination: ICoord, team: Team, board: &mut Board) {
-    let max = 0.05;
+    let max = 0.05; // TODO: normalize based on frame delta? 0.05 / 0.016 * delta_s ?
     let diff = destination.into::<Coord>() - cursor_pos;
     let diff = diff.normalize();
     let diff = diff * max;

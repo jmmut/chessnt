@@ -3,7 +3,7 @@ use crate::core::coord::{Coord, ICoord};
 use crate::world::board::{Board, EverMoved, PieceIndex, PieceIndexSmall};
 use crate::world::bot::{Plan, PlanSelect};
 use crate::world::moves::{
-    Move, Moveset, checked_index_at, index_at, pieces_to_str, possible_moves,
+    Move, Moveset, board_to_str, checked_index_at, index_at, pieces_to_str, possible_moves,
     possible_moves_matrix_mut, print_pieces, set_index_at, set_occupied, to_occupied_matrix,
     to_piece_index_matrix_small,
 };
@@ -13,11 +13,18 @@ use std::time::Instant;
 
 pub const PLANNING_DEPTH: i32 = 4;
 
+#[allow(unused)]
+mod debug_level {
+    pub const NO: i32 = 0;
+    pub const CONCISE: i32 = 10;
+    pub const VERBOSE: i32 = 20;
+}
+
 #[cfg(test)]
-pub const DEBUG_PLANNING: bool = true;
+pub const DEBUG_PLANNING: i32 = debug_level::CONCISE;
 
 #[cfg(not(test))]
-pub const DEBUG_PLANNING: bool = false;
+pub const DEBUG_PLANNING: i32 = debug_level::NO;
 
 pub type Score = f32;
 
@@ -101,12 +108,12 @@ pub fn choose_target_score_mut(
     occupied: &mut Vec<Vec<Option<Team>>>,
     indexes: &mut Vec<Vec<Option<PieceIndexSmall>>>,
 ) -> AnyResult<(Option<(PieceIndex, ICoord)>, Score)> {
-    if DEBUG_PLANNING {
+    if DEBUG_PLANNING >= debug_level::CONCISE {
         // print!("{}choosing move for board as {}:\n{}", ".".repeat(depth as usize), team, board_to_str(pieces));
-        print!("{}", pieces_to_str(pieces));
+        print!("\n{}", board_to_str(pieces, board_size));
     }
     if depth <= 0 {
-        if DEBUG_PLANNING {
+        if DEBUG_PLANNING >= debug_level::VERBOSE {
             println!(
                 "{} returning (depth==0) with score {} for {} ************",
                 ".*".repeat(depth as usize),
@@ -120,7 +127,7 @@ pub fn choose_target_score_mut(
     let mut best = None;
     for i in 0..pieces.len() {
         if pieces[i].team == team && pieces[i].alive {
-            if DEBUG_PLANNING {
+            if DEBUG_PLANNING > debug_level::CONCISE {
                 println!(
                     "{}. where to move piece {} {:?} at {:?}?",
                     ".*".repeat(depth as usize - 1),
@@ -141,16 +148,6 @@ pub fn choose_target_score_mut(
         }
     }
     if let Some((best_i, best_move, best_score)) = best {
-        if DEBUG_PLANNING {
-            println!(
-                "{} chose moving {} {:?} to {:?} with score {}",
-                ".*".repeat(depth as usize),
-                pieces[best_i].team,
-                pieces[best_i].moveset.single(),
-                best_move,
-                best_score
-            );
-        }
         Ok((Some((best_i, best_move)), best_score))
     } else {
         Ok((None, 0.0))
@@ -170,13 +167,26 @@ fn evaluate_movement(
     i: usize,
     movement: ICoord,
 ) -> AnyResult<()> {
-    if DEBUG_PLANNING {
+    if DEBUG_PLANNING >= debug_level::VERBOSE {
         println!(
             "{} evaluating move to {:?}",
             ".*".repeat(depth as usize - 1),
             movement
         );
     }
+    let piece_change = if pieces[i].moveset.single() == Move::Pawn {
+        if team == Team::White && movement.column == 0
+            || team == Team::Black && movement.column == board_size.column - 1
+        {
+            // TODO: allow user to choose promotion
+            pieces[i].moveset = Moveset::new(Move::Queen);
+            piece_type_value(Move::Queen) - piece_type_value(Move::Pawn)
+        } else {
+            0.0
+        }
+    } else {
+        0.0
+    };
     if let Some(other_i) = index_at(movement, &indexes) {
         let other_i = other_i as usize;
         if pieces[other_i].team != team {
@@ -208,6 +218,9 @@ fn evaluate_movement(
                     occupied,
                     indexes,
                 )?;
+                if piece_change != 0.0 {
+                    pieces[i].moveset = Moveset::new(Move::Pawn);
+                }
 
                 pieces[i].set_pos_and_initial_i(old_pos);
                 pieces[other_i].set_pos_and_initial_i(old_killed_pos);
@@ -223,8 +236,8 @@ fn evaluate_movement(
             } else {
                 0.0
             };
-            let future_score = -future_score - kill_value;
-            maybe_store_better(best, future_score, i, movement);
+            let future_score = -future_score - kill_value + piece_change;
+            maybe_store_better_and_debug(depth, pieces, i, movement, future_score, best);
         }
     } else {
         // TODO: modify score due to our movement's benefit
@@ -243,19 +256,6 @@ fn evaluate_movement(
                 }
             } else {
                 None
-            };
-            let piece_change = if pieces[i].moveset.single() == Move::Pawn {
-                if team == Team::White && movement.column == 0
-                    || team == Team::Black && movement.column == board_size.column - 1
-                {
-                    // TODO: allow user to choose promotion
-                    pieces[i].moveset = Moveset::new(Move::Queen);
-                    piece_type_value(Move::Queen) - piece_type_value(Move::Pawn)
-                } else {
-                    0.0
-                }
-            } else {
-                0.0
             };
             pieces[i].set_pos_and_initial_i(movement);
             set_occupied(old_pos, None, occupied);
@@ -308,9 +308,55 @@ fn evaluate_movement(
         } else {
             0.0
         };
-        maybe_store_better(best, future_score, i, movement);
+        maybe_store_better_and_debug(depth, pieces, i, movement, future_score, best);
     }
     Ok(())
+}
+
+fn maybe_store_better_and_debug(
+    depth: i32,
+    pieces: &Vec<Piece>,
+    i: usize,
+    movement: ICoord,
+    future_score: Score,
+    best: &mut Option<(PieceIndex, ICoord, Score)>,
+) {
+    if DEBUG_PLANNING >= debug_level::CONCISE {
+        if let Some((best_i_until_now, best_move_until_now, score_until_now)) = best.clone() {
+            let was_better = maybe_store_better(best, future_score, i, movement);
+            if was_better {
+                println!(
+                    "{} chose moving {} {:?} to {:?} with better score {} than {} ({} {:?} to {:?})",
+                    ".*".repeat(depth as usize),
+                    pieces[i].team,
+                    pieces[i].moveset.single(),
+                    movement,
+                    future_score,
+                    score_until_now,
+                    pieces[best_i_until_now].team,
+                    pieces[best_i_until_now].moveset.single(),
+                    best_move_until_now,
+                );
+            } else if DEBUG_PLANNING >= debug_level::VERBOSE {
+                println!(
+                    "{} discarded moving {} {:?} to {:?} with score {} (best is {} for {} {:?} to {:?}",
+                    ".*".repeat(depth as usize),
+                    pieces[i].team,
+                    pieces[i].moveset.single(),
+                    movement,
+                    future_score,
+                    score_until_now,
+                    pieces[best_i_until_now].team,
+                    pieces[best_i_until_now].moveset.single(),
+                    best_move_until_now,
+                )
+            }
+        } else {
+            maybe_store_better(best, future_score, i, movement);
+        }
+    } else {
+        maybe_store_better(best, future_score, i, movement);
+    }
 }
 
 pub fn evaluate_pieces(team: Team, pieces: &Vec<Piece>) -> f32 {
@@ -322,7 +368,7 @@ fn maybe_store_better(
     future_score: Score,
     i: PieceIndex,
     movement: ICoord,
-) {
+) -> bool {
     let is_better = if let Some((_, _, best_score)) = best {
         *best_score < future_score
     } else {
@@ -332,6 +378,7 @@ fn maybe_store_better(
         // print_decision_kill(pieces, i, movement, other_i, future_score, depth);
         *best = Some((i, movement, future_score));
     }
+    is_better
 }
 
 #[allow(unused)]
@@ -455,19 +502,19 @@ mod tests {
     fn test_planning_accounts_for_castle() {
         #[rustfmt::skip]
         let (size, pieces, ever_moved) = parse_board("
-            -- -- wp wr
-            -- -- wp --
-            -- -- wp --
-            -- -- wr wk
-            -- -- -- --
-            bp -- -- bk
+            -- -- -- wp wr
+            -- -- -- wp --
+            -- -- -- wp --
+            -- -- -- wr wk
+            -- -- -- -- --
+            bp -- -- -- bk
         ");
         let plan =
             choose_target_inner_depth(Team::White, &pieces, size, &ever_moved, Team::White, 3)
                 .unwrap()
                 .0;
         let king = find_first(Team::White, Move::King, &pieces).unwrap();
-        assert_eq!(plan, Some(PlanSelect::new(king, ICoord::new_i(3, 1))));
+        assert_eq!(plan, Some(PlanSelect::new(king, ICoord::new_i(4, 1))));
     }
     #[test]
     fn test_recursive_castle() {
@@ -507,6 +554,30 @@ mod tests {
                 Some(PlanSelect::new(pawn, ICoord::new_i(0, 0))),
                 Some(
                     piece_type_value(Move::King) + piece_type_value(Move::Queen)
+                        - piece_type_value(Move::Pawn)
+                )
+            ),
+        );
+    }
+    #[test]
+    fn test_pawn_killing_promotion() {
+        #[rustfmt::skip]
+        let (size, pieces, ever_moved) = parse_board("
+            -- wp wr -- -- --
+            bb -- -- -- bk --
+        ");
+        let plan =
+            choose_target_inner_depth(Team::White, &pieces, size, &ever_moved, Team::White, 3)
+                .unwrap();
+        let pawn = find_first(Team::White, Move::Pawn, &pieces).unwrap();
+        assert_eq!(
+            plan,
+            (
+                Some(PlanSelect::new(pawn, ICoord::new_i(0, 1))),
+                Some(
+                    piece_type_value(Move::King)
+                        + piece_type_value(Move::Bishop)
+                        + piece_type_value(Move::Queen)
                         - piece_type_value(Move::Pawn)
                 )
             ),
