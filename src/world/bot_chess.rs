@@ -13,6 +13,8 @@ use std::time::Instant;
 
 pub const PLANNING_DEPTH: i32 = 4;
 
+static mut EVALUATIONS: i32 = 0;
+
 #[allow(unused)]
 mod debug_level {
     pub const NO: i32 = 0;
@@ -77,6 +79,9 @@ pub fn choose_target_inner_depth(
     turn: Team,
     depth: i32,
 ) -> AnyResult<(Option<Plan>, Option<Score>)> {
+    if DEBUG_PLANNING > debug_level::NO {
+        unsafe {EVALUATIONS = 0;}
+    }
     let mut occupied = to_occupied_matrix(pieces, board_size);
     let mut indexes = to_piece_index_matrix_small(pieces, board_size);
     if let (Some((i, movement)), score) = choose_target_score_mut(
@@ -232,6 +237,9 @@ fn evaluate_movement(
                 unkill_in_caches(other_i, old_killed_pos, pieces, occupied, indexes);
                 future_score
             } else {
+                if DEBUG_PLANNING > debug_level::NO {
+                    unsafe {EVALUATIONS += 1;}
+                }
                 0.0
             };
             let future_score = -future_score - kill_value + piece_change;
@@ -303,6 +311,9 @@ fn evaluate_movement(
             let future_score = -future_score + piece_change;
             future_score
         } else {
+            if DEBUG_PLANNING > debug_level::NO {
+                unsafe {EVALUATIONS += 1;}
+            }
             0.0
         };
         maybe_store_better_and_debug(depth, pieces, i, movement, future_score, overall_best, best);
@@ -639,5 +650,6 @@ mod tests {
                 )
             ),
         );
+        println!("evaluations: {}", unsafe { EVALUATIONS });
     }
 }
