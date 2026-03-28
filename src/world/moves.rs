@@ -8,6 +8,11 @@ pub struct Moveset {
     pub moves: Vec<Move>,
 }
 impl Moveset {
+    pub fn new(movement: Move) -> Self {
+        Self {
+            moves: vec![movement],
+        }
+    }
     pub fn single(&self) -> Move {
         *self.moves.first().unwrap()
     }
@@ -559,11 +564,10 @@ pub fn store_max<T: PartialOrd<T>>(max: &mut Option<T>, new: T) {
     store_better(max, new, |a, b| a < b)
 }
 
-pub fn print_board(pieces: &Vec<Piece>) {
-    println!("{}", board_to_str(pieces));
+pub fn print_pieces(pieces: &Vec<Piece>) {
+    println!("{}", pieces_to_str(pieces));
 }
-pub fn board_to_str(pieces: &Vec<Piece>) -> String {
-    let mut message = String::new();
+pub fn pieces_to_str(pieces: &Vec<Piece>) -> String {
     let mut max_row = None;
     let mut max_column = None;
     for piece in pieces {
@@ -571,35 +575,42 @@ pub fn board_to_str(pieces: &Vec<Piece>) -> String {
         store_max(&mut max_column, piece.initial_pos.column);
     }
     if let (Some(row), Some(column)) = (max_row, max_column) {
-        let mut matrix = vec![vec![None; column as usize + 1]; row as usize + 1];
         let board_size = ICoord::new_i(column + 1, row + 1);
-        for piece in pieces {
-            if inside(piece.initial_pos, board_size) {
-                matrix[piece.initial_pos.row as usize][piece.initial_pos.column as usize] =
-                    Some((piece.team, piece.moveset.single()));
+        board_to_str(pieces, board_size)
+    } else {
+        "".to_string()
+    }
+}
+
+pub fn board_to_str(pieces: &Vec<Piece>, board_size: ICoord) -> String {
+    let mut message = String::new();
+    let mut matrix = vec![vec![None; board_size.column as usize]; board_size.row as usize];
+    for piece in pieces {
+        if inside(piece.initial_pos, board_size) {
+            matrix[piece.initial_pos.row as usize][piece.initial_pos.column as usize] =
+                Some((piece.team, piece.moveset.single()));
+        }
+    }
+    for row in matrix {
+        for cell in row {
+            if let Some((team, movement)) = cell {
+                message += &format!(
+                    "{}{} ",
+                    if team.is_white() { 'w' } else { 'b' },
+                    match movement {
+                        Move::Pawn => LETTER_PAWN,
+                        Move::Knight => LETTER_KNIGHT,
+                        Move::Bishop => LETTER_BISHOP,
+                        Move::Rook => LETTER_ROOK,
+                        Move::Queen => LETTER_QUEEN,
+                        Move::King => LETTER_KING,
+                    } as char
+                )
+            } else {
+                message += "-- ";
             }
         }
-        for row in matrix {
-            for cell in row {
-                if let Some((team, movement)) = cell {
-                    message += &format!(
-                        "{}{} ",
-                        if team.is_white() { 'w' } else { 'b' },
-                        match movement {
-                            Move::Pawn => LETTER_PAWN,
-                            Move::Knight => LETTER_KNIGHT,
-                            Move::Bishop => LETTER_BISHOP,
-                            Move::Rook => LETTER_ROOK,
-                            Move::Queen => LETTER_QUEEN,
-                            Move::King => LETTER_KING,
-                        } as char
-                    )
-                } else {
-                    message += "-- ";
-                }
-            }
-            message += "\n";
-        }
+        message += "\n";
     }
     message
 }
@@ -867,7 +878,7 @@ pub mod tests {
     fn assert_eq_sorted(moves: &mut Vec<ICoord>, expected: &mut Vec<ICoord>, pieces: &Vec<Piece>) {
         moves.sort();
         expected.sort();
-        assert_eq!(moves, expected, "board:\n{}", board_to_str(pieces));
+        assert_eq!(moves, expected, "board:\n{}", pieces_to_str(pieces));
     }
 
     #[test]

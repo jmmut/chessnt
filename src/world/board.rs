@@ -4,12 +4,13 @@ pub mod board_ui;
 use crate::AnyResult;
 use crate::core::coord::{Coord, ICoord};
 use crate::world::moves::{
-    Move, Moveset, board_to_str, compute_attackers, inside_f, possible_moves,
+    Move, Moveset, board_to_str, compute_attackers, inside_f, pieces_to_str, possible_moves,
 };
 use crate::world::piece::{Piece, Pieces};
 use crate::world::referee::Referee;
 use crate::world::team::{OneForEachTeam, Team};
 use macroquad::math::{Vec2, vec2};
+use std::fmt::{Display, Formatter};
 
 pub type PieceIndex = usize;
 pub type PieceIndexSmall = u8;
@@ -196,7 +197,7 @@ impl Board {
         }
     }
     pub fn new_chess(cursor_white: Coord, cursor_black: Coord) -> Self {
-        let back_column = vec![
+        let back_column = [
             Move::Rook,
             Move::Knight,
             Move::Bishop,
@@ -303,13 +304,13 @@ impl Board {
             let initial_pos = self.pieces[selected_i].initial_pos;
             let final_pos = self.pieces[selected_i].pos_ii();
             let overlaps_i = self.overlapping_pieces(selected_i);
+            let referee_saw = self.referee.saw_piece(&self.pieces, selected_i);
             assert!(
                 overlaps_i.len() <= 1,
                 "killing several pieces in the same tile is unsupported"
             );
             let moves = possible_moves(selected_i, &self.pieces, self.size, self.ever_moved());
             if let Some(overlap_i) = overlaps_i.last().cloned() {
-                let referee_saw = self.referee.saw_any_piece(&self.pieces, vec![selected_i]);
                 let rounded_overlap_initial = self.pieces[overlap_i].pos_initial_i();
                 let overlap_team = self.pieces[overlap_i].team;
                 let selected_team = self.pieces[selected_i].team;
@@ -341,7 +342,6 @@ impl Board {
                     }
                 }
             } else {
-                let referee_saw = self.referee.saw_any_piece(&self.pieces, vec![selected_i]);
                 if self.pieces[selected_i].moveset.single() == Move::King
                     && (final_pos - initial_pos).length_squared() == 2 * 2
                     && moves.contains(&final_pos)
@@ -365,11 +365,14 @@ impl Board {
                                 "invalid castle, from {:?} to {:?} with board\n{}",
                                 initial_pos,
                                 final_pos,
-                                board_to_str(&self.pieces)
+                                pieces_to_str(&self.pieces)
                             )
                         })?;
                     if self.pieces[rook_index].moveset != vec![Move::Rook].into() {
-                        return Err(format!("invalid castle, from {:?} to {:?}, expected rook at {:?} or {:?} with board:\n{}", initial_pos, final_pos, rook_1, rook_2, board_to_str(&self.pieces)).into());
+                        return Err(format!(
+                            "invalid castle, from {:?} to {:?}, expected rook at {:?} or {:?} with board:\n{}",
+                            initial_pos, final_pos, rook_1, rook_2, pieces_to_str(&self.pieces)).into()
+                        );
                     }
 
                     self.pieces[rook_index].set_pos_and_initial_i(final_pos - to_rook);
@@ -395,6 +398,14 @@ impl Board {
             }
             if initial_pos != final_pos {
                 self.ever_moved.register_movement(selected_i);
+            }
+            if referee_saw && self.pieces[selected_i].moveset.single() == Move::Pawn {
+                if team == Team::White && final_pos.column == 0
+                    || team == Team::Black && final_pos.column == self.size.column - 1
+                {
+                    // TODO: allow user to choose promotion
+                    self.pieces[selected_i].moveset = Moveset::new(Move::Queen)
+                }
             }
             *self.selected_mut(team) = None;
             *self.cursor_mut(team) = self.cursor(team).round();
@@ -482,6 +493,11 @@ impl Board {
             }
         }
         None
+    }
+}
+impl Display for Board {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", board_to_str(self.pieces(), self.size()))
     }
 }
 
@@ -635,5 +651,15 @@ mod tests {
                 (Team::Black, true, pos_right),
             ]
         );
+    }
+
+    #[test]
+    fn test_promotion() {
+        #[rustfmt::skip]
+        let mut board = build_board("-- wpO -- -- bpX --");
+        board.select(Team::White);
+        board.move_cursor_rel(Coord::new_i(-1, 0), Team::White);
+        board.deselect(Team::White).unwrap();
+        assert_eq!(board.to_string(), "wq -- -- -- bp -- \n");
     }
 }

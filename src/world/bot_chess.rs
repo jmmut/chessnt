@@ -3,8 +3,8 @@ use crate::core::coord::{Coord, ICoord};
 use crate::world::board::{Board, EverMoved, PieceIndex, PieceIndexSmall};
 use crate::world::bot::{Plan, PlanSelect};
 use crate::world::moves::{
-    Move, board_to_str, checked_index_at, index_at, possible_moves, possible_moves_matrix_mut,
-    print_board, set_index_at, set_occupied, to_occupied_matrix, to_piece_index_matrix_small,
+    Move, checked_index_at, index_at, pieces_to_str, possible_moves, possible_moves_matrix_mut,
+    print_pieces, set_index_at, set_occupied, to_occupied_matrix, to_piece_index_matrix_small,
 };
 use crate::world::piece::Piece;
 use crate::world::team::Team;
@@ -91,7 +91,7 @@ pub fn choose_target_score_mut(
 ) -> AnyResult<(Option<(PieceIndex, ICoord)>, Score)> {
     if DEBUG_PLANNING {
         // print!("{}choosing move for board as {}:\n{}", ".".repeat(depth as usize), team, board_to_str(pieces));
-        print!("{}", board_to_str(pieces));
+        print!("{}", pieces_to_str(pieces));
     }
     if depth <= 0 {
         if DEBUG_PLANNING {
@@ -227,7 +227,7 @@ fn evaluate_movement(
                 } else if let Some(rook) = checked_index_at(old_pos + to_rook * 4, indexes) {
                     Some((rook, pieces[rook as usize].initial_pos, old_pos + to_rook))
                 } else {
-                    return Err(format!("castling appeared possible but couldn't find rook at {:?} nor {:?}. board:\n{}", to_rook * 3, to_rook * 4, board_to_str(pieces)).into());
+                    return Err(format!("castling appeared possible but couldn't find rook at {:?} nor {:?}. board:\n{}", to_rook * 3, to_rook * 4, pieces_to_str(pieces)).into());
                 }
             } else {
                 None
@@ -316,7 +316,7 @@ fn print_decision_kill(
     depth: i32,
 ) {
     let piece = &pieces[i];
-    print_board(pieces);
+    print_pieces(pieces);
     println!(
         "{}moving {} {:?} to {:?} (kill {} {:?}) has better score {}",
         ".".repeat(depth as usize),
@@ -337,7 +337,7 @@ fn print_decision(
     movement: Coord,
     future_score: Score,
 ) {
-    print_board(pieces);
+    print_pieces(pieces);
     println!(
         "{}moving {} {:?} to {:?} has better score {}",
         ".".repeat(depth as usize),
