@@ -3,9 +3,9 @@ use crate::core::coord::{Coord, ICoord};
 use crate::world::board::{Board, EverMoved, PieceIndex, PieceIndexSmall};
 use crate::world::bot::{Plan, PlanSelect};
 use crate::world::moves::{
-    Move, Moveset, board_to_str, board_to_str_indent, checked_index_at, index_at, pieces_to_str,
-    possible_moves, possible_moves_matrix_mut, print_pieces, set_index_at, set_occupied,
-    to_occupied_matrix, to_piece_index_matrix_small,
+    Move, Moveset, board_to_str_indent, checked_index_at, index_at, pieces_to_str, possible_moves,
+    possible_moves_matrix_mut, print_pieces, set_index_at, set_occupied, to_occupied_matrix,
+    to_piece_index_matrix_small,
 };
 use crate::world::piece::Piece;
 use crate::world::team::Team;
@@ -210,17 +210,9 @@ fn evaluate_movement(
             let kill_value = piece_value(&pieces[other_i], team);
 
             let future_score = if depth >= 2 {
+                let old_killed_pos = kill_in_caches(other_i, pieces, occupied, indexes);
                 let old_pos = pieces[i].initial_pos;
-                pieces[i].set_pos_and_initial_i(movement);
-                pieces[other_i].alive = false;
-                let old_killed_pos = pieces[other_i].initial_pos;
-                pieces[other_i].set_pos_and_initial(Coord::new_i(0, -2));
-                set_occupied(old_killed_pos, None, occupied);
-                set_occupied(old_pos, None, occupied);
-                set_occupied(movement, Some(team), occupied);
-                set_index_at(old_killed_pos, None, indexes);
-                set_index_at(old_pos, None, indexes);
-                set_index_at(movement, Some(i as PieceIndexSmall), indexes);
+                move_in_caches(i, old_pos, movement, pieces, occupied, indexes);
 
                 let (_, future_score) = choose_target_score_mut(
                     team.opposite(),
@@ -236,17 +228,8 @@ fn evaluate_movement(
                 if piece_change != 0.0 {
                     pieces[i].moveset = Moveset::new(Move::Pawn);
                 }
-
-                pieces[i].set_pos_and_initial_i(old_pos);
-                pieces[other_i].set_pos_and_initial_i(old_killed_pos);
-                pieces[other_i].alive = true;
-                set_occupied(old_pos, Some(team), occupied);
-                set_occupied(movement, None, occupied);
-                set_occupied(old_killed_pos, Some(pieces[other_i].team), occupied);
-                set_index_at(old_pos, Some(i as PieceIndexSmall), indexes);
-                set_index_at(movement, None, indexes);
-                set_index_at(old_killed_pos, Some(other_i as PieceIndexSmall), indexes);
-
+                move_in_caches(i, movement, old_pos, pieces, occupied, indexes);
+                unkill_in_caches(other_i, old_killed_pos, pieces, occupied, indexes);
                 future_score
             } else {
                 0.0
@@ -275,25 +258,21 @@ fn evaluate_movement(
                 } else if let Some(rook) = checked_index_at(old_pos + to_rook * 4, indexes) {
                     Some((rook, pieces[rook as usize].initial_pos, old_pos + to_rook))
                 } else {
-                    return Err(format!("castling appeared possible but couldn't find rook at {:?} nor {:?}. board:\n{}", to_rook * 3, to_rook * 4, pieces_to_str(pieces)).into());
+                    return Err(format!(
+                        "castling appeared possible but couldn't find rook at {:?} nor {:?}. board:\n{}",
+                        to_rook * 3, to_rook * 4, pieces_to_str(pieces)
+                    ).into());
                 }
             } else {
                 None
             };
-            pieces[i].set_pos_and_initial_i(movement);
-            set_occupied(old_pos, None, occupied);
-            set_occupied(movement, Some(team), occupied);
-            set_index_at(old_pos, None, indexes);
-            set_index_at(movement, Some(i as PieceIndexSmall), indexes);
+            move_in_caches(i, old_pos, movement, pieces, occupied, indexes);
 
             if let Some((rook, old_rook_pos, new_rook_pos)) =
-                castle_rook_index_and_pos_and_new_pos.as_ref()
+                castle_rook_index_and_pos_and_new_pos.clone()
             {
-                pieces[*rook as usize].set_pos_and_initial_i(*new_rook_pos);
-                set_occupied(*old_rook_pos, None, occupied);
-                set_occupied(*new_rook_pos, Some(team), occupied);
-                set_index_at(*old_rook_pos, None, indexes);
-                set_index_at(*old_rook_pos, Some(*rook), indexes);
+                let rook = rook as usize;
+                move_in_caches(rook, old_rook_pos, new_rook_pos, pieces, occupied, indexes);
             }
 
             let (_, future_score) = choose_target_score_mut(
@@ -311,20 +290,14 @@ fn evaluate_movement(
             if piece_change != 0.0 {
                 pieces[i].moveset = Moveset::new(Move::Pawn);
             }
-            pieces[i].set_pos_and_initial_i(old_pos);
-            set_occupied(old_pos, Some(team), occupied);
-            set_occupied(movement, None, occupied);
-            set_index_at(old_pos, Some(i as PieceIndexSmall), indexes);
-            set_index_at(movement, None, indexes);
+
+            move_in_caches(i, movement, old_pos, pieces, occupied, indexes);
 
             if let Some((rook, old_rook_pos, new_rook_pos)) =
-                castle_rook_index_and_pos_and_new_pos.as_ref()
+                castle_rook_index_and_pos_and_new_pos.clone()
             {
-                pieces[*rook as usize].set_pos_and_initial_i(*old_rook_pos);
-                set_occupied(*old_rook_pos, Some(team), occupied); // TODO: extract?
-                set_occupied(*new_rook_pos, None, occupied);
-                set_index_at(*old_rook_pos, Some(*rook), indexes);
-                set_index_at(*old_rook_pos, None, indexes);
+                let rook = rook as usize;
+                move_in_caches(rook, new_rook_pos, old_rook_pos, pieces, occupied, indexes);
             }
 
             let future_score = -future_score + piece_change;
@@ -335,6 +308,49 @@ fn evaluate_movement(
         maybe_store_better_and_debug(depth, pieces, i, movement, future_score, overall_best, best);
     }
     Ok(())
+}
+
+fn move_in_caches(
+    i: usize,
+    from: ICoord,
+    to: ICoord,
+    pieces: &mut Vec<Piece>,
+    occupied: &mut Vec<Vec<Option<Team>>>,
+    indexes: &mut Vec<Vec<Option<PieceIndexSmall>>>,
+) {
+    let team = pieces[i].team;
+    pieces[i].set_pos_and_initial_i(to);
+    set_occupied(from, None, occupied);
+    set_occupied(to, Some(team), occupied);
+    set_index_at(from, None, indexes);
+    set_index_at(to, Some(i as PieceIndexSmall), indexes);
+}
+
+fn kill_in_caches(
+    i: usize,
+    pieces: &mut Vec<Piece>,
+    occupied: &mut Vec<Vec<Option<Team>>>,
+    indexes: &mut Vec<Vec<Option<PieceIndexSmall>>>,
+) -> ICoord {
+    pieces[i].alive = false;
+    let old_killed_pos = pieces[i].initial_pos;
+    pieces[i].set_pos_and_initial(Coord::new_i(0, -2));
+    set_occupied(old_killed_pos, None, occupied);
+    set_index_at(old_killed_pos, None, indexes);
+    old_killed_pos
+}
+
+fn unkill_in_caches(
+    i: usize,
+    pos_before_dying: ICoord,
+    pieces: &mut Vec<Piece>,
+    occupied: &mut Vec<Vec<Option<Team>>>,
+    indexes: &mut Vec<Vec<Option<PieceIndexSmall>>>,
+) {
+    pieces[i].alive = true;
+    pieces[i].set_pos_and_initial_i(pos_before_dying);
+    set_occupied(pos_before_dying, Some(pieces[i].team), occupied);
+    set_index_at(pos_before_dying, Some(i as PieceIndexSmall), indexes);
 }
 
 fn maybe_store_better_and_debug(
