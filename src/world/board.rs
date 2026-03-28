@@ -654,7 +654,7 @@ mod tests {
     }
 
     #[test]
-    fn test_promotion() {
+    fn test_pawn_promotion() {
         #[rustfmt::skip]
         let mut board = build_board("-- wpO -- -- bpX --");
         board.select(Team::White);
