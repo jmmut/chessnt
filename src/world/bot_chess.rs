@@ -176,7 +176,7 @@ pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
         }
         return Ok((None, 0.0));
     }
-    let mut moves = Vec::new();
+    let mut moves = Vec::with_capacity(17);
     let mut best = None;
     let mut debug_best_plan = DebugState::new();
     for i in 0..pieces.len() {
@@ -860,6 +860,6 @@ mod tests {
             ]
         )
         // latest:
-        // For depth 6 took: 5828.989ms
+        // For depth 6 took: 5040.865ms
     }
 }
