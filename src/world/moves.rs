@@ -549,19 +549,20 @@ pub fn compute_attacked_matrix(
     occupied: &Vec<Vec<Option<Team>>>,
 ) -> Vec<Vec<bool>> {
     let mut attacked = vec![vec![false; board_size.column as usize]; board_size.row as usize];
+    let mut moves = Vec::with_capacity(17);
     for (other_i, _other_piece) in pieces.iter().enumerate() {
         if team != pieces[other_i].team {
-            let moves = if pieces[other_i].moveset.single() != Move::Pawn {
-                possible_moves_matrix(other_i, pieces, board_size, ever_moved, occupied)
+            if pieces[other_i].moveset.single() != Move::Pawn {
+                possible_moves_matrix_mut(
+                    other_i, pieces, board_size, occupied, ever_moved, &mut moves,
+                );
             } else {
-                let mut moves = Vec::new();
                 get_pawn_attacks_mut(other_i, pieces, occupied, board_size, &mut moves);
-                moves
             };
-            for movement in moves {
-                attacked[movement.row as usize][movement.column as usize] = true;
-            }
         }
+    }
+    for movement in moves {
+        attacked[movement.row as usize][movement.column as usize] = true;
     }
     attacked
 }
@@ -600,13 +601,14 @@ fn compute_attackers_matrix(
     let mut attackers = Vec::new();
     for (other_i, _other_piece) in pieces.iter().enumerate() {
         if team != pieces[other_i].team {
-            let moves = if pieces[other_i].moveset.single() != Move::Pawn {
-                possible_moves_matrix(other_i, pieces, board_size, ever_moved, occupied)
+            let mut moves = Vec::new();
+            if pieces[other_i].moveset.single() != Move::Pawn {
+                possible_moves_matrix_mut(
+                    other_i, pieces, board_size, occupied, ever_moved, &mut moves,
+                )
             } else {
-                let mut moves = Vec::new();
                 get_pawn_attacks_mut(other_i, pieces, occupied, board_size, &mut moves);
-                moves
-            };
+            }
             if moves.contains(&target_pos) {
                 attackers.push(other_i)
             };
