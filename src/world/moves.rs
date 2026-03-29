@@ -1,9 +1,56 @@
 use crate::core::coord::{Coord, ICoord};
 use crate::world::board::{AllowedCastle, EverMoved, PieceIndex, PieceIndexSmall};
 use crate::world::piece::{Piece, Pieces};
-use crate::world::team::Team;
+use crate::world::team::{OneForEachTeam, Team};
 
-pub type Occupied = Vec<Vec<Option<Team>>>;
+// pub type Occupied = Vec<Vec<Option<Team>>>;
+
+pub struct Occupied {
+    inner: OneForEachTeam<Vec<bool>>,
+    board_size: ICoord,
+}
+
+impl Occupied {
+    pub fn new(board_size: ICoord) -> Self {
+        Self {
+            inner: OneForEachTeam::new(
+                vec![false; (board_size.row * board_size.column) as usize],
+                vec![false; (board_size.row * board_size.column) as usize],
+            ),
+            board_size,
+        }
+    }
+    pub fn set(&mut self, pos: ICoord, team: Team, occupied: bool) {
+        let i = self.index(pos);
+        self.inner.get_mut(team)[i] = occupied;
+    }
+
+    fn index(&self, pos: ICoord) -> usize {
+        (pos.row * self.board_size.column + pos.column) as usize
+    }
+
+    pub fn get(&self, pos: ICoord, team: Team) -> bool {
+        let i = self.index(pos);
+        self.inner.get(team)[i]
+    }
+    pub fn get_any(&self, pos: ICoord) -> Option<Team> {
+        if self.get(pos, Team::White) {
+            Some(Team::White)
+        } else if self.get(pos, Team::Black) {
+            Some(Team::Black)
+        } else {
+            None
+        }
+    }
+    pub fn set_any(&mut self, pos: ICoord, team: Option<Team>) {
+        if let Some(team) = team {
+            self.set(pos, team, true);
+        } else {
+            self.set(pos, Team::White, false);
+            self.set(pos, Team::Black, false);
+        }
+    }
+}
 
 #[derive(PartialEq, Clone, Debug, PartialOrd)]
 pub struct Moveset {
@@ -376,24 +423,27 @@ fn add_castle(
 }
 
 pub fn to_occupied_matrix(pieces: &Vec<Piece>, board_size: ICoord) -> Occupied {
-    let mut occupied = vec![vec![None; board_size.column as usize]; board_size.row as usize];
+    let mut occupied = Occupied::new(board_size);
     for i in 0..pieces.len() {
         let piece = &pieces[i];
         let pos = piece.initial_pos;
         if inside(pos, board_size) && pieces[i].alive {
-            if occupied[pos.row() as usize][pos.column() as usize].is_some() {
+            if occupied.get(pos, Team::White) || occupied.get(pos, Team::Black) {
                 panic!("unsupported several pieces in the same tile");
             }
-            occupied[pos.row() as usize][pos.column() as usize] = Some(piece.team);
+            occupied.set(pos, piece.team, true);
         }
     }
     occupied
 }
 pub fn is_occupied(test: ICoord, occupied: &Occupied) -> Option<Team> {
-    occupied[test.row() as usize][test.column() as usize]
+    occupied.get_any(test)
+}
+pub fn is_occupied_by(test: ICoord, occupied: &Occupied, team: Team) -> bool {
+    occupied.get(test, team)
 }
 pub fn set_occupied(test: ICoord, team: Option<Team>, occupied: &mut Occupied) {
-    occupied[test.row() as usize][test.column() as usize] = team;
+    occupied.set_any(test, team)
 }
 pub fn to_piece_index_matrix(
     pieces: &Vec<Piece>,
@@ -489,14 +539,24 @@ fn add_direction(
     for _ in 0..8 {
         test += delta;
         if inside(test, board_size) {
-            if let Some(other_team) = is_occupied(test, occupied) {
-                if piece.team != other_team {
-                    positions.push(test);
-                }
+            if is_occupied_by(test, occupied, piece.team) {
+                break;
+            } else if is_occupied_by(test, occupied, piece.team.opposite()) {
+                positions.push(test);
                 break;
             } else {
                 positions.push(test);
             }
+            // if let Some(other_team) = is_occupied(test, occupied) {
+            //     if piece.team == other_team {
+            //         break;
+            //     } else {
+            //         positions.push(test);
+            //         break;
+            //     }
+            // } else {
+            //     positions.push(test);
+            // }
         } else {
             break;
         }
