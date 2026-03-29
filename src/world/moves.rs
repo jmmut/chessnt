@@ -6,49 +6,35 @@ use crate::world::team::{OneForEachTeam, Team};
 // pub type Occupied = Vec<Vec<Option<Team>>>;
 
 pub struct Occupied {
-    inner: OneForEachTeam<Vec<bool>>,
+    inner: Vec<Option<Team>>,
     board_size: ICoord,
 }
 
 impl Occupied {
     pub fn new(board_size: ICoord) -> Self {
         Self {
-            inner: OneForEachTeam::new(
-                vec![false; (board_size.row * board_size.column) as usize],
-                vec![false; (board_size.row * board_size.column) as usize],
-            ),
+            inner: vec![None; (board_size.row * board_size.column) as usize],
             board_size,
         }
     }
-    pub fn set(&mut self, pos: ICoord, team: Team, occupied: bool) {
-        let i = self.index(pos);
-        self.inner.get_mut(team)[i] = occupied;
-    }
-
     fn index(&self, pos: ICoord) -> usize {
         (pos.row * self.board_size.column + pos.column) as usize
     }
 
+    pub fn set(&mut self, pos: ICoord, team: Team, occupied: bool) {
+        self.set_any(pos, if occupied {Some(team)} else {None})
+    }
+
     pub fn get(&self, pos: ICoord, team: Team) -> bool {
-        let i = self.index(pos);
-        self.inner.get(team)[i]
+        self.get_any(pos) == Some(team)
     }
     pub fn get_any(&self, pos: ICoord) -> Option<Team> {
-        if self.get(pos, Team::White) {
-            Some(Team::White)
-        } else if self.get(pos, Team::Black) {
-            Some(Team::Black)
-        } else {
-            None
-        }
+        let i = self.index(pos);
+        self.inner[i]
     }
     pub fn set_any(&mut self, pos: ICoord, team: Option<Team>) {
-        if let Some(team) = team {
-            self.set(pos, team, true);
-        } else {
-            self.set(pos, Team::White, false);
-            self.set(pos, Team::Black, false);
-        }
+        let i = self.index(pos);
+        self.inner[i] = team;
     }
 }
 
@@ -428,7 +414,7 @@ pub fn to_occupied_matrix(pieces: &Vec<Piece>, board_size: ICoord) -> Occupied {
         let piece = &pieces[i];
         let pos = piece.initial_pos;
         if inside(pos, board_size) && pieces[i].alive {
-            if occupied.get(pos, Team::White) || occupied.get(pos, Team::Black) {
+            if occupied.get_any(pos).is_some() {
                 panic!("unsupported several pieces in the same tile");
             }
             occupied.set(pos, piece.team, true);
@@ -539,24 +525,16 @@ fn add_direction(
     for _ in 0..8 {
         test += delta;
         if inside(test, board_size) {
-            if is_occupied_by(test, occupied, piece.team) {
-                break;
-            } else if is_occupied_by(test, occupied, piece.team.opposite()) {
-                positions.push(test);
-                break;
+            if let Some(other_team) = is_occupied(test, occupied) {
+                if piece.team == other_team {
+                    break;
+                } else {
+                    positions.push(test);
+                    break;
+                }
             } else {
                 positions.push(test);
             }
-            // if let Some(other_team) = is_occupied(test, occupied) {
-            //     if piece.team == other_team {
-            //         break;
-            //     } else {
-            //         positions.push(test);
-            //         break;
-            //     }
-            // } else {
-            //     positions.push(test);
-            // }
         } else {
             break;
         }
