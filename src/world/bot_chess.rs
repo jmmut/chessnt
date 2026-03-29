@@ -271,7 +271,7 @@ fn evaluate_movement<const DEBUG_PLANNING: i32>(
                 let old_killed_pos = kill_in_caches(other_i, pieces, occupied, indexes);
                 let old_pos = pieces[i].initial_pos;
                 move_in_caches(i, old_pos, movement, pieces, occupied, indexes);
-                // ever_moved.register_movement(i);
+                ever_moved.register_movement(i);
 
                 let (_, future_score) = choose_target_score_mut::<DEBUG_PLANNING>(
                     team.opposite(),
@@ -290,7 +290,7 @@ fn evaluate_movement<const DEBUG_PLANNING: i32>(
                 }
                 move_in_caches(i, movement, old_pos, pieces, occupied, indexes);
                 unkill_in_caches(other_i, old_killed_pos, pieces, occupied, indexes);
-                // ever_moved.undo_movement(i);
+                ever_moved.undo_movement(i);
                 future_score
             } else {
                 if DEBUG_PLANNING > debug_level::NO {
@@ -335,7 +335,7 @@ fn evaluate_movement<const DEBUG_PLANNING: i32>(
                 None
             };
             move_in_caches(i, old_pos, movement, pieces, occupied, indexes);
-            // ever_moved.register_movement(i);
+            ever_moved.register_movement(i);
 
             if let Some((rook, old_rook_pos, new_rook_pos)) =
                 castle_rook_index_and_pos_and_new_pos.clone()
@@ -362,7 +362,7 @@ fn evaluate_movement<const DEBUG_PLANNING: i32>(
             }
 
             move_in_caches(i, movement, old_pos, pieces, occupied, indexes);
-            // ever_moved.undo_movement(i);
+            ever_moved.undo_movement(i);
 
             if let Some((rook, old_rook_pos, new_rook_pos)) =
                 castle_rook_index_and_pos_and_new_pos.clone()
