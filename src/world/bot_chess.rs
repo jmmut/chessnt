@@ -11,12 +11,11 @@ use crate::world::piece::Piece;
 use crate::world::team::Team;
 use macroquad::logging::info;
 use macroquad::prelude::get_time;
-use std::sync::Arc;
 
 pub const PLANNING_DEPTH: i32 = 4;
 
 static mut EVALUATIONS: i32 = 0;
-// static PLAN_STEPS: Arc<Vec<(PieceIndex, Move)>> = Arc::new(Vec::new());
+static mut PLAN_STEPS: Vec<(PieceIndex, Move)> = Vec::new();
 
 #[allow(unused)]
 mod debug_level {
@@ -26,10 +25,10 @@ mod debug_level {
     pub const VERBOSE: i32 = 30;
 }
 
-#[cfg(test)]
+#[cfg(debug_assertions)]
 pub const DEBUG_PLANNING: i32 = debug_level::CONCISE;
 
-#[cfg(not(test))]
+#[cfg(not(debug_assertions))]
 pub const DEBUG_PLANNING: i32 = debug_level::NO;
 
 pub type Score = f32;
@@ -40,15 +39,7 @@ pub fn choose_target(board: &Board, team: Team) -> AnyResult<Option<Plan>> {
     if board.referee.turn != team && !in_check {
         Ok(None)
     } else {
-        let turn = board.referee.turn;
-        let plan_score = choose_target_inner_depth(
-            team,
-            board.pieces(),
-            board.size(),
-            &board.ever_moved(),
-            turn,
-            PLANNING_DEPTH,
-        );
+        let plan_score = choose_target_board_depth(board, team, PLANNING_DEPTH);
         let score_str = if let Ok((_, Some(score))) = &plan_score {
             format!("{:>8.1}", score)
         } else {
@@ -67,6 +58,20 @@ pub fn choose_target(board: &Board, team: Team) -> AnyResult<Option<Plan>> {
     }
 }
 
+pub fn choose_target_board_depth(
+    board: &Board,
+    team: Team,
+    depth: i32,
+) -> AnyResult<(Option<Plan>, Option<Score>)> {
+    choose_target_inner_depth(
+        team,
+        board.pieces(),
+        board.size(),
+        &board.ever_moved(),
+        board.referee.turn,
+        depth,
+    )
+}
 pub fn choose_target_inner_depth(
     team: Team,
     pieces: &Vec<Piece>,
@@ -78,7 +83,7 @@ pub fn choose_target_inner_depth(
     if DEBUG_PLANNING > debug_level::NO {
         unsafe {
             EVALUATIONS = 0;
-            // PLAN_STEPS = Vec::new();
+            PLAN_STEPS = Vec::new();
         }
     }
     let mut occupied = to_occupied_matrix(pieces, board_size);
@@ -96,16 +101,17 @@ pub fn choose_target_inner_depth(
         &mut indexes,
     )? {
         if DEBUG_PLANNING > debug_level::NO {
-            unsafe {
-                println!("evaluations: {}", unsafe { EVALUATIONS });
-                // print!("evaluations: [");
-                // unsafe {
-                //     for step in &raw const PLAN_STEPS {
-                //         print!("{:?},", step);
-                //     }
-                // }
-                // println!("]");
-            }
+            println!("evaluations: {}", unsafe { EVALUATIONS });
+            print!("plan steps: {:?}", unsafe { &*(&raw const PLAN_STEPS) });
+            // print!("plan steps: [");
+            // unsafe {
+            //     if let Some(steps) = &*(&raw const PLAN_STEPS) {
+            //         for step in steps {
+            //             print!("{:?},", step);
+            //         }
+            //     }
+            // }
+            println!("]");
         }
         Ok((Some(PlanSelect::new(i, movement)), Some(score)))
     } else if team == turn {
@@ -572,12 +578,14 @@ fn piece_type_value(movement: Move) -> f32 {
 mod tests {
     use super::*;
     use crate::world::board::find_first;
-    use crate::world::moves::tests::parse_board;
+    use crate::world::board::tests::parse_board;
+    use crate::world::moves::tests::parse_pieces;
+    use std::time::Instant;
 
     #[test]
     fn test_choose_basic_kill() {
         #[rustfmt::skip]
-        let (size, pieces, ever_moved) = parse_board("
+        let (size, pieces, ever_moved) = parse_pieces("
             -- -- wb --
             bk -- -- wr
         ");
@@ -592,7 +600,7 @@ mod tests {
     #[test]
     fn test_choose_basic_save() {
         #[rustfmt::skip]
-        let (size, pieces, ever_moved) = parse_board("
+        let (size, pieces, ever_moved) = parse_pieces("
             bk -- -- wr
             br -- -- wp
         ");
@@ -606,7 +614,7 @@ mod tests {
     #[test]
     fn test_planning_accounts_for_castle() {
         #[rustfmt::skip]
-        let (size, pieces, ever_moved) = parse_board("
+        let (size, pieces, ever_moved) = parse_pieces("
             -- -- -- wp wr
             -- -- -- wp --
             -- -- -- wp --
@@ -624,7 +632,7 @@ mod tests {
     #[test]
     fn test_recursive_castle() {
         #[rustfmt::skip]
-        let (size, pieces, ever_moved) = parse_board("
+        let (size, pieces, ever_moved) = parse_pieces("
             br -- -- -- wr
             -- -- -- -- --
             -- -- -- -- --
@@ -645,7 +653,7 @@ mod tests {
     #[test]
     fn test_pawn_promotion() {
         #[rustfmt::skip]
-        let (size, pieces, ever_moved) = parse_board("
+        let (size, pieces, ever_moved) = parse_pieces("
             -- wp -- bk --
             -- wr -- -- --
         ");
@@ -667,7 +675,7 @@ mod tests {
     #[test]
     fn test_pawn_killing_promotion() {
         #[rustfmt::skip]
-        let (size, pieces, ever_moved) = parse_board("
+        let (size, pieces, ever_moved) = parse_pieces("
             -- wp wr -- -- --
             bb -- -- -- bk --
         ");
@@ -692,7 +700,7 @@ mod tests {
     #[test]
     fn test_castle_tracked_in_planning() {
         #[rustfmt::skip]
-        let (size, pieces, ever_moved) = parse_board("
+        let (size, pieces, ever_moved) = parse_pieces("
             -- wr
             -- --
             wp --
@@ -713,5 +721,30 @@ mod tests {
             score,
             Some(piece_type_value(Move::King) + piece_type_value(Move::Rook))
         );
+    }
+    #[test]
+    #[ignore]
+    fn benchmark() {
+        #[rustfmt::skip]
+        let board = parse_board("
+            br bp -- -- -- -- -- wr
+            bh -- bb -- -- -- -- --
+            bb bp -- -- -- -- -- --
+            bk -- -- -- -- -- wp wk
+            bq bp -- bh -- -- wp --
+            -- -- -- -- -- -- -- --
+            -- -- -- bb -- -- -- --
+            br bp -- -- -- -- -- wr
+        ");
+        let depth = 6;
+        let start = Instant::now();
+        choose_target_board_depth(&board, Team::Black, depth).unwrap();
+        println!(
+            "For depth {} took: {:.3}ms",
+            depth,
+            (Instant::now() - start).as_secs_f64() * 1000.0
+        );
+        // latest:
+        // For depth 6 took: 14611.287ms
     }
 }

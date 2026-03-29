@@ -631,12 +631,12 @@ pub mod tests {
     use Move::*;
     use Team::*;
 
-    pub fn parse_board(text: &str) -> (ICoord, Vec<Piece>, EverMoved) {
-        let (size, pieces, _, _, ever_moved) = parse_board_cursor(text);
+    pub fn parse_pieces(text: &str) -> (ICoord, Vec<Piece>, EverMoved) {
+        let (size, pieces, _, _, ever_moved) = parse_pieces_cursor(text);
         (size, pieces, ever_moved)
     }
 
-    pub fn parse_board_cursor(text: &str) -> (ICoord, Vec<Piece>, Coord, Coord, EverMoved) {
+    pub fn parse_pieces_cursor(text: &str) -> (ICoord, Vec<Piece>, Coord, Coord, EverMoved) {
         let mut max_columns = None;
         let mut white_cursor = Coord::new_i(0, 0);
         let mut black_cursor = Coord::new_i(0, 0);
@@ -700,7 +700,7 @@ pub mod tests {
     #[test]
     fn test_parse_board() {
         #[rustfmt::skip]
-        let (size, parsed_pieces, _) = parse_board("
+        let (size, parsed_pieces, _) = parse_pieces("
             -- -- wb --
             -- -- -- wr
             bk -- -- --
@@ -721,7 +721,7 @@ pub mod tests {
     #[test]
     fn test_parse_board_cursor() {
         #[rustfmt::skip]
-        let (size, parsed_pieces, _) = parse_board("
+        let (size, parsed_pieces, _) = parse_pieces("
             --- --- wbX ---
             --- --- --- wr-
             bk- --- --- ---
@@ -742,7 +742,7 @@ pub mod tests {
     #[test]
     fn test_check() {
         #[rustfmt::skip]
-        let (board_size, pieces, ever_moved) = parse_board("
+        let (board_size, pieces, ever_moved) = parse_pieces("
             br -- wb --
             -- -- -- wr
             bk -- -- --
@@ -757,7 +757,7 @@ pub mod tests {
     #[test]
     fn test_jumping_pieces() {
         #[rustfmt::skip]
-        let (board_size, pieces, ever_moved) = parse_board("
+        let (board_size, pieces, ever_moved) = parse_pieces("
             bk bp wr wq
             -- bp -- --
             -- wh wb --
@@ -771,7 +771,7 @@ pub mod tests {
     #[test]
     fn test_pawn_movement() {
         #[rustfmt::skip]
-        let (board_size, pieces, ever_moved) = parse_board("
+        let (board_size, pieces, ever_moved) = parse_pieces("
             -- wh -- --
             -- wr wp --
             -- bp -- --
@@ -783,7 +783,7 @@ pub mod tests {
     #[test]
     fn test_pawn_movement_border() {
         #[rustfmt::skip]
-        let (board_size, pieces, ever_moved) = parse_board("
+        let (board_size, pieces, ever_moved) = parse_pieces("
             wp --
         ");
         let white_pawn = find_first(White, Pawn, &pieces).unwrap();
@@ -889,7 +889,7 @@ pub mod tests {
     #[test]
     fn test_castle_forbidden_path_in_check() {
         #[rustfmt::skip]
-        let (board_size, pieces, ever_moved) = parse_board("
+        let (board_size, pieces, ever_moved) = parse_pieces("
             br bp -- -- -- -- -- wr 
             bh bp bb -- -- -- -- -- 
             bb bp -- -- -- -- -- -- 

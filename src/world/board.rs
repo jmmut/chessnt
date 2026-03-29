@@ -535,9 +535,9 @@ pub fn other_pieces_at(pos: ICoord, index: PieceIndex, pieces: &Vec<Piece>) -> V
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
-    use crate::world::moves::tests::parse_board_cursor;
+    use crate::world::moves::tests::parse_pieces_cursor;
     use crate::world::piece::PieceMock;
 
     fn pieces_at(pos: Coord, pieces: &[Piece]) -> Vec<&Piece> {
@@ -550,8 +550,8 @@ mod tests {
         found
     }
 
-    fn build_board(text: &str) -> Board {
-        let (size, pieces, white_cursor, black_cursor, ever_moved) = parse_board_cursor(text);
+    pub fn parse_board(text: &str) -> Board {
+        let (size, pieces, white_cursor, black_cursor, ever_moved) = parse_pieces_cursor(text);
         let mut board = Board::new(white_cursor, black_cursor, size, pieces, ever_moved);
         board.set_all_seeing_referee(true);
         board
@@ -577,7 +577,7 @@ mod tests {
     }
     #[test]
     fn test_deselect_when_killed() {
-        let mut board = build_board("wqO brX");
+        let mut board = parse_board("wqO brX");
         let pos_right = board.cursor(Team::Black).into();
 
         board.select(Team::White);
@@ -604,7 +604,7 @@ mod tests {
 
     fn rook_bishop_3_3() -> (Coord, Coord, Board) {
         #[rustfmt::skip]
-        let board = build_board("
+        let board = parse_board("
             wrO --- bbX
             --- --- ---
             --- --- ---
@@ -656,7 +656,7 @@ mod tests {
     #[test]
     fn test_pawn_promotion() {
         #[rustfmt::skip]
-        let mut board = build_board("-- wpO -- -- bpX --");
+        let mut board = parse_board("-- wpO -- -- bpX --");
         board.select(Team::White);
         board.move_cursor_rel(Coord::new_i(-1, 0), Team::White);
         board.deselect(Team::White).unwrap();
