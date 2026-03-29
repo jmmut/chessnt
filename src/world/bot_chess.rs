@@ -45,12 +45,12 @@ pub fn choose_target(board: &Board, team: Team) -> AnyResult<Option<Plan>> {
             board.ever_moved(),
         );
         let score_str = if let Ok((_, Some(score))) = &plan_score {
-            format!("{:6.1}", score)
+            format!("{:>8.1}", score)
         } else {
             "unknown".to_string()
         };
         println!(
-            "planning took {:5.3}ms, expected score {:6.1}",
+            "planning took {:>10.3}ms, expected score {}",
             (Instant::now() - start).as_secs_f64() * 1000.0,
             score_str,
         );
@@ -80,7 +80,9 @@ pub fn choose_target_inner_depth(
     depth: i32,
 ) -> AnyResult<(Option<Plan>, Option<Score>)> {
     if DEBUG_PLANNING > debug_level::NO {
-        unsafe {EVALUATIONS = 0;}
+        unsafe {
+            EVALUATIONS = 0;
+        }
     }
     let mut occupied = to_occupied_matrix(pieces, board_size);
     let mut indexes = to_piece_index_matrix_small(pieces, board_size);
@@ -162,6 +164,17 @@ pub fn choose_target_score_mut(
                     i,
                     movement,
                 )?;
+                if let (Some((overall_i, _, overall_score)), Some((i, movement, score))) =
+                    (overall_best, &best)
+                {
+                    let mut overall_score = *overall_score;
+                    if pieces[*overall_i].team != pieces[*i].team {
+                        overall_score = -overall_score;
+                    }
+                    if *score > overall_score {
+                        return Ok((Some((*i, *movement)), *score));
+                    }
+                }
             }
         }
     }
@@ -226,7 +239,7 @@ fn evaluate_movement(
                     ever_moved,
                     turn.opposite(),
                     depth - 1,
-                    overall_best,
+                    best,
                     occupied,
                     indexes,
                 )?;
@@ -238,7 +251,9 @@ fn evaluate_movement(
                 future_score
             } else {
                 if DEBUG_PLANNING > debug_level::NO {
-                    unsafe {EVALUATIONS += 1;}
+                    unsafe {
+                        EVALUATIONS += 1;
+                    }
                 }
                 0.0
             };
@@ -290,7 +305,7 @@ fn evaluate_movement(
                 ever_moved,
                 team.opposite(), // team: not a bug. on the first level we want to evaluate movements out of our turn before the other team moves
                 depth - 1,
-                overall_best,
+                &best,
                 occupied,
                 indexes,
             )?;
@@ -312,7 +327,9 @@ fn evaluate_movement(
             future_score
         } else {
             if DEBUG_PLANNING > debug_level::NO {
-                unsafe {EVALUATIONS += 1;}
+                unsafe {
+                    EVALUATIONS += 1;
+                }
             }
             0.0
         };
