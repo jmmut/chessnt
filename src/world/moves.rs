@@ -92,7 +92,16 @@ pub fn possible_moves_matrix(
     ever_moved: &EverMoved,
     occupied: &Vec<Vec<Option<Team>>>,
 ) -> Vec<ICoord> {
-    let mut valid_moves = Vec::new();
+    // capacity benchmarks:
+    // new(): 8650.928ms
+    // 0:  9235.926ms
+    // 10: 7625.944ms
+    // 17: 7379.700ms
+    // 20: 7349.646ms
+    // 30: 7405.413ms
+    // 40: 7515.943ms
+    // 50: 7515.134ms
+    let mut valid_moves = Vec::with_capacity(17);
     possible_moves_matrix_mut(
         piece_index,
         pieces,
