@@ -533,8 +533,12 @@ pub fn is_any_attacked(
 ) -> bool {
     const CHESS_SIZE: ICoord = ICoord::new_i(8, 8);
     static mut ATTACKED_CHESS: Vec<Vec<bool>> = Vec::new();
+    static mut MOVES: Vec<ICoord> = Vec::new();
+
     if board_size == CHESS_SIZE {
         let mut attacked = unsafe { std::mem::take(&mut *(&raw mut ATTACKED_CHESS)) };
+        let mut moves = unsafe { std::mem::take(&mut *(&raw mut MOVES)) };
+        moves.clear();
         if attacked.len() == 0 {
             attacked = vec![vec![false; CHESS_SIZE.column as usize]; CHESS_SIZE.row as usize];
         }
@@ -543,7 +547,6 @@ pub fn is_any_attacked(
                 *b = false;
             }
         }
-        let mut moves = Vec::with_capacity(17);
         for (other_i, _other_piece) in pieces.iter().enumerate() {
             if team != pieces[other_i].team {
                 if pieces[other_i].moveset.single() != Move::Pawn {
@@ -555,16 +558,21 @@ pub fn is_any_attacked(
                 };
             }
         }
-        for movement in moves {
+        for movement in &moves {
             attacked[movement.row as usize][movement.column as usize] = true;
         }
         for target in targets {
             if attacked[target.row as usize][target.column as usize] {
                 unsafe {
                     ATTACKED_CHESS = std::mem::take(&mut attacked);
+                    MOVES = std::mem::take(&mut moves);
                 }
                 return true;
             }
+        }
+        unsafe {
+            ATTACKED_CHESS = std::mem::take(&mut attacked);
+            MOVES = std::mem::take(&mut moves);
         }
         false
     } else {
