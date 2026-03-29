@@ -1,5 +1,4 @@
 use std::fmt::{Display, Formatter};
-use std::iter::Zip;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, PartialOrd)]
 pub enum Team {

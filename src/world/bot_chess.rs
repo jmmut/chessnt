@@ -3,9 +3,9 @@ use crate::core::coord::{Coord, ICoord};
 use crate::world::board::{Board, EverMoved, PieceIndex, PieceIndexSmall};
 use crate::world::bot::{Plan, PlanSelect};
 use crate::world::moves::{
-    Move, Moveset, Occupied, board_to_str_indent, checked_index_at, index_at, pieces_to_str,
-    possible_moves, possible_moves_matrix_mut, print_pieces, set_index_at, set_occupied,
-    to_occupied_matrix, to_piece_index_matrix_small,
+    Move, Moveset, Occupied, PieceIndexes, board_to_str_indent, checked_index_at, index_at,
+    pieces_to_str, possible_moves, possible_moves_matrix_mut, print_pieces, set_index_at,
+    set_occupied, to_occupied_matrix, to_piece_index_matrix_small,
 };
 use crate::world::piece::Piece;
 use crate::world::team::Team;
@@ -158,7 +158,7 @@ pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
     overall_best: &Option<(PieceIndex, ICoord, Score)>,
     ever_moved: &mut EverMoved,
     occupied: &mut Occupied,
-    indexes: &mut Vec<Vec<Option<PieceIndexSmall>>>,
+    indexes: &mut PieceIndexes,
     debug: &mut DebugState,
 ) -> AnyResult<(Option<(PieceIndex, ICoord)>, Score)> {
     if DEBUG_PLANNING >= debug_level::TREE {
@@ -260,7 +260,7 @@ fn evaluate_movement<const DEBUG_PLANNING: i32>(
     ever_moved: &mut EverMoved,
     pieces: &mut Vec<Piece>,
     occupied: &mut Occupied,
-    indexes: &mut Vec<Vec<Option<PieceIndexSmall>>>,
+    indexes: &mut PieceIndexes,
     debug: &mut DebugState,
 ) -> AnyResult<bool> {
     if DEBUG_PLANNING >= debug_level::VERBOSE {
@@ -421,7 +421,7 @@ fn move_in_caches(
     to: ICoord,
     pieces: &mut Vec<Piece>,
     occupied: &mut Occupied,
-    indexes: &mut Vec<Vec<Option<PieceIndexSmall>>>,
+    indexes: &mut PieceIndexes,
 ) {
     let team = pieces[i].team;
     pieces[i].set_pos_and_initial_i(to);
@@ -435,7 +435,7 @@ fn kill_in_caches(
     i: usize,
     pieces: &mut Vec<Piece>,
     occupied: &mut Occupied,
-    indexes: &mut Vec<Vec<Option<PieceIndexSmall>>>,
+    indexes: &mut PieceIndexes,
 ) -> ICoord {
     pieces[i].alive = false;
     let old_killed_pos = pieces[i].initial_pos;
@@ -450,7 +450,7 @@ fn unkill_in_caches(
     pos_before_dying: ICoord,
     pieces: &mut Vec<Piece>,
     occupied: &mut Occupied,
-    indexes: &mut Vec<Vec<Option<PieceIndexSmall>>>,
+    indexes: &mut PieceIndexes,
 ) {
     pieces[i].alive = true;
     pieces[i].set_pos_and_initial_i(pos_before_dying);
@@ -860,6 +860,6 @@ mod tests {
             ]
         )
         // latest:
-        // For depth 6 took: 5040.865ms
+        // For depth 6 took: 4365.364ms
     }
 }

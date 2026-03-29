@@ -1,16 +1,17 @@
 use crate::core::coord::{Coord, ICoord};
 use crate::world::board::{AllowedCastle, EverMoved, PieceIndex, PieceIndexSmall};
 use crate::world::piece::{Piece, Pieces};
-use crate::world::team::{OneForEachTeam, Team};
+use crate::world::team::Team;
 
-// pub type Occupied = Vec<Vec<Option<Team>>>;
+pub type Occupied = Matrix<Team>;
+pub type PieceIndexes = Matrix<PieceIndexSmall>;
 
-pub struct Occupied {
-    inner: Vec<Option<Team>>,
+pub struct Matrix<T> {
+    inner: Vec<Option<T>>,
     board_size: ICoord,
 }
 
-impl Occupied {
+impl<T: Copy + PartialEq> Matrix<T> {
     pub fn new(board_size: ICoord) -> Self {
         Self {
             inner: vec![None; (board_size.row * board_size.column) as usize],
@@ -21,20 +22,31 @@ impl Occupied {
         (pos.row * self.board_size.column + pos.column) as usize
     }
 
-    pub fn set(&mut self, pos: ICoord, team: Team, occupied: bool) {
-        self.set_any(pos, if occupied {Some(team)} else {None})
+    pub fn rows(&self) -> i32 {
+        self.board_size.row
     }
-
-    pub fn get(&self, pos: ICoord, team: Team) -> bool {
-        self.get_any(pos) == Some(team)
+    pub fn columns(&self) -> i32 {
+        self.board_size.column
     }
-    pub fn get_any(&self, pos: ICoord) -> Option<Team> {
+    pub fn size(&self) -> ICoord {
+        self.board_size
+    }
+    pub fn contains(&self, pos: ICoord) -> bool {
+        pos.row() >= 0
+            && pos.row() < self.rows()
+            && pos.column() >= 0
+            && pos.column() < self.columns()
+    }
+    pub fn get(&self, pos: ICoord, value: T) -> bool {
+        self.get_any(pos) == Some(value)
+    }
+    pub fn get_any(&self, pos: ICoord) -> Option<T> {
         let i = self.index(pos);
         self.inner[i]
     }
-    pub fn set_any(&mut self, pos: ICoord, team: Option<Team>) {
+    pub fn set_any(&mut self, pos: ICoord, value: Option<T>) {
         let i = self.index(pos);
-        self.inner[i] = team;
+        self.inner[i] = value;
     }
 }
 
@@ -417,7 +429,7 @@ pub fn to_occupied_matrix(pieces: &Vec<Piece>, board_size: ICoord) -> Occupied {
             if occupied.get_any(pos).is_some() {
                 panic!("unsupported several pieces in the same tile");
             }
-            occupied.set(pos, piece.team, true);
+            occupied.set_any(pos, Some(piece.team));
         }
     }
     occupied
@@ -447,71 +459,42 @@ pub fn to_piece_index_matrix(
     }
     occupied
 }
-pub fn to_piece_index_matrix_small(
-    pieces: &Vec<Piece>,
-    board_size: ICoord,
-) -> Vec<Vec<Option<PieceIndexSmall>>> {
-    let mut occupied = vec![vec![None; board_size.column as usize]; board_size.row as usize];
+pub fn to_piece_index_matrix_small(pieces: &Vec<Piece>, board_size: ICoord) -> PieceIndexes {
+    let mut occupied = PieceIndexes::new(board_size);
     for i in 0..pieces.len() {
         let pos = pieces[i].initial_pos;
         if inside(pos, board_size) && pieces[i].alive {
-            if occupied[pos.row() as usize][pos.column() as usize].is_some() {
+            if occupied.get_any(pos).is_some() {
                 panic!("unsupported several pieces in the same tile");
             }
-            occupied[pos.row() as usize][pos.column() as usize] = Some(i as u8);
+            occupied.set_any(pos, Some(i as PieceIndexSmall));
         }
     }
     occupied
 }
 
-pub fn index_at(
-    test: ICoord,
-    occupied: &Vec<Vec<Option<PieceIndexSmall>>>,
-) -> Option<PieceIndexSmall> {
+pub fn index_at(test: ICoord, occupied: &PieceIndexes) -> Option<PieceIndexSmall> {
     #[cfg(test)]
-    if test.row() < 0
-        || test.row() as usize >= occupied.len()
-        || test.column() < 0
-        || test.column() as usize >= occupied[0].len()
-    {
+    if !occupied.contains(test) {
         panic!(
-            "index_at should receive coords in range: coord={:?}, occupied size=({}, {})",
+            "index_at should receive coords in range: coord={:?}, occupied size=(columns: {}, rows: {})",
             test,
-            occupied.len(),
-            if occupied.len() > 0 {
-                occupied[0].len()
-            } else {
-                0
-            }
+            occupied.columns(),
+            occupied.rows(),
         );
     }
-    occupied[test.row() as usize][test.column() as usize]
+    occupied.get_any(test)
 }
-pub fn checked_index_at(
-    test: ICoord,
-    occupied: &Vec<Vec<Option<PieceIndexSmall>>>,
-) -> Option<PieceIndexSmall> {
-    if test.row() >= 0
-        && let Some(row) = occupied.get(test.row() as usize)
-    {
-        if test.column() >= 0
-            && let Some(tile) = row.get(test.column() as usize)
-        {
-            tile.clone()
-        } else {
-            None
-        }
+pub fn checked_index_at(test: ICoord, occupied: &PieceIndexes) -> Option<PieceIndexSmall> {
+    if occupied.contains(test) {
+        occupied.get_any(test)
     } else {
         None
     }
 }
 
-pub fn set_index_at(
-    test: ICoord,
-    index: Option<PieceIndexSmall>,
-    occupied: &mut Vec<Vec<Option<PieceIndexSmall>>>,
-) {
-    occupied[test.row() as usize][test.column() as usize] = index;
+pub fn set_index_at(test: ICoord, index: Option<PieceIndexSmall>, occupied: &mut PieceIndexes) {
+    occupied.set_any(test, index)
 }
 
 fn add_direction(
