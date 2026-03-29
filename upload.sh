@@ -54,11 +54,11 @@ else
   read -p "tag ${new_version} doesn't exist. Want to tag now? [y/N] " -n 1 -r
   echo
   if [[ $REPLY =~ ^[Yy]$ ]]; then
-    message=$(git show --pretty="%s" |head -n 1)
-    git tag $new_version -m "$message"
+    message=$(git log HEAD~1..HEAD --format="%s")
     echo -e "is this message ok?\n    $message"
     read -p "[y/N] " -n 1 -r
     echo 
+    git tag $new_version -m "$message"
     if [[ $REPLY =~ ^[Yy]$ ]]; then
       echo "keeping message"
     else
