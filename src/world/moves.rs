@@ -342,22 +342,19 @@ fn add_castle(
             #[rustfmt::skip]
             match allowed_castle {
                 AllowedCastle::Yes => {
-                    if !is_attacked(piece.initial_pos, team, pieces, board_size, &SKIP_CASTLE, occupied)
-                        && !is_attacked(adjacent, team, pieces, board_size, &SKIP_CASTLE, occupied)
-                        && !is_attacked(jump, team, pieces, board_size, &SKIP_CASTLE, occupied)
-                    {
+                    let targets = vec![piece.initial_pos, adjacent, jump];
+                    if !is_any_attacked(targets, team, pieces, board_size, &SKIP_CASTLE, occupied) {
                         positions.push(jump);
                     }
                 }
                 AllowedCastle::RookMissing => {
                     if inside(rook_far, board_size)
-                        && is_occupied(rook_close, occupied).is_none()
-                        && ever_moved.castle_allowed_rook_pos(team, rook_far, pieces) == AllowedCastle::Yes
-                        && !is_attacked(piece.initial_pos, team, pieces, board_size, &SKIP_CASTLE, occupied)
-                        && !is_attacked(adjacent, team, pieces, board_size, &SKIP_CASTLE, occupied)
-                        && !is_attacked(jump, team, pieces, board_size, &SKIP_CASTLE, occupied)
-                    {
-                        positions.push(jump);
+                            && is_occupied(rook_close, occupied).is_none()
+                            && ever_moved.castle_allowed_rook_pos(team, rook_far, pieces) == AllowedCastle::Yes {
+                        let targets = vec![piece.initial_pos, adjacent, jump];
+                        if !is_any_attacked(targets, team, pieces, board_size, &SKIP_CASTLE, occupied) {
+                            positions.push(jump);
+                        }
                     }
                 }
                 AllowedCastle::RookMoved => {}
