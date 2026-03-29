@@ -531,13 +531,51 @@ pub fn is_any_attacked(
     ever_moved: &EverMoved,
     occupied: &Vec<Vec<Option<Team>>>,
 ) -> bool {
-    let attacked = compute_attacked_matrix(team, pieces, board_size, ever_moved, occupied);
-    for target in targets {
-        if attacked[target.row as usize][target.column as usize] {
-            return true;
+    const CHESS_SIZE: ICoord = ICoord::new_i(8, 8);
+    static mut ATTACKED_CHESS: Vec<Vec<bool>> = Vec::new();
+    if board_size == CHESS_SIZE {
+        let mut attacked = unsafe { std::mem::take(&mut *(&raw mut ATTACKED_CHESS)) };
+        if attacked.len() == 0 {
+            attacked = vec![vec![false; CHESS_SIZE.column as usize]; CHESS_SIZE.row as usize];
         }
+        for row in attacked.iter_mut() {
+            for b in row.iter_mut() {
+                *b = false;
+            }
+        }
+        let mut moves = Vec::with_capacity(17);
+        for (other_i, _other_piece) in pieces.iter().enumerate() {
+            if team != pieces[other_i].team {
+                if pieces[other_i].moveset.single() != Move::Pawn {
+                    possible_moves_matrix_mut(
+                        other_i, pieces, board_size, occupied, ever_moved, &mut moves,
+                    );
+                } else {
+                    get_pawn_attacks_mut(other_i, pieces, occupied, board_size, &mut moves);
+                };
+            }
+        }
+        for movement in moves {
+            attacked[movement.row as usize][movement.column as usize] = true;
+        }
+        for target in targets {
+            if attacked[target.row as usize][target.column as usize] {
+                unsafe {
+                    ATTACKED_CHESS = std::mem::take(&mut attacked);
+                }
+                return true;
+            }
+        }
+        false
+    } else {
+        let attacked = compute_attacked_matrix(team, pieces, board_size, ever_moved, occupied);
+        for target in targets {
+            if attacked[target.row as usize][target.column as usize] {
+                return true;
+            }
+        }
+        false
     }
-    false
 }
 
 /// team is the attacked team
