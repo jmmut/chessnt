@@ -9,8 +9,9 @@ use crate::world::moves::{
 };
 use crate::world::piece::Piece;
 use crate::world::team::Team;
-use std::sync::Arc;
+use macroquad::logging::info;
 use macroquad::prelude::get_time;
+use std::sync::Arc;
 
 pub const PLANNING_DEPTH: i32 = 4;
 
@@ -53,7 +54,7 @@ pub fn choose_target(board: &Board, team: Team) -> AnyResult<Option<Plan>> {
         } else {
             "unknown".to_string()
         };
-        println!(
+        info!(
             "planning took {:>10.3}ms, expected score {}",
             (get_time() - start) * 1000.0,
             score_str,
