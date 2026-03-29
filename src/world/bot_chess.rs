@@ -8,6 +8,7 @@ use crate::world::moves::{
 };
 use crate::world::piece::Piece;
 use crate::world::team::Team;
+use macroquad::logging::info;
 use macroquad::prelude::get_time;
 
 pub const PLANNING_DEPTH: i32 = 4;
@@ -33,7 +34,7 @@ pub fn choose_target(board: &Board, team: Team) -> AnyResult<Option<Plan>> {
             board.size(),
             board.ever_moved(),
         );
-        println!("planning took {:5.3}ms", (get_time() - start) * 1000.0);
+        info!("planning took {:5.3}ms", (get_time() - start) * 1000.0);
         plan
     }
 }
