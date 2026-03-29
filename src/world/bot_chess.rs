@@ -10,7 +10,7 @@ use crate::world::moves::{
 use crate::world::piece::Piece;
 use crate::world::team::Team;
 use std::sync::Arc;
-use std::time::Instant;
+use macroquad::prelude::get_time;
 
 pub const PLANNING_DEPTH: i32 = 4;
 
@@ -34,7 +34,7 @@ pub const DEBUG_PLANNING: i32 = debug_level::NO;
 pub type Score = f32;
 
 pub fn choose_target(board: &Board, team: Team) -> AnyResult<Option<Plan>> {
-    let start = Instant::now();
+    let start = get_time();
     let in_check = board.is_in_check(team).is_some();
     if board.referee.turn != team && !in_check {
         Ok(None)
@@ -55,7 +55,7 @@ pub fn choose_target(board: &Board, team: Team) -> AnyResult<Option<Plan>> {
         };
         println!(
             "planning took {:>10.3}ms, expected score {}",
-            (Instant::now() - start).as_secs_f64() * 1000.0,
+            (get_time() - start) * 1000.0,
             score_str,
         );
         if let Ok((plan, _)) = plan_score {
