@@ -17,7 +17,7 @@ pub const PLANNING_DEPTH: i32 = 4;
 static mut EVALUATIONS: i32 = 0;
 
 #[allow(unused)]
-mod debug_level {
+pub mod debug_level {
     pub const NO: i32 = 0;
     pub const PLAN: i32 = 5;
     pub const CONCISE: i32 = 10;
@@ -26,10 +26,10 @@ mod debug_level {
 }
 
 #[cfg(debug_assertions)]
-pub const DEBUG_PLANNING: i32 = debug_level::CONCISE;
+pub const DEBUG_PLANNING_GLOBAL: i32 = debug_level::CONCISE;
 
 #[cfg(not(debug_assertions))]
-pub const DEBUG_PLANNING: i32 = debug_level::PLAN;
+pub const DEBUG_PLANNING_GLOBAL: i32 = debug_level::PLAN;
 
 pub type Score = f32;
 
@@ -47,7 +47,8 @@ pub fn choose_target(board: &Board, team: Team) -> AnyResult<Option<Plan>> {
     if board.referee.turn != team && !in_check {
         Ok(None)
     } else {
-        let plan_score = choose_target_board_depth(board, team, PLANNING_DEPTH);
+        let plan_score =
+            choose_target_board_depth::<DEBUG_PLANNING_GLOBAL>(board, team, PLANNING_DEPTH);
         let score_str = if let Ok((_, Some(score))) = &plan_score {
             format!("{:>8.1}", score)
         } else {
@@ -66,12 +67,12 @@ pub fn choose_target(board: &Board, team: Team) -> AnyResult<Option<Plan>> {
     }
 }
 
-pub fn choose_target_board_depth(
+pub fn choose_target_board_depth<const DEBUG_PLANNING: i32>(
     board: &Board,
     team: Team,
     depth: i32,
 ) -> AnyResult<(Option<Plan>, Option<Score>)> {
-    choose_target_inner_depth(
+    choose_target_inner_depth::<DEBUG_PLANNING>(
         team,
         board.pieces(),
         board.size(),
@@ -80,7 +81,7 @@ pub fn choose_target_board_depth(
         depth,
     )
 }
-pub fn choose_target_inner_depth(
+pub fn choose_target_inner_depth<const DEBUG_PLANNING: i32>(
     team: Team,
     pieces: &Vec<Piece>,
     board_size: ICoord,
@@ -97,7 +98,7 @@ pub fn choose_target_inner_depth(
     let mut indexes = to_piece_index_matrix_small(pieces, board_size);
     let mut ever_moved = ever_moved.clone();
     let mut debug = DebugState::new();
-    if let (Some((i, movement)), score) = choose_target_score_mut(
+    if let (Some((i, movement)), score) = choose_target_score_mut::<DEBUG_PLANNING>(
         team,
         &mut pieces.clone(),
         board_size,
@@ -126,7 +127,7 @@ pub fn choose_target_inner_depth(
         Ok((None, None))
     }
 }
-pub fn choose_target_score_mut(
+pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
     team: Team,
     pieces: &mut Vec<Piece>,
     board_size: ICoord,
@@ -172,7 +173,7 @@ pub fn choose_target_score_mut(
             for movement in &moves {
                 let mut debug_here = DebugState::new();
                 let movement = *movement;
-                let is_better = evaluate_movement(
+                let is_better = evaluate_movement::<DEBUG_PLANNING>(
                     movement,
                     i,
                     team,
@@ -225,7 +226,7 @@ pub fn choose_target_score_mut(
     }
 }
 
-fn evaluate_movement(
+fn evaluate_movement<const DEBUG_PLANNING: i32>(
     movement: ICoord,
     i: usize,
     team: Team,
@@ -270,8 +271,9 @@ fn evaluate_movement(
                 let old_killed_pos = kill_in_caches(other_i, pieces, occupied, indexes);
                 let old_pos = pieces[i].initial_pos;
                 move_in_caches(i, old_pos, movement, pieces, occupied, indexes);
+                // ever_moved.register_movement(i);
 
-                let (_, future_score) = choose_target_score_mut(
+                let (_, future_score) = choose_target_score_mut::<DEBUG_PLANNING>(
                     team.opposite(),
                     pieces,
                     board_size,
@@ -288,6 +290,7 @@ fn evaluate_movement(
                 }
                 move_in_caches(i, movement, old_pos, pieces, occupied, indexes);
                 unkill_in_caches(other_i, old_killed_pos, pieces, occupied, indexes);
+                // ever_moved.undo_movement(i);
                 future_score
             } else {
                 if DEBUG_PLANNING > debug_level::NO {
@@ -298,7 +301,7 @@ fn evaluate_movement(
                 0.0
             };
             let future_score = -future_score - kill_value + piece_change;
-            maybe_store_better_and_debug(
+            maybe_store_better_and_debug::<DEBUG_PLANNING>(
                 depth,
                 pieces,
                 i,
@@ -332,6 +335,7 @@ fn evaluate_movement(
                 None
             };
             move_in_caches(i, old_pos, movement, pieces, occupied, indexes);
+            // ever_moved.register_movement(i);
 
             if let Some((rook, old_rook_pos, new_rook_pos)) =
                 castle_rook_index_and_pos_and_new_pos.clone()
@@ -340,7 +344,7 @@ fn evaluate_movement(
                 move_in_caches(rook, old_rook_pos, new_rook_pos, pieces, occupied, indexes);
             }
 
-            let (_, future_score) = choose_target_score_mut(
+            let (_, future_score) = choose_target_score_mut::<DEBUG_PLANNING>(
                 team.opposite(),
                 pieces,
                 board_size,
@@ -358,6 +362,7 @@ fn evaluate_movement(
             }
 
             move_in_caches(i, movement, old_pos, pieces, occupied, indexes);
+            // ever_moved.undo_movement(i);
 
             if let Some((rook, old_rook_pos, new_rook_pos)) =
                 castle_rook_index_and_pos_and_new_pos.clone()
@@ -376,7 +381,15 @@ fn evaluate_movement(
             }
             0.0
         };
-        maybe_store_better_and_debug(depth, pieces, i, movement, future_score, overall_best, best)
+        maybe_store_better_and_debug::<DEBUG_PLANNING>(
+            depth,
+            pieces,
+            i,
+            movement,
+            future_score,
+            overall_best,
+            best,
+        )
     })
 }
 
@@ -423,7 +436,7 @@ fn unkill_in_caches(
     set_index_at(pos_before_dying, Some(i as PieceIndexSmall), indexes);
 }
 
-fn maybe_store_better_and_debug(
+fn maybe_store_better_and_debug<const DEBUG_PLANNING: i32>(
     depth: i32,
     pieces: &Vec<Piece>,
     i: usize,
@@ -606,10 +619,16 @@ mod tests {
             -- -- wb --
             bk -- -- wr
         ");
-        let plan =
-            choose_target_inner_depth(Team::White, &pieces, size, &ever_moved, Team::White, 2)
-                .unwrap()
-                .0;
+        let plan = choose_target_inner_depth::<DEBUG_PLANNING_GLOBAL>(
+            Team::White,
+            &pieces,
+            size,
+            &ever_moved,
+            Team::White,
+            2,
+        )
+        .unwrap()
+        .0;
         let rook = find_first(Team::White, Move::Rook, &pieces).unwrap();
         let king = find_first(Team::Black, Move::King, &pieces).unwrap();
         assert_eq!(plan, Some(PlanSelect::new(rook, pieces[king].initial_pos)));
@@ -621,10 +640,16 @@ mod tests {
             bk -- -- wr
             br -- -- wp
         ");
-        let plan =
-            choose_target_inner_depth(Team::Black, &pieces, size, &ever_moved, Team::Black, 2)
-                .unwrap()
-                .0;
+        let plan = choose_target_inner_depth::<DEBUG_PLANNING_GLOBAL>(
+            Team::Black,
+            &pieces,
+            size,
+            &ever_moved,
+            Team::Black,
+            2,
+        )
+        .unwrap()
+        .0;
         let king = find_first(Team::Black, Move::King, &pieces).unwrap();
         assert_eq!(plan, Some(PlanSelect::new(king, ICoord::new_i(1, 1))));
     }
@@ -639,10 +664,16 @@ mod tests {
             -- -- -- -- --
             bp -- -- -- bk
         ");
-        let plan =
-            choose_target_inner_depth(Team::White, &pieces, size, &ever_moved, Team::White, 3)
-                .unwrap()
-                .0;
+        let plan = choose_target_inner_depth::<DEBUG_PLANNING_GLOBAL>(
+            Team::White,
+            &pieces,
+            size,
+            &ever_moved,
+            Team::White,
+            3,
+        )
+        .unwrap()
+        .0;
         let king = find_first(Team::White, Move::King, &pieces).unwrap();
         assert_eq!(plan, Some(PlanSelect::new(king, ICoord::new_i(4, 1))));
     }
@@ -656,10 +687,16 @@ mod tests {
             bk -- -- -- wk
             br -- -- -- wr
         ");
-        let plan =
-            choose_target_inner_depth(Team::White, &pieces, size, &ever_moved, Team::White, 2)
-                .unwrap()
-                .0;
+        let plan = choose_target_inner_depth::<DEBUG_PLANNING_GLOBAL>(
+            Team::White,
+            &pieces,
+            size,
+            &ever_moved,
+            Team::White,
+            2,
+        )
+        .unwrap()
+        .0;
         let top_white_rook = find_first(Team::White, Move::Rook, &pieces).unwrap();
         assert_eq!(
             plan,
@@ -674,9 +711,15 @@ mod tests {
             -- wp -- bk --
             -- wr -- -- --
         ");
-        let plan =
-            choose_target_inner_depth(Team::White, &pieces, size, &ever_moved, Team::White, 3)
-                .unwrap();
+        let plan = choose_target_inner_depth::<DEBUG_PLANNING_GLOBAL>(
+            Team::White,
+            &pieces,
+            size,
+            &ever_moved,
+            Team::White,
+            3,
+        )
+        .unwrap();
         let pawn = find_first(Team::White, Move::Pawn, &pieces).unwrap();
         assert_eq!(
             plan,
@@ -696,9 +739,15 @@ mod tests {
             -- wp wr -- -- --
             bb -- -- -- bk --
         ");
-        let plan =
-            choose_target_inner_depth(Team::White, &pieces, size, &ever_moved, Team::White, 3)
-                .unwrap();
+        let plan = choose_target_inner_depth::<DEBUG_PLANNING_GLOBAL>(
+            Team::White,
+            &pieces,
+            size,
+            &ever_moved,
+            Team::White,
+            3,
+        )
+        .unwrap();
         let pawn = find_first(Team::White, Move::Pawn, &pieces).unwrap();
         assert_eq!(
             plan,
@@ -718,22 +767,30 @@ mod tests {
     fn test_castle_tracked_in_planning() {
         #[rustfmt::skip]
         let (size, pieces, ever_moved) = parse_pieces("
-            -- wr
+            wr br
             -- --
             wp --
-            wp br
+            wp --
             wp wk
+            wp --
+            -- --
             -- --
             -- bk
             -- --
             -- --
             wr --
         ");
-        let (plan, score) =
-            choose_target_inner_depth(Team::White, &pieces, size, &ever_moved, Team::White, 3)
-                .unwrap();
-        let king = find_first(Team::White, Move::King, &pieces).unwrap();
-        assert_eq!(plan, Some(PlanSelect::new(king, ICoord::new_i(0, 3))),);
+        let (plan, score) = choose_target_inner_depth::<{ debug_level::PLAN }>(
+            Team::White,
+            &pieces,
+            size,
+            &ever_moved,
+            Team::White,
+            5,
+        )
+        .unwrap();
+        let rook = find_first(Team::White, Move::Rook, &pieces).unwrap();
+        assert_eq!(plan, Some(PlanSelect::new(rook, ICoord::new_i(1, 0))),);
         assert_ne!(
             score,
             Some(piece_type_value(Move::King) + piece_type_value(Move::Rook))
@@ -755,7 +812,7 @@ mod tests {
         ");
         let depth = 6;
         let start = Instant::now();
-        choose_target_board_depth(&board, Team::Black, depth).unwrap();
+        choose_target_board_depth::<{ debug_level::PLAN }>(&board, Team::Black, depth).unwrap();
         println!(
             "For depth {} took: {:.3}ms",
             depth,
