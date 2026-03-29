@@ -3,6 +3,8 @@ use crate::world::board::{AllowedCastle, EverMoved, PieceIndex, PieceIndexSmall}
 use crate::world::piece::{Piece, Pieces};
 use crate::world::team::Team;
 
+pub type Occupied = Vec<Vec<Option<Team>>>;
+
 #[derive(PartialEq, Clone, Debug, PartialOrd)]
 pub struct Moveset {
     pub moves: Vec<Move>,
@@ -90,7 +92,7 @@ pub fn possible_moves_matrix(
     pieces: &Vec<Piece>,
     size: ICoord,
     ever_moved: &EverMoved,
-    occupied: &Vec<Vec<Option<Team>>>,
+    occupied: &Occupied,
 ) -> Vec<ICoord> {
     // capacity benchmarks:
     // new(): 8650.928ms
@@ -116,7 +118,7 @@ pub fn possible_moves_matrix_mut(
     piece_index: usize,
     pieces: &Vec<Piece>,
     size: ICoord,
-    occupied: &Vec<Vec<Option<Team>>>,
+    occupied: &Occupied,
     ever_moved: &EverMoved,
     valid_moves: &mut Vec<ICoord>,
 ) {
@@ -139,7 +141,7 @@ fn piece_moves_matrix_mut(
     movement: &Move,
     pieces: &Vec<Piece>,
     board_size: ICoord,
-    occupied: &Vec<Vec<Option<Team>>>,
+    occupied: &Occupied,
     ever_moved: &EverMoved,
     moves: &mut Vec<ICoord>,
 ) {
@@ -175,7 +177,7 @@ fn piece_moves_matrix_mut(
 fn get_positions_mut(
     piece: &Piece,
     possible: &[ICoord],
-    occupied: &Vec<Vec<Option<Team>>>,
+    occupied: &Occupied,
     board_size: ICoord,
     moves: &mut Vec<ICoord>,
 ) {
@@ -197,7 +199,7 @@ fn get_positions_mut(
 fn get_pawn_positions_mut(
     piece_index: usize,
     pieces: &Vec<Piece>,
-    occupied: &Vec<Vec<Option<Team>>>,
+    occupied: &Occupied,
     board_size: ICoord,
     moves: &mut Vec<ICoord>,
 ) {
@@ -238,7 +240,7 @@ fn get_pawn_positions_mut(
 fn get_pawn_attacks_mut(
     piece_index: usize,
     pieces: &Vec<Piece>,
-    occupied: &Vec<Vec<Option<Team>>>,
+    occupied: &Occupied,
     board_size: ICoord,
     moves: &mut Vec<ICoord>,
 ) {
@@ -264,7 +266,7 @@ fn get_pawn_attacks_mut(
 
 fn get_rook_positions_mut(
     piece: &Piece,
-    occupied: &Vec<Vec<Option<Team>>>,
+    occupied: &Occupied,
     board_size: ICoord,
     positions: &mut Vec<ICoord>,
 ) {
@@ -281,7 +283,7 @@ fn get_rook_positions_mut(
 
 fn get_bishop_positions_mut(
     piece: &Piece,
-    occupied: &Vec<Vec<Option<Team>>>,
+    occupied: &Occupied,
     board_size: ICoord,
     positions: &mut Vec<ICoord>,
 ) {
@@ -308,7 +310,7 @@ const KING: &[ICoord] = &[
 fn get_king_positions_mut(
     piece: &Piece,
     pieces: &Pieces,
-    occupied: &Vec<Vec<Option<Team>>>,
+    occupied: &Occupied,
     board_size: ICoord,
     ever_moved: &EverMoved,
     positions: &mut Vec<ICoord>,
@@ -329,7 +331,7 @@ fn get_king_positions_mut(
 fn add_castle(
     piece: &Piece,
     pieces: &Pieces,
-    occupied: &Vec<Vec<Option<Team>>>,
+    occupied: &Occupied,
     board_size: ICoord,
     ever_moved: &EverMoved,
     positions: &mut Vec<ICoord>,
@@ -373,7 +375,7 @@ fn add_castle(
     }
 }
 
-pub fn to_occupied_matrix(pieces: &Vec<Piece>, board_size: ICoord) -> Vec<Vec<Option<Team>>> {
+pub fn to_occupied_matrix(pieces: &Vec<Piece>, board_size: ICoord) -> Occupied {
     let mut occupied = vec![vec![None; board_size.column as usize]; board_size.row as usize];
     for i in 0..pieces.len() {
         let piece = &pieces[i];
@@ -387,10 +389,10 @@ pub fn to_occupied_matrix(pieces: &Vec<Piece>, board_size: ICoord) -> Vec<Vec<Op
     }
     occupied
 }
-pub fn is_occupied(test: ICoord, occupied: &Vec<Vec<Option<Team>>>) -> Option<Team> {
+pub fn is_occupied(test: ICoord, occupied: &Occupied) -> Option<Team> {
     occupied[test.row() as usize][test.column() as usize]
 }
-pub fn set_occupied(test: ICoord, team: Option<Team>, occupied: &mut Vec<Vec<Option<Team>>>) {
+pub fn set_occupied(test: ICoord, team: Option<Team>, occupied: &mut Occupied) {
     occupied[test.row() as usize][test.column() as usize] = team;
 }
 pub fn to_piece_index_matrix(
@@ -479,7 +481,7 @@ pub fn set_index_at(
 fn add_direction(
     piece: &Piece,
     board_size: ICoord,
-    occupied: &Vec<Vec<Option<Team>>>,
+    occupied: &Occupied,
     delta: ICoord,
     positions: &mut Vec<ICoord>,
 ) {
@@ -518,7 +520,7 @@ fn is_attacked(
     pieces: &Pieces,
     board_size: ICoord,
     ever_moved: &EverMoved,
-    occupied: &Vec<Vec<Option<Team>>>,
+    occupied: &Occupied,
 ) -> bool {
     compute_attackers_matrix(pos, team, pieces, board_size, ever_moved, occupied).len() > 0
 }
@@ -529,7 +531,7 @@ pub fn is_any_attacked(
     pieces: &Vec<Piece>,
     board_size: ICoord,
     ever_moved: &EverMoved,
-    occupied: &Vec<Vec<Option<Team>>>,
+    occupied: &Occupied,
 ) -> bool {
     const CHESS_SIZE: ICoord = ICoord::new_i(8, 8);
     static mut ATTACKED_CHESS: Vec<Vec<bool>> = Vec::new();
@@ -592,7 +594,7 @@ pub fn compute_attacked_matrix(
     pieces: &Vec<Piece>,
     board_size: ICoord,
     ever_moved: &EverMoved,
-    occupied: &Vec<Vec<Option<Team>>>,
+    occupied: &Occupied,
 ) -> Vec<Vec<bool>> {
     let mut attacked = vec![vec![false; board_size.column as usize]; board_size.row as usize];
     let mut moves = Vec::with_capacity(17);
@@ -642,7 +644,7 @@ fn compute_attackers_matrix(
     pieces: &Vec<Piece>,
     board_size: ICoord,
     ever_moved: &EverMoved,
-    occupied: &Vec<Vec<Option<Team>>>,
+    occupied: &Occupied,
 ) -> Vec<usize> {
     let mut attackers = Vec::new();
     for (other_i, _other_piece) in pieces.iter().enumerate() {
