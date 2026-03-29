@@ -9,11 +9,13 @@ use crate::world::moves::{
 };
 use crate::world::piece::Piece;
 use crate::world::team::Team;
+use std::sync::Arc;
 use std::time::Instant;
 
 pub const PLANNING_DEPTH: i32 = 4;
 
 static mut EVALUATIONS: i32 = 0;
+// static PLAN_STEPS: Arc<Vec<(PieceIndex, Move)>> = Arc::new(Vec::new());
 
 #[allow(unused)]
 mod debug_level {
@@ -37,12 +39,14 @@ pub fn choose_target(board: &Board, team: Team) -> AnyResult<Option<Plan>> {
     if board.referee.turn != team && !in_check {
         Ok(None)
     } else {
-        let plan_score = choose_target_inner(
+        let turn = board.referee.turn;
+        let plan_score = choose_target_inner_depth(
             team,
             board.pieces(),
-            board.referee.turn,
             board.size(),
-            board.ever_moved(),
+            &board.ever_moved(),
+            turn,
+            PLANNING_DEPTH,
         );
         let score_str = if let Ok((_, Some(score))) = &plan_score {
             format!("{:>8.1}", score)
@@ -61,15 +65,6 @@ pub fn choose_target(board: &Board, team: Team) -> AnyResult<Option<Plan>> {
         }
     }
 }
-pub fn choose_target_inner(
-    team: Team,
-    pieces: &Vec<Piece>,
-    turn: Team,
-    board_size: ICoord,
-    ever_moved: &EverMoved,
-) -> AnyResult<(Option<Plan>, Option<Score>)> {
-    choose_target_inner_depth(team, pieces, board_size, ever_moved, turn, PLANNING_DEPTH)
-}
 
 pub fn choose_target_inner_depth(
     team: Team,
@@ -82,25 +77,39 @@ pub fn choose_target_inner_depth(
     if DEBUG_PLANNING > debug_level::NO {
         unsafe {
             EVALUATIONS = 0;
+            // PLAN_STEPS = Vec::new();
         }
     }
     let mut occupied = to_occupied_matrix(pieces, board_size);
     let mut indexes = to_piece_index_matrix_small(pieces, board_size);
+    let mut ever_moved = ever_moved.clone();
     if let (Some((i, movement)), score) = choose_target_score_mut(
         team,
         &mut pieces.clone(),
         board_size,
-        ever_moved,
         turn,
         depth,
         &None,
+        &mut ever_moved,
         &mut occupied,
         &mut indexes,
     )? {
+        if DEBUG_PLANNING > debug_level::NO {
+            unsafe {
+                println!("evaluations: {}", unsafe { EVALUATIONS });
+                // print!("evaluations: [");
+                // unsafe {
+                //     for step in &raw const PLAN_STEPS {
+                //         print!("{:?},", step);
+                //     }
+                // }
+                // println!("]");
+            }
+        }
         Ok((Some(PlanSelect::new(i, movement)), Some(score)))
     } else if team == turn {
         Ok((
-            choose_first_target_inner(team, pieces, board_size, ever_moved),
+            choose_first_target_inner(team, pieces, board_size, &ever_moved),
             None,
         ))
     } else {
@@ -111,10 +120,10 @@ pub fn choose_target_score_mut(
     team: Team,
     pieces: &mut Vec<Piece>,
     board_size: ICoord,
-    ever_moved: &EverMoved,
     turn: Team,
     depth: i32,
     overall_best: &Option<(PieceIndex, ICoord, Score)>,
+    ever_moved: &mut EverMoved,
     occupied: &mut Vec<Vec<Option<Team>>>,
     indexes: &mut Vec<Vec<Option<PieceIndexSmall>>>,
 ) -> AnyResult<(Option<(PieceIndex, ICoord)>, Score)> {
@@ -137,7 +146,7 @@ pub fn choose_target_score_mut(
     let mut best = None;
     for i in 0..pieces.len() {
         if pieces[i].team == team && pieces[i].alive {
-            if DEBUG_PLANNING >= debug_level::VERBOSE {
+            if DEBUG_PLANNING >= debug_level::CONCISE {
                 println!(
                     "{}. where to move piece {} {:?} at {:?}?",
                     ".*".repeat(depth as usize - 1),
@@ -151,18 +160,18 @@ pub fn choose_target_score_mut(
             for movement in &moves {
                 let movement = *movement;
                 evaluate_movement(
+                    movement,
+                    i,
                     team,
-                    pieces,
                     board_size,
-                    ever_moved,
                     turn,
                     depth,
+                    overall_best,
+                    &mut best,
+                    ever_moved,
+                    pieces,
                     occupied,
                     indexes,
-                    &mut best,
-                    overall_best,
-                    i,
-                    movement,
                 )?;
                 if let (Some((overall_i, _, overall_score)), Some((i, movement, score))) =
                     (overall_best, &best)
@@ -179,6 +188,16 @@ pub fn choose_target_score_mut(
         }
     }
     if let Some((best_i, best_move, best_score)) = best {
+        if DEBUG_PLANNING >= debug_level::CONCISE {
+            println!(
+                "{} best move for {} is {:?} to {:?} with score {}",
+                ".*".repeat(depth as usize),
+                team,
+                pieces[best_i].moveset.single(),
+                best_move,
+                best_score
+            )
+        }
         Ok((Some((best_i, best_move)), best_score))
     } else {
         Ok((None, 0.0))
@@ -186,18 +205,18 @@ pub fn choose_target_score_mut(
 }
 
 fn evaluate_movement(
+    movement: ICoord,
+    i: usize,
     team: Team,
-    pieces: &mut Vec<Piece>,
     board_size: ICoord,
-    ever_moved: &EverMoved,
     turn: Team,
     depth: i32,
+    overall_best: &Option<(PieceIndex, ICoord, Score)>,
+    best: &mut Option<(PieceIndex, ICoord, Score)>,
+    ever_moved: &mut EverMoved,
+    pieces: &mut Vec<Piece>,
     occupied: &mut Vec<Vec<Option<Team>>>,
     indexes: &mut Vec<Vec<Option<PieceIndexSmall>>>,
-    best: &mut Option<(PieceIndex, ICoord, Score)>,
-    overall_best: &Option<(PieceIndex, ICoord, Score)>,
-    i: usize,
-    movement: ICoord,
 ) -> AnyResult<()> {
     if DEBUG_PLANNING >= debug_level::VERBOSE {
         println!(
@@ -236,10 +255,10 @@ fn evaluate_movement(
                     team.opposite(),
                     pieces,
                     board_size,
-                    ever_moved,
                     turn.opposite(),
                     depth - 1,
                     best,
+                    ever_moved,
                     occupied,
                     indexes,
                 )?;
@@ -302,10 +321,10 @@ fn evaluate_movement(
                 team.opposite(),
                 pieces,
                 board_size,
-                ever_moved,
                 team.opposite(), // team: not a bug. on the first level we want to evaluate movements out of our turn before the other team moves
                 depth - 1,
                 &best,
+                ever_moved,
                 occupied,
                 indexes,
             )?;
@@ -667,6 +686,31 @@ mod tests {
                 )
             ),
         );
-        println!("evaluations: {}", unsafe { EVALUATIONS });
+    }
+
+    #[test]
+    fn test_castle_tracked_in_planning() {
+        #[rustfmt::skip]
+        let (size, pieces, ever_moved) = parse_board("
+            -- wr
+            -- --
+            wp --
+            wp br
+            wp wk
+            -- --
+            -- bk
+            -- --
+            -- --
+            wr --
+        ");
+        let (plan, score) =
+            choose_target_inner_depth(Team::White, &pieces, size, &ever_moved, Team::White, 3)
+                .unwrap();
+        let king = find_first(Team::White, Move::King, &pieces).unwrap();
+        assert_eq!(plan, Some(PlanSelect::new(king, ICoord::new_i(0, 3))),);
+        assert_ne!(
+            score,
+            Some(piece_type_value(Move::King) + piece_type_value(Move::Rook))
+        );
     }
 }

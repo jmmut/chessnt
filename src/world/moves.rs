@@ -913,4 +913,14 @@ pub mod tests {
         ];
         assert_eq_sorted(&mut moves, &mut expected, &pieces); // requires checking check in the path 
     }
+    // #[test]
+    // fn test_en_passant() {
+    //
+    //     #[rustfmt::skip]
+    //     let (board_size, pieces, ever_moved) = parse_board_cursor("
+    //         -- -- -- wp -- -- -- --
+    //         -- bp -- -- -- -- -- --
+    //     ");
+    //
+    // }
 }
