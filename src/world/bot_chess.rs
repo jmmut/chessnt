@@ -44,11 +44,16 @@ impl DebugState {
 pub fn choose_target(board: &Board, team: Team) -> AnyResult<Option<Plan>> {
     let start = get_time();
     let in_check = board.is_in_check(team).is_some();
+    let mut debug = DebugState::new();
     if board.referee.turn != team && !in_check {
         Ok(None)
     } else {
-        let plan_score =
-            choose_target_board_depth::<DEBUG_PLANNING_GLOBAL>(board, team, PLANNING_DEPTH);
+        let plan_score = choose_target_board_depth::<DEBUG_PLANNING_GLOBAL>(
+            board,
+            team,
+            PLANNING_DEPTH,
+            &mut debug,
+        );
         let score_str = if let Ok((_, Some(score))) = &plan_score {
             format!("{:>8.1}", score)
         } else {
@@ -71,14 +76,16 @@ pub fn choose_target_board_depth<const DEBUG_PLANNING: i32>(
     board: &Board,
     team: Team,
     depth: i32,
+    debug: &mut DebugState,
 ) -> AnyResult<(Option<Plan>, Option<Score>)> {
-    choose_target_inner_depth::<DEBUG_PLANNING>(
+    choose_target_inner_depth_plan::<DEBUG_PLANNING>(
         team,
         board.pieces(),
         board.size(),
         &board.ever_moved(),
         board.referee.turn,
         depth,
+        debug,
     )
 }
 pub fn choose_target_inner_depth<const DEBUG_PLANNING: i32>(
@@ -89,6 +96,21 @@ pub fn choose_target_inner_depth<const DEBUG_PLANNING: i32>(
     turn: Team,
     depth: i32,
 ) -> AnyResult<(Option<Plan>, Option<Score>)> {
+    let mut debug = DebugState::new();
+    choose_target_inner_depth_plan::<DEBUG_PLANNING>(
+        team, &pieces, board_size, ever_moved, turn, depth, &mut debug,
+    )
+}
+
+fn choose_target_inner_depth_plan<const DEBUG_PLANNING: i32>(
+    team: Team,
+    pieces: &Vec<Piece>,
+    board_size: ICoord,
+    ever_moved: &EverMoved,
+    turn: Team,
+    depth: i32,
+    debug: &mut DebugState,
+) -> AnyResult<(Option<Plan>, Option<Score>)> {
     if DEBUG_PLANNING > debug_level::NO {
         unsafe {
             EVALUATIONS = 0;
@@ -97,7 +119,6 @@ pub fn choose_target_inner_depth<const DEBUG_PLANNING: i32>(
     let mut occupied = to_occupied_matrix(pieces, board_size);
     let mut indexes = to_piece_index_matrix_small(pieces, board_size);
     let mut ever_moved = ever_moved.clone();
-    let mut debug = DebugState::new();
     if let (Some((i, movement)), score) = choose_target_score_mut::<DEBUG_PLANNING>(
         team,
         &mut pieces.clone(),
@@ -108,7 +129,7 @@ pub fn choose_target_inner_depth<const DEBUG_PLANNING: i32>(
         &mut ever_moved,
         &mut occupied,
         &mut indexes,
-        &mut debug,
+        debug,
     )? {
         if DEBUG_PLANNING > debug_level::NO {
             println!("evaluations: {}", unsafe { EVALUATIONS });
@@ -127,6 +148,7 @@ pub fn choose_target_inner_depth<const DEBUG_PLANNING: i32>(
         Ok((None, None))
     }
 }
+
 pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
     team: Team,
     pieces: &mut Vec<Piece>,
@@ -811,14 +833,33 @@ mod tests {
             br bp -- -- -- -- -- wr
         ");
         let depth = 6;
+        let mut debug = DebugState::new();
         let start = Instant::now();
-        choose_target_board_depth::<{ debug_level::PLAN }>(&board, Team::Black, depth).unwrap();
+        let plan = choose_target_board_depth::<{ debug_level::PLAN }>(
+            &board,
+            Team::Black,
+            depth,
+            &mut debug,
+        )
+        .unwrap();
         println!(
             "For depth {} took: {:.3}ms",
             depth,
             (Instant::now() - start).as_secs_f64() * 1000.0
         );
+        assert_eq!(plan.1, Some(-1.0));
+        assert_eq!(
+            debug.plan,
+            vec![
+                (1, ICoord { column: 2, row: 0 }),
+                (2, ICoord { column: 6, row: 0 }),
+                (3, ICoord { column: 2, row: 2 }),
+                (2, ICoord { column: 5, row: 0 }),
+                (0, ICoord { column: 1, row: 0 }),
+                (2, ICoord { column: 2, row: 0 })
+            ]
+        )
         // latest:
-        // For depth 6 took: 14611.287ms
+        // For depth 6 took: 8882.329ms
     }
 }

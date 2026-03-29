@@ -502,6 +502,7 @@ pub fn inside(pos: ICoord, board_size: ICoord) -> bool {
     pos.column >= 0 && pos.column < board_size.column && pos.row >= 0 && pos.row < board_size.row
 }
 
+#[allow(unused)] // don't know if ths is faster than is_any_attacked(vec![pos], ...)
 fn is_attacked(
     pos: ICoord,
     team: Team,
