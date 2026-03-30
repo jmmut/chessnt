@@ -101,6 +101,7 @@ impl EverMoved {
     }
 
     pub fn register_movement(&mut self, piece_index: PieceIndex) {
+        // TODO: need something like Vec<MovementsSincePawnDoubleJumped> indexed by piece index
         let count = &mut self.indexes_moves[piece_index];
         *count += 1;
     }
@@ -661,5 +662,23 @@ pub mod tests {
         board.move_cursor_rel(Coord::new_i(-1, 0), Team::White);
         board.deselect(Team::White).unwrap();
         assert_eq!(board.to_string(), "wq -- -- -- bp -- \n");
+    }
+
+    #[test]
+    fn test_kill_en_passant() {
+        #[rustfmt::skip]
+        let mut board = parse_board("
+            -- -- bpX -- --  --
+            -- -- --  -- wpO --
+        ");
+        board.select(Team::White);
+        board.move_cursor_rel(Coord::new_i(-2, 0), Team::White);
+        board.deselect(Team::White).unwrap();
+        board.select(Team::Black);
+        board.move_cursor_rel(Coord::new_i(1, 1), Team::Black);
+        board.deselect(Team::Black).unwrap();
+        let white_pawn = find_first(Team::White, Move::Pawn, board.pieces()).unwrap();
+        let alive = board.pieces()[white_pawn].alive;
+        assert_eq!(alive, false);
     }
 }

@@ -269,17 +269,23 @@ fn get_pawn_positions_mut(
             }
         }
 
-        let mut add_if_enemy_is_at = |attack| {
+        let mut add_if_enemy_is_at = |side| {
+            let attack = piece_pos + direction + side;
+            let passant = piece_pos + side;
             if inside(attack, board_size) {
                 if let Some(other_team) = is_occupied(attack, occupied) {
                     if other_team != pieces[piece_index].team {
                         moves.push(attack);
                     }
+                } else if let Some(other_team) = is_occupied(passant, occupied) {
+                    if other_team != pieces[piece_index].team && ever_moved.en_passantable(other_i) {
+                        moves.push(attack);
+                    }
                 }
             }
         };
-        add_if_enemy_is_at(piece_pos + direction + ICoord::new_i(0, 1));
-        add_if_enemy_is_at(piece_pos + direction + ICoord::new_i(0, -1));
+        add_if_enemy_is_at(ICoord::new_i(0, 1));
+        add_if_enemy_is_at(ICoord::new_i(0, -1));
     }
 }
 fn get_pawn_attacks_mut(
@@ -799,7 +805,7 @@ pub mod tests {
         for line in text.lines() {
             let trimmed = line.trim();
             if trimmed.len() > 0 {
-                let tiles = trimmed.split(' ').collect::<Vec<_>>();
+                let tiles = trimmed.split_ascii_whitespace().collect::<Vec<_>>();
                 store_max(&mut max_columns, tiles.len() as i32);
                 for (column, tile) in tiles.iter().enumerate() {
                     let color = tile.as_bytes()[0];
