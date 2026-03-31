@@ -1,6 +1,6 @@
 use crate::AnyResult;
 use crate::core::coord::{Coord, ICoord};
-use crate::world::board::{Board, EverMoved, PieceIndex, PieceIndexSmall};
+use crate::world::board::{Board, EverMoved, PieceIndex, PieceIndexSmall, find_at};
 use crate::world::bot::{Plan, PlanSelect};
 use crate::world::moves::{
     Move, Moveset, Occupied, PieceIndexes, board_to_str_indent, checked_index_at, index_at,
@@ -285,36 +285,119 @@ fn evaluate_movement<const DEBUG_PLANNING: i32>(
     } else {
         0.0
     };
-    Ok(if let Some(other_i) = index_at(movement, &indexes) {
-        let other_i = other_i as usize;
-        if pieces[other_i].team != team && turn == team {
-            // don't think about killing when it's not your turn
-            let kill_value = piece_value(&pieces[other_i], team);
+    Ok(
+        if let Some(other_i) = other_killable(i, pieces, movement, indexes, ever_moved) {
+            let other_i = other_i as usize;
+            if pieces[other_i].team != team && turn == team {
+                // don't think about killing when it's not your turn
+                let kill_value = piece_value(&pieces[other_i], team);
 
+                let future_score = if depth >= 2 {
+                    let old_killed_pos = kill_in_caches(other_i, pieces, occupied, indexes);
+                    let old_pos = pieces[i].initial_pos;
+                    move_in_caches(i, old_pos, movement, pieces, occupied, indexes);
+                    ever_moved.register_movement(i, pieces, old_pos, movement, board_size);
+
+                    let (_, future_score) = choose_target_score_mut::<DEBUG_PLANNING>(
+                        team.opposite(),
+                        pieces,
+                        board_size,
+                        turn.opposite(),
+                        depth - 1,
+                        best,
+                        ever_moved,
+                        occupied,
+                        indexes,
+                        debug,
+                    )?;
+                    if piece_change != 0.0 {
+                        pieces[i].moveset = Moveset::new(Move::Pawn);
+                    }
+                    move_in_caches(i, movement, old_pos, pieces, occupied, indexes);
+                    unkill_in_caches(other_i, old_killed_pos, pieces, occupied, indexes);
+                    ever_moved.undo_movement(i);
+                    future_score
+                } else {
+                    if DEBUG_PLANNING > debug_level::NO {
+                        unsafe {
+                            EVALUATIONS += 1;
+                        }
+                    }
+                    0.0
+                };
+                let future_score = -future_score - kill_value + piece_change;
+                maybe_store_better_and_debug::<DEBUG_PLANNING>(
+                    depth,
+                    pieces,
+                    i,
+                    movement,
+                    future_score,
+                    overall_best,
+                    best,
+                )
+            } else {
+                false
+            }
+        } else {
+            // TODO: modify score due to our movement's benefit
             let future_score = if depth >= 2 {
-                let old_killed_pos = kill_in_caches(other_i, pieces, occupied, indexes);
                 let old_pos = pieces[i].initial_pos;
+                let castle_rook_index_and_pos_and_new_pos = if pieces[i].moveset.single()
+                    == Move::King
+                    && (movement - old_pos).length_squared() == 2 * 2
+                {
+                    let to_rook = (movement - old_pos) / 2;
+                    if let Some(rook) = checked_index_at(old_pos + to_rook * 3, indexes) {
+                        Some((rook, pieces[rook as usize].initial_pos, old_pos + to_rook))
+                    } else if let Some(rook) = checked_index_at(old_pos + to_rook * 4, indexes) {
+                        Some((rook, pieces[rook as usize].initial_pos, old_pos + to_rook))
+                    } else {
+                        return Err(format!(
+                        "castling appeared possible but couldn't find rook at {:?} nor {:?}. board:\n{}",
+                        to_rook * 3, to_rook * 4, pieces_to_str(pieces)
+                    ).into());
+                    }
+                } else {
+                    None
+                };
                 move_in_caches(i, old_pos, movement, pieces, occupied, indexes);
                 ever_moved.register_movement(i, pieces, old_pos, movement, board_size);
+
+                if let Some((rook, old_rook_pos, new_rook_pos)) =
+                    castle_rook_index_and_pos_and_new_pos.clone()
+                {
+                    let rook = rook as usize;
+                    move_in_caches(rook, old_rook_pos, new_rook_pos, pieces, occupied, indexes);
+                }
 
                 let (_, future_score) = choose_target_score_mut::<DEBUG_PLANNING>(
                     team.opposite(),
                     pieces,
                     board_size,
-                    turn.opposite(),
+                    team.opposite(), // team: not a bug. on the first level we want to evaluate movements out of our turn before the other team moves
                     depth - 1,
-                    best,
+                    &best,
                     ever_moved,
                     occupied,
                     indexes,
                     debug,
                 )?;
+
                 if piece_change != 0.0 {
                     pieces[i].moveset = Moveset::new(Move::Pawn);
                 }
+
                 move_in_caches(i, movement, old_pos, pieces, occupied, indexes);
-                unkill_in_caches(other_i, old_killed_pos, pieces, occupied, indexes);
                 ever_moved.undo_movement(i);
+
+                if let Some((rook, old_rook_pos, new_rook_pos)) =
+                    castle_rook_index_and_pos_and_new_pos.clone()
+                {
+                    let rook = rook as usize;
+                    move_in_caches(rook, new_rook_pos, old_rook_pos, pieces, occupied, indexes);
+                }
+
+                let future_score = -future_score + piece_change;
                 future_score
             } else {
                 if DEBUG_PLANNING > debug_level::NO {
@@ -324,7 +407,6 @@ fn evaluate_movement<const DEBUG_PLANNING: i32>(
                 }
                 0.0
             };
-            let future_score = -future_score - kill_value + piece_change;
             maybe_store_better_and_debug::<DEBUG_PLANNING>(
                 depth,
                 pieces,
@@ -334,87 +416,30 @@ fn evaluate_movement<const DEBUG_PLANNING: i32>(
                 overall_best,
                 best,
             )
-        } else {
-            false
-        }
-    } else {
-        // TODO: modify score due to our movement's benefit
-        let future_score = if depth >= 2 {
-            let old_pos = pieces[i].initial_pos;
-            let castle_rook_index_and_pos_and_new_pos = if pieces[i].moveset.single() == Move::King
-                && (movement - old_pos).length_squared() == 2 * 2
-            {
-                let to_rook = (movement - old_pos) / 2;
-                if let Some(rook) = checked_index_at(old_pos + to_rook * 3, indexes) {
-                    Some((rook, pieces[rook as usize].initial_pos, old_pos + to_rook))
-                } else if let Some(rook) = checked_index_at(old_pos + to_rook * 4, indexes) {
-                    Some((rook, pieces[rook as usize].initial_pos, old_pos + to_rook))
-                } else {
-                    return Err(format!(
-                        "castling appeared possible but couldn't find rook at {:?} nor {:?}. board:\n{}",
-                        to_rook * 3, to_rook * 4, pieces_to_str(pieces)
-                    ).into());
-                }
-            } else {
-                None
-            };
-            move_in_caches(i, old_pos, movement, pieces, occupied, indexes);
-            ever_moved.register_movement(i, pieces, old_pos, movement, board_size);
+        },
+    )
+}
 
-            if let Some((rook, old_rook_pos, new_rook_pos)) =
-                castle_rook_index_and_pos_and_new_pos.clone()
-            {
-                let rook = rook as usize;
-                move_in_caches(rook, old_rook_pos, new_rook_pos, pieces, occupied, indexes);
-            }
-
-            let (_, future_score) = choose_target_score_mut::<DEBUG_PLANNING>(
-                team.opposite(),
-                pieces,
-                board_size,
-                team.opposite(), // team: not a bug. on the first level we want to evaluate movements out of our turn before the other team moves
-                depth - 1,
-                &best,
-                ever_moved,
-                occupied,
-                indexes,
-                debug,
-            )?;
-
-            if piece_change != 0.0 {
-                pieces[i].moveset = Moveset::new(Move::Pawn);
-            }
-
-            move_in_caches(i, movement, old_pos, pieces, occupied, indexes);
-            ever_moved.undo_movement(i);
-
-            if let Some((rook, old_rook_pos, new_rook_pos)) =
-                castle_rook_index_and_pos_and_new_pos.clone()
-            {
-                let rook = rook as usize;
-                move_in_caches(rook, new_rook_pos, old_rook_pos, pieces, occupied, indexes);
-            }
-
-            let future_score = -future_score + piece_change;
-            future_score
-        } else {
-            if DEBUG_PLANNING > debug_level::NO {
-                unsafe {
-                    EVALUATIONS += 1;
-                }
-            }
-            0.0
-        };
-        maybe_store_better_and_debug::<DEBUG_PLANNING>(
-            depth,
-            pieces,
-            i,
-            movement,
-            future_score,
-            overall_best,
-            best,
+fn other_killable(
+    i: usize,
+    pieces: &Vec<Piece>,
+    movement: ICoord,
+    indexes: &PieceIndexes,
+    ever_moved: &EverMoved,
+) -> Option<PieceIndex> {
+    if let Some(other_i) = index_at(movement, indexes) {
+        Some(other_i as PieceIndex)
+    } else if pieces[i].moveset.single() == Move::Pawn
+        && let Some(pawn_jumped) = find_at(
+            ICoord::new_i(pieces[i].initial_pos.column, movement.row),
+            &pieces,
         )
-    })
+        && ever_moved.en_passantable(pawn_jumped)
+    {
+        Some(pawn_jumped)
+    } else {
+        None
+    }
 }
 
 fn move_in_caches(

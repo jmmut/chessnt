@@ -133,6 +133,7 @@ impl EverMoved {
     pub fn undo_movement(&mut self, piece_index: PieceIndex) {
         let count = &mut self.indexes_moves[piece_index];
         *count -= 1;
+        self.turn -= 1;
     }
     pub fn castle_allowed_rook(&self, team: Team, rook_index: PieceIndex) -> bool {
         if let Some(RooksKing { king_index, .. }) = self.rooks_king.get(team) {
