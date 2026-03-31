@@ -5,12 +5,14 @@ use crate::AnyResult;
 use crate::core::coord::{Coord, ICoord};
 use crate::world::moves::{
     Move, Moveset, board_to_str, compute_attackers, inside_f, pieces_to_str, possible_moves,
+    starting_pawn_column,
 };
 use crate::world::piece::{Piece, Pieces};
 use crate::world::referee::Referee;
 use crate::world::team::{OneForEachTeam, Team};
 use macroquad::math::{Vec2, vec2};
 use std::fmt::{Display, Formatter};
+use std::vec;
 
 pub type PieceIndex = usize;
 pub type PieceIndexSmall = u8;
@@ -61,6 +63,8 @@ pub struct EverMoved {
     indexes_moves: IndexesMoves,
     // castle_allowed: OneForEachTeam<Option<bool>>,
     rooks_king: OneForEachTeam<Option<RooksKing>>,
+    pawns_double_jump_turn: Vec<Option<i32>>,
+    turn: i32,
 }
 #[derive(PartialEq)]
 pub enum AllowedCastle {
@@ -71,8 +75,7 @@ pub enum AllowedCastle {
 }
 impl EverMoved {
     pub fn new_from(pieces: &Pieces) -> Self {
-        let mut indexes_moves = Vec::new();
-        indexes_moves.resize(pieces.len(), 0);
+        let indexes_moves = vec::from_elem(0, pieces.len());
         // let castle_allowed = OneForEachTeam::new(Some(true), Some(true));
         let mut rooks_king_opt =
             OneForEachTeam::new(RooksKingBuilder::new(), RooksKingBuilder::new());
@@ -87,23 +90,45 @@ impl EverMoved {
         }
         let [white, black] = rooks_king_opt.take();
         let rooks_king = OneForEachTeam::new(white.build(), black.build());
+        let pawns_double_jump_turn = vec::from_elem(None, pieces.len());
         Self {
             indexes_moves,
             // castle_allowed,
             rooks_king,
+            pawns_double_jump_turn,
+            turn: 0,
         }
     }
     pub const fn new_forbidden() -> Self {
         Self {
             indexes_moves: Vec::new(),
             rooks_king: OneForEachTeam::new(None, None),
+            pawns_double_jump_turn: Vec::new(),
+            turn: 0,
         }
     }
 
-    pub fn register_movement(&mut self, piece_index: PieceIndex) {
+    pub fn register_movement(
+        &mut self,
+        piece_index: PieceIndex,
+        pieces: &Pieces,
+        from: ICoord,
+        to: ICoord,
+        board_size: ICoord,
+    ) {
         // TODO: need something like Vec<MovementsSincePawnDoubleJumped> indexed by piece index
         let count = &mut self.indexes_moves[piece_index];
         *count += 1;
+        self.turn += 1;
+        self.pawns_double_jump_turn[piece_index] = if pieces[piece_index].moveset.single()
+            == Move::Pawn
+            && (to - from).length_squared() == 2 * 2
+            && from.column() == starting_pawn_column(board_size, pieces[piece_index].team)
+        {
+            Some(self.turn)
+        } else {
+            None
+        };
     }
     pub fn undo_movement(&mut self, piece_index: PieceIndex) {
         let count = &mut self.indexes_moves[piece_index];
@@ -158,6 +183,13 @@ impl EverMoved {
             self.indexes_moves[*king_index] == 0
                 && (self.indexes_moves[*rook_1_index] == 0
                     || self.indexes_moves[*rook_2_index] == 0)
+        } else {
+            false
+        }
+    }
+    pub fn en_passantable(&self, piece_index: PieceIndex) -> bool {
+        if let Some(turn) = self.pawns_double_jump_turn[piece_index] {
+            turn == self.turn
         } else {
             false
         }
@@ -377,6 +409,17 @@ impl Board {
                     }
 
                     self.pieces[rook_index].set_pos_and_initial_i(final_pos - to_rook);
+                } else if referee_saw
+                    && self.pieces[selected_i].moveset.single() == Move::Pawn
+                    && moves.contains(&final_pos)
+                    && let Some(pawn_jumped) = find_at(
+                        ICoord::new_i(initial_pos.column, final_pos.row),
+                        &self.pieces,
+                    )
+                    && self.ever_moved.en_passantable(pawn_jumped)
+                {
+                    // en passant
+                    self.kill(pawn_jumped);
                 }
                 self.pieces[selected_i].set_pos_and_initial_i(final_pos);
                 if referee_saw {
@@ -398,7 +441,13 @@ impl Board {
                 }
             }
             if initial_pos != final_pos {
-                self.ever_moved.register_movement(selected_i);
+                self.ever_moved.register_movement(
+                    selected_i,
+                    &self.pieces,
+                    initial_pos,
+                    final_pos,
+                    self.size,
+                );
             }
             if referee_saw && self.pieces[selected_i].moveset.single() == Move::Pawn {
                 if team == Team::White && final_pos.column == 0

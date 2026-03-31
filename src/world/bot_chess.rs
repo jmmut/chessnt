@@ -191,7 +191,9 @@ pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
                 );
             }
             moves.clear();
-            possible_moves_matrix_mut(i, &pieces, board_size, &occupied, ever_moved, &mut moves);
+            possible_moves_matrix_mut(
+                i, &pieces, board_size, &occupied, indexes, ever_moved, &mut moves,
+            );
             for movement in &moves {
                 let mut debug_here = DebugState::new();
                 let movement = *movement;
@@ -293,7 +295,7 @@ fn evaluate_movement<const DEBUG_PLANNING: i32>(
                 let old_killed_pos = kill_in_caches(other_i, pieces, occupied, indexes);
                 let old_pos = pieces[i].initial_pos;
                 move_in_caches(i, old_pos, movement, pieces, occupied, indexes);
-                ever_moved.register_movement(i);
+                ever_moved.register_movement(i, pieces, old_pos, movement, board_size);
 
                 let (_, future_score) = choose_target_score_mut::<DEBUG_PLANNING>(
                     team.opposite(),
@@ -357,7 +359,7 @@ fn evaluate_movement<const DEBUG_PLANNING: i32>(
                 None
             };
             move_in_caches(i, old_pos, movement, pieces, occupied, indexes);
-            ever_moved.register_movement(i);
+            ever_moved.register_movement(i, pieces, old_pos, movement, board_size);
 
             if let Some((rook, old_rook_pos, new_rook_pos)) =
                 castle_rook_index_and_pos_and_new_pos.clone()
@@ -818,6 +820,7 @@ mod tests {
             Some(piece_type_value(Move::King) + piece_type_value(Move::Rook))
         );
     }
+    
     #[test]
     #[ignore]
     fn benchmark() {
