@@ -820,7 +820,37 @@ mod tests {
             Some(piece_type_value(Move::King) + piece_type_value(Move::Rook))
         );
     }
-    
+
+    #[test]
+    fn test_en_passant_in_planning() {
+        #[rustfmt::skip]
+        let board = parse_board("
+            -- -- bh -- -- --
+            -- -- bp -- br --
+            -- -- -- -- wp wr
+            -- bk -- -- -- wb
+        ");
+        let mut debug = DebugState::new();
+        let (_, score) =
+            choose_target_board_depth::<{ debug_level::PLAN }>(&board, Team::White, 3, &mut debug)
+                .unwrap();
+        let white_pawn = find_first(Team::White, Move::Pawn, board.pieces()).unwrap();
+        let black_pawn = find_first(Team::Black, Move::Pawn, board.pieces()).unwrap();
+        assert_eq!(
+            (&debug.plan[0..2], score),
+            (
+                [
+                    (white_pawn, ICoord { column: 2, row: 2 }),
+                    (black_pawn, ICoord { column: 3, row: 2 }),
+                ]
+                .as_slice(),
+                Some(2.0)
+            ),
+            "full plan: {:?}",
+            debug.plan
+        )
+    }
+
     #[test]
     #[ignore]
     fn benchmark() {
