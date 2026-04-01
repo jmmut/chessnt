@@ -189,8 +189,8 @@ impl EverMoved {
         }
     }
     pub fn en_passantable(&self, piece_index: PieceIndex) -> bool {
-        if let Some(turn) = self.pawns_double_jump_turn[piece_index] {
-            turn == self.turn
+        if let Some(Some(turn)) = self.pawns_double_jump_turn.get(piece_index) {
+            *turn == self.turn
         } else {
             false
         }
