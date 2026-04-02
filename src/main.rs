@@ -76,9 +76,10 @@ async fn fallible_main() -> AnyResult<()> {
             &mut bots,
             &mut gamepads,
         )?);
-        if handle_ui_actions(messages, &mut board, &mut bots, &mut theme).await? {
+        if handle_ui_actions(messages, &mut board, &mut bots, &mut time, &mut theme).await? {
             break;
         }
+        time.tick_end();
         next_frame().await
     }
     Ok(())
@@ -88,6 +89,7 @@ async fn handle_ui_actions(
     messages: Vec<Message>,
     board: &mut Board,
     bots: &mut Bots,
+    time: &mut Time,
     theme: &mut Theme,
 ) -> AnyResult<bool> {
     let mut should_exit = false;
@@ -115,6 +117,9 @@ async fn handle_ui_actions(
             }
             Message::ToggleReferee => {
                 board.referee.referee_paused = !board.referee.referee_paused;
+            }
+            Message::TargetFPS(fps) => {
+                time.set_target_fps(fps);
             }
         }
     }

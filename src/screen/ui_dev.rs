@@ -2,7 +2,7 @@ use crate::core::array_union::ArrayUnionTrait;
 use crate::core::clipboard::Clipboard;
 use crate::core::coord::fmt_vec2;
 use crate::core::input::Gamepads;
-use crate::core::time::Time;
+use crate::core::time::{DEFAULT_FPS, Time};
 use crate::screen::theme::{
     CameraPos, Palette, Theme, coloring_elem, named_coloring, named_state_style, new_coloring,
     set_theme_coloring, state_style_elem,
@@ -76,7 +76,7 @@ impl DevUi {
         match self.menu {
             DevUiMenu::Hidden => {}
             DevUiMenu::Main => self.draw_main(theme),
-            DevUiMenu::Screen => self.draw_screen(time, theme, camera),
+            DevUiMenu::Screen => return Ok(self.draw_screen(time, theme, camera)),
             DevUiMenu::Board => return Ok(self.draw_characters(theme, board, bots)),
             DevUiMenu::PaletteWorld => self.draw_palette(theme)?,
             DevUiMenu::PaletteUi => self.draw_palette_ui(theme)?,
@@ -124,7 +124,13 @@ impl DevUi {
         self.navigation(theme, "Hide Dev UI", DevUiMenu::Hidden, rect);
     }
 
-    fn draw_screen(&mut self, time: &Time, theme: &mut Theme, camera: &mut CameraPos) {
+    fn draw_screen(
+        &mut self,
+        time: &Time,
+        theme: &mut Theme,
+        camera: &mut CameraPos,
+    ) -> Vec<Message> {
+        let mut messages = Vec::new();
         let rect = &mut Self::dev_ui_title(theme);
         // let text = "You can move the green cursor with your keyboard arrows";
         // let rect = render_text(text, below_left(rect), theme);
@@ -133,7 +139,23 @@ impl DevUi {
         render_text_dev_mut(&text, theme, below_left, rect);
         // let text = format!("scale: {}", unsafe { SCALE });
         // let _rect = render_text(&text, below_left(_rect), theme);
-
+        let mut fps_limited = time.get_target_fps().is_some();
+        let verb = enable_or_disable(fps_limited);
+        let text = format!("{} FPS limit", verb);
+        if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
+            if fps_limited {
+                messages.push(Message::TargetFPS(None));
+                fps_limited = false;
+            } else {
+                messages.push(Message::TargetFPS(Some(DEFAULT_FPS)));
+                fps_limited = true;
+            }
+        }
+        if fps_limited && let Some(target) = time.get_target_fps() {
+            let mut target = target as f32;
+            render_slider("Target FPS", theme, 10.0, 200.0, &mut target, rect);
+            messages.push(Message::TargetFPS(Some(target as f64)));
+        }
         render_slider("Camera Y", theme, 0.0, 100.0, &mut camera.y, rect);
         render_slider("Camera Z", theme, 0.0, 100.0, &mut camera.z, rect);
         render_slider("Camera Width", theme, 43.5, 47.5, &mut camera.fovy, rect);
@@ -155,6 +177,7 @@ impl DevUi {
         }
 
         self.navigation(theme, "Back", DevUiMenu::Main, rect);
+        messages
     }
 
     fn draw_characters(

@@ -19,6 +19,7 @@ pub enum Message {
     ToggleBot(Team),
     ToggleRadar,
     ToggleReferee,
+    TargetFPS(Option<f64>),
 }
 
 impl Board {
