@@ -9,7 +9,8 @@ use crate::screen::theme::{
 };
 use crate::screen::ui;
 use crate::screen::ui::{
-    render_button_dev_mut, render_slider, render_text_dev, render_text_dev_mut, rightwards,
+    render_button_dev_mut, render_slider, render_slider_fmt, render_text_dev, render_text_dev_mut,
+    rightwards,
 };
 use crate::world::board::board_ui::Message;
 use crate::world::board::{Board, DEFAULT_PIECE_SIZE};
@@ -139,22 +140,26 @@ impl DevUi {
         render_text_dev_mut(&text, theme, below_left, rect);
         // let text = format!("scale: {}", unsafe { SCALE });
         // let _rect = render_text(&text, below_left(_rect), theme);
-        let mut fps_limited = time.get_target_fps().is_some();
-        let verb = enable_or_disable(fps_limited);
-        let text = format!("{} FPS limit", verb);
-        if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
-            if fps_limited {
-                messages.push(Message::TargetFPS(None));
-                fps_limited = false;
-            } else {
-                messages.push(Message::TargetFPS(Some(DEFAULT_FPS)));
-                fps_limited = true;
+        #[cfg(not(target_family = "wasm"))]
+        {
+            let mut fps_limited = time.get_target_fps().is_some();
+            let verb = enable_or_disable(fps_limited);
+            let text = format!("{} FPS limit", verb);
+            if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
+                if fps_limited {
+                    messages.push(Message::TargetFPS(None));
+                    fps_limited = false;
+                } else {
+                    messages.push(Message::TargetFPS(Some(DEFAULT_FPS)));
+                    fps_limited = true;
+                }
             }
-        }
-        if fps_limited && let Some(target) = time.get_target_fps() {
-            let mut target = target as f32;
-            render_slider("Target FPS", theme, 10.0, 200.0, &mut target, rect);
-            messages.push(Message::TargetFPS(Some(target as f64)));
+            if fps_limited && let Some(target) = time.get_target_fps() {
+                let mut target = target as f32;
+                let text = &format!("Target FPS: {:>5.1}", target);
+                render_slider_fmt(text, theme, 10.0, 200.0, &mut target, below_left, rect);
+                messages.push(Message::TargetFPS(Some(target as f64)));
+            }
         }
         render_slider("Camera Y", theme, 0.0, 100.0, &mut camera.y, rect);
         render_slider("Camera Z", theme, 0.0, 100.0, &mut camera.z, rect);
@@ -213,10 +218,10 @@ impl DevUi {
         }
 
         let dir = board.referee.dir_c();
-        let text = format!("Referee dir: {:0>5.2} {:0>5.2}", dir.column, dir.row);
+        let text = format!("Referee dir: {:>5.2} {:>5.2}", dir.column, dir.row);
         render_text_dev_mut(&text, theme, below_left, rect);
 
-        let text = format!("Referee trip time: {:0>5.2}", board.referee.trip_time);
+        let text = format!("Referee trip time: {:>5.2}", board.referee.trip_time);
         render_text_dev_mut(&text, theme, below_left, rect);
 
         let action = hide_or_show(board.referee.render_radar);

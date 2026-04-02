@@ -243,11 +243,12 @@ pub fn render_slider(
     value: &mut f32,
     rect: &mut Rect,
 ) {
-    render_slider_mut(text, theme, min, max, value, below_left, rect)
+    let text = &format!("{}: {:>5.2}", text, value);
+    render_slider_fmt(text, theme, min, max, value, below_left, rect)
 }
 
-pub fn render_slider_mut(
-    text: &str,
+pub fn render_slider_fmt(
+    formatted_text: &str,
     theme: &Theme,
     min: f32,
     max: f32,
@@ -255,7 +256,7 @@ pub fn render_slider_mut(
     anchor: fn(Rect) -> Anchor,
     rect: &mut Rect,
 ) {
-    let text_rect = render_text_dev(&format!("{}: {:0>5.2}", text, value), theme, anchor(*rect));
+    let text_rect = render_text_dev(formatted_text, theme, anchor(*rect));
     let mut style = Style::default();
     style.coloring = theme.button_coloring();
     let mut slider = juquad::lazy::slider::Slider::new(style, min, max, *value);
