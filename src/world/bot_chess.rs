@@ -430,13 +430,13 @@ fn other_killable(
     if let Some(other_i) = index_at(movement, indexes) {
         Some(other_i as PieceIndex)
     } else if pieces[i].moveset.single() == Move::Pawn
-        && let Some(pawn_jumped) = find_at(
+        && let Some(pawn_jumped) = index_at(
             ICoord::new_i(pieces[i].initial_pos.column, movement.row),
-            &pieces,
+            &indexes,
         )
-        && ever_moved.en_passantable(pawn_jumped)
+        && ever_moved.en_passantable(pawn_jumped as PieceIndex)
     {
-        Some(pawn_jumped)
+        Some(pawn_jumped as PieceIndex)
     } else {
         None
     }
@@ -918,6 +918,6 @@ mod tests {
             ]
         )
         // latest:
-        // For depth 6 took: 5062.607ms
+        // For depth 6 took: 4660.739ms
     }
 }
