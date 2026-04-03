@@ -553,7 +553,7 @@ pub fn to_piece_index_matrix_small(pieces: &Vec<Piece>, board_size: ICoord) -> P
 }
 
 pub fn index_at(test: ICoord, occupied: &PieceIndexes) -> Option<PieceIndexSmall> {
-    #[cfg(test)]
+    #[cfg(debug_assertions)]
     if !occupied.contains(test) {
         panic!(
             "index_at should receive coords in range: coord={:?}, occupied size=(columns: {}, rows: {})",

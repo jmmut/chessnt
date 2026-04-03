@@ -918,6 +918,6 @@ mod tests {
             ]
         )
         // latest:
-        // For depth 6 took: 4660.739ms
+        // For depth 6 took: 4530.082ms
     }
 }
