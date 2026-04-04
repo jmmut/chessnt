@@ -44,8 +44,8 @@ async fn fallible_main() -> AnyResult<()> {
         text: load_ttf_font("assets/fonts/TitilliumWeb-SemiBold.ttf").await?,
         dev: load_ttf_font("assets/fonts/JetBrainsMono-Medium.ttf").await?,
     };
-    let material = init_shaders()?;
-    let mut theme = Theme::new(textures, fonts, material);
+    let materials = init_shaders()?;
+    let mut theme = Theme::new(textures, fonts, materials);
     let mut camera = CameraPos::default();
     let mut board = Board::new_chess(Coord::new_i(6, 4), Coord::new_i(2, 4));
     let mut bots = Bots::new();

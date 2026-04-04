@@ -1,5 +1,6 @@
 use crate::AnyResult;
 use crate::screen::shader::names::{COLOR_BLACK, COLOR_WHITE, RADAR, TILES};
+use crate::screen::theme::Materials;
 use macroquad::material::{Material, MaterialParams, load_material};
 use macroquad::miniquad::{ShaderSource, UniformDesc, UniformType};
 
@@ -13,10 +14,13 @@ pub mod names {
     pub const COLOR_BLACK: &str = "color_black";
 }
 
-const FRAGMENT_SHADER: &'static str = include_str!("../shaders/floor_fragment.glsl");
-const VERTEX_SHADER: &'static str = include_str!("../shaders/floor_vertex.glsl");
+const FLOOR_FRAGMENT_SHADER: &'static str = include_str!("../shaders/floor_fragment.glsl");
+const FLOOR_VERTEX_SHADER: &'static str = include_str!("../shaders/floor_vertex.glsl");
 
-pub fn init_shaders() -> AnyResult<Material> {
+const CHARACTER_FRAGMENT_SHADER: &'static str = include_str!("../shaders/character_fragment.glsl");
+const CHARACTER_VERTEX_SHADER: &'static str = include_str!("../shaders/character_vertex.glsl");
+
+pub fn init_shaders() -> AnyResult<Materials> {
     let material_params = MaterialParams {
         pipeline_params: Default::default(),
         uniforms: vec![
@@ -53,11 +57,24 @@ pub fn init_shaders() -> AnyResult<Material> {
         ],
         textures: vec![],
     };
-    Ok(load_material(
+    let floor = load_material(
         ShaderSource::Glsl {
-            vertex: VERTEX_SHADER,
-            fragment: FRAGMENT_SHADER,
+            vertex: FLOOR_VERTEX_SHADER,
+            fragment: FLOOR_FRAGMENT_SHADER,
         },
         material_params,
-    )?)
+    )?;
+    let material_params = MaterialParams {
+        pipeline_params: Default::default(),
+        uniforms: vec![],
+        textures: vec![],
+    };
+    let character = load_material(
+        ShaderSource::Glsl {
+            vertex: CHARACTER_VERTEX_SHADER,
+            fragment: CHARACTER_FRAGMENT_SHADER,
+        },
+        material_params,
+    )?;
+    Ok(Materials { floor, character })
 }

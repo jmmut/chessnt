@@ -36,13 +36,18 @@ impl Board {
 
         meshes.extend(self.selection_meshes(Team::White, theme));
         meshes.extend(self.selection_meshes(Team::Black, theme));
-        meshes.extend(self.piece_meshes(theme));
         meshes.extend(self.possible_moves_meshes(Team::White, theme));
         meshes.extend(self.possible_moves_meshes(Team::Black, theme));
         meshes.extend(self.checks_meshes(theme));
+        meshes.sort_by(|a, b| depth(a).total_cmp(&depth(b)));
+        for mesh in &meshes {
+            draw_mesh(&mesh); // can't render cursor and figures online because of intersecting quads with transparencies
+        }
+        meshes.clear();
+        self.draw_piece_meshes(theme);
+
         meshes.extend(self.turn_light_meshes(theme));
 
-        meshes.sort_by(|a, b| depth(a).total_cmp(&depth(b)));
         for mesh in meshes {
             draw_mesh(&mesh); // can't render cursor and figures online because of intersecting quads with transparencies
         }
@@ -57,10 +62,11 @@ impl Board {
         }
     }
 
-    fn piece_meshes(&self, theme: &Theme) -> Vec<Mesh> {
+    fn draw_piece_meshes(&self, theme: &Theme) {
         let mut meshes = Vec::new();
+        let mut character_meshes = Vec::new();
         for piece in &self.pieces {
-            meshes.push(mesh_figure_texture(
+            character_meshes.push(mesh_figure_texture(
                 piece,
                 if piece.team.is_white() {
                     theme.palette.mask_white
@@ -97,7 +103,17 @@ impl Board {
             //     theme,
             // ));
         }
-        meshes
+
+        meshes.sort_by(|a, b| depth(a).total_cmp(&depth(b)));
+        for mesh in meshes {
+            draw_mesh(&mesh); // can't render cursor and figures online because of intersecting quads with transparencies
+        }
+
+        gl_use_material(&theme.materials.character);
+        for character in character_meshes {
+            draw_mesh(&character);
+        }
+        gl_use_default_material();
     }
 
     fn referee_meshes(&self, theme: &Theme) -> Vec<Mesh> {
@@ -152,26 +168,33 @@ impl Board {
     }
 
     fn draw_floor(&self, theme: &Theme) {
-        gl_use_material(&theme.material);
+        gl_use_material(&theme.materials.floor);
         let position_in_pixels_tuple = mouse_position();
         let position_in_pixels = Vec2::new(position_in_pixels_tuple.0, position_in_pixels_tuple.1);
         let position_minus_1_to_1 =
             position_in_pixels / Vec2::new(screen_width(), screen_height()) * 2.0 - 1.0;
         theme
-            .material
+            .materials
+            .floor
             .set_uniform(POSITION_X_NAME, position_minus_1_to_1.x);
         theme
-            .material
+            .materials
+            .floor
             .set_uniform(POSITION_Y_NAME, position_minus_1_to_1.y);
-        theme.material.set_uniform(TILES, self.size.into::<Vec2>());
         theme
-            .material
+            .materials
+            .floor
+            .set_uniform(TILES, self.size.into::<Vec2>());
+        theme
+            .materials
+            .floor
             .set_uniform(COLOR_BLACK, theme.palette.tiles_black);
         theme
-            .material
+            .materials
+            .floor
             .set_uniform(COLOR_WHITE, theme.palette.tiles_white);
         let radar = self.referee.radar_v2_offset();
-        theme.material.set_uniform_array(RADAR, &radar);
+        theme.materials.floor.set_uniform_array(RADAR, &radar);
 
         let corners = horizontal_quad(
             Coord::new_i(0, 0).to_vec3(0.0),

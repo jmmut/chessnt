@@ -25,11 +25,15 @@ pub struct Theme {
     fonts: Fonts,
     coloring: AllColoring,
     pub textures: Textures,
-    pub material: Material,
+    pub materials: Materials,
+}
+pub struct Materials {
+    pub floor: Material,
+    pub character: Material,
 }
 
 impl Theme {
-    pub fn new(textures: Textures, fonts: Fonts, material: Material) -> Self {
+    pub fn new(textures: Textures, fonts: Fonts, materials: Materials) -> Self {
         Self {
             screen: vec2(1.0, 1.0),
             palette: Palette::default(),
@@ -42,7 +46,7 @@ impl Theme {
             fonts,
             coloring: new_coloring(),
             textures,
-            material,
+            materials,
         }
     }
     pub fn update_screen_size(&mut self, screen: Vec2) {
