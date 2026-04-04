@@ -110,6 +110,7 @@ impl Board {
         }
 
         gl_use_material(&theme.materials.character);
+        character_meshes.sort_by(|a, b| depth(a).total_cmp(&depth(b)));
         for character in character_meshes {
             draw_mesh(&character);
         }
