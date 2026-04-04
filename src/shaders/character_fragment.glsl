@@ -10,9 +10,10 @@ void main() {
     vec3 code = vec3(241.0 / 255.0, 1.0, 135.0/255.0);
     vec4 sampled = texture2D(Texture, uv);
     vec3 diff = code - sampled.rgb;
-    float dist = abs(diff.r) + abs(diff.g) + abs(diff.b);
+    float dist = (abs(diff.r) + abs(diff.g) + abs(diff.b)) / 3.0;
+    float dist_2 = dist * dist;
     if (dist < 0.5) {
-        vec3 color_out = sampled.rgb * dist + color.rgb * (1.0 - dist);
+        vec3 color_out = sampled.rgb * dist_2 + color.rgb * (1.0 - dist_2);
         gl_FragColor = vec4(color_out, sampled.a);
     } else {
         gl_FragColor = sampled;
