@@ -13,7 +13,7 @@ void main() {
     vec3 p = sampled.rgb / code;  // NOTE: division by 0!
     float p_avg = (p.r + p.g + p.b) / 3.0;
     float dist = abs(p.r - p_avg) + abs(p.g - p_avg) + abs(p.b - p_avg);
-    if (dist < 10000.0 && p_avg > 0.0) {
+    if (dist < 0.05 && p_avg > 0.1) {
         vec3 color_out = sampled.rgb * dist + color.rgb * p * (1.0 - dist);
         gl_FragColor = vec4(color_out, sampled.a);
     } else {
