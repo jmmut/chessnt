@@ -1,7 +1,7 @@
 use chessnt::core::coord::Coord;
 use chessnt::core::input::Gamepads;
 use chessnt::core::time::Time;
-use chessnt::screen::shader::init_shaders;
+use chessnt::screen::shader::{character_shader, init_shaders};
 use chessnt::screen::theme::{CameraPos, Fonts, Textures, Theme, new_text_coloring};
 use chessnt::screen::ui::{SCALE, render_text_no_font, render_title};
 use chessnt::screen::ui_dev::DevUi;
@@ -21,6 +21,7 @@ use macroquad::math::vec2;
 use macroquad::prelude::{Conf, clear_background, next_frame, screen_height, screen_width};
 use macroquad::prelude::{load_texture, load_ttf_font};
 use std::collections::HashMap;
+use std::fs::read_to_string;
 
 #[macroquad::main(window_conf)]
 async fn main() {
@@ -121,6 +122,20 @@ async fn handle_ui_actions(
             Message::TargetFPS(fps) => {
                 time.set_target_fps(fps);
             }
+            Message::ReloadShaderCharacter => {
+                let reloaded = character_shader(
+                    &read_to_string("src/shaders/character_vertex.glsl")?,
+                    &read_to_string("src/shaders/character_fragment.glsl")?,
+                );
+                match reloaded {
+                    Ok(ok) => {
+                        theme.materials.character = ok;
+                    }
+                    Err(e) => {
+                        println!("{}", e);
+                    }
+                }
+            }
         }
     }
     Ok(should_exit)
@@ -196,6 +211,9 @@ fn handle_inputs_shoud_exit(
     }
     if is_key_pressed(KeyCode::V) {
         messages.push(Message::ToggleBot(Team::White));
+    }
+    if is_key_pressed(KeyCode::M) {
+        messages.push(Message::ReloadShaderCharacter);
     }
     Ok(messages)
 }

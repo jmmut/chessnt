@@ -24,6 +24,12 @@ const CHARACTER_FRAGMENT_SHADER: &'static str = include_str!("../shaders/charact
 const CHARACTER_VERTEX_SHADER: &'static str = include_str!("../shaders/character_vertex.glsl");
 
 pub fn init_shaders() -> AnyResult<Materials> {
+    let floor = floor_shader(FLOOR_VERTEX_SHADER, FLOOR_FRAGMENT_SHADER)?;
+    let character = character_shader(CHARACTER_VERTEX_SHADER, CHARACTER_FRAGMENT_SHADER)?;
+    Ok(Materials { floor, character })
+}
+
+pub fn floor_shader(vertex_code: &str, fragment_code: &str) -> AnyResult<Material> {
     let material_params = MaterialParams {
         pipeline_params: Default::default(),
         uniforms: vec![
@@ -62,11 +68,15 @@ pub fn init_shaders() -> AnyResult<Materials> {
     };
     let floor = load_material(
         ShaderSource::Glsl {
-            vertex: FLOOR_VERTEX_SHADER,
-            fragment: FLOOR_FRAGMENT_SHADER,
+            vertex: vertex_code,
+            fragment: fragment_code,
         },
         material_params,
     )?;
+    Ok(floor)
+}
+
+pub fn character_shader(vertex_code: &str, fragment_code: &str) -> AnyResult<Material> {
     let material_params = MaterialParams {
         pipeline_params: PipelineParams {
             color_blend: Some(BlendState::new(
@@ -86,10 +96,10 @@ pub fn init_shaders() -> AnyResult<Materials> {
     };
     let character = load_material(
         ShaderSource::Glsl {
-            vertex: CHARACTER_VERTEX_SHADER,
-            fragment: CHARACTER_FRAGMENT_SHADER,
+            vertex: vertex_code,
+            fragment: fragment_code,
         },
         material_params,
     )?;
-    Ok(Materials { floor, character })
+    Ok(character)
 }

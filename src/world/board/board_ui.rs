@@ -20,6 +20,7 @@ pub enum Message {
     ToggleRadar,
     ToggleReferee,
     TargetFPS(Option<f64>),
+    ReloadShaderCharacter,
 }
 
 impl Board {
