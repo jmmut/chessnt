@@ -2,7 +2,10 @@ use crate::AnyResult;
 use crate::screen::shader::names::{COLOR_BLACK, COLOR_WHITE, RADAR, TILES};
 use crate::screen::theme::Materials;
 use macroquad::material::{Material, MaterialParams, load_material};
-use macroquad::miniquad::{ShaderSource, UniformDesc, UniformType};
+use macroquad::miniquad::{
+    BlendFactor, BlendState, BlendValue, Equation, ShaderSource, UniformDesc, UniformType,
+};
+use macroquad::prelude::PipelineParams;
 
 pub const POSITION_X_NAME: &str = "position_x";
 pub const POSITION_Y_NAME: &str = "position_y";
@@ -65,7 +68,19 @@ pub fn init_shaders() -> AnyResult<Materials> {
         material_params,
     )?;
     let material_params = MaterialParams {
-        pipeline_params: Default::default(),
+        pipeline_params: PipelineParams {
+            color_blend: Some(BlendState::new(
+                Equation::Add,
+                BlendFactor::Value(BlendValue::SourceAlpha),
+                BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
+            )),
+            alpha_blend: Some(BlendState::new(
+                Equation::Add,
+                BlendFactor::Zero,
+                BlendFactor::One,
+            )),
+            ..Default::default()
+        },
         uniforms: vec![],
         textures: vec![],
     };
