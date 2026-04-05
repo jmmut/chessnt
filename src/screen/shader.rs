@@ -1,5 +1,7 @@
 use crate::AnyResult;
-use crate::screen::shader::names::{COLOR_BLACK, COLOR_WHITE, RADAR, TILES};
+use crate::screen::shader::names::{
+    COLOR_BLACK, COLOR_WHITE, POSITION_X_NAME, POSITION_Y_NAME, RADAR, REFEREE_SAW, TILES,
+};
 use crate::screen::theme::Materials;
 use macroquad::material::{Material, MaterialParams, load_material};
 use macroquad::miniquad::{
@@ -7,14 +9,14 @@ use macroquad::miniquad::{
 };
 use macroquad::prelude::PipelineParams;
 
-pub const POSITION_X_NAME: &str = "position_x";
-pub const POSITION_Y_NAME: &str = "position_y";
-
 pub mod names {
+    pub const POSITION_X_NAME: &str = "position_x";
+    pub const POSITION_Y_NAME: &str = "position_y";
     pub const RADAR: &str = "radar";
     pub const TILES: &str = "tiles";
     pub const COLOR_WHITE: &str = "color_white";
     pub const COLOR_BLACK: &str = "color_black";
+    pub const REFEREE_SAW: &str = "referee_saw";
 }
 
 const FLOOR_FRAGMENT_SHADER: &'static str = include_str!("../shaders/floor_fragment.glsl");
@@ -91,7 +93,11 @@ pub fn character_shader(vertex_code: &str, fragment_code: &str) -> AnyResult<Mat
             )),
             ..Default::default()
         },
-        uniforms: vec![],
+        uniforms: vec![UniformDesc {
+            name: REFEREE_SAW.to_string(),
+            uniform_type: UniformType::Int1,
+            array_count: 1,
+        }],
         textures: vec![],
     };
     let character = load_material(

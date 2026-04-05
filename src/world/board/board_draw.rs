@@ -4,8 +4,9 @@ use crate::screen::render::{
     floor_corners, horizontal_quad, mesh_cursor, mesh_cursor_width, mesh_figure_texture,
     mesh_progress_bar, mesh_quad, mesh_texture_quad, mesh_triangle, mesh_vertical_texture, quad,
 };
-use crate::screen::shader::names::{COLOR_BLACK, COLOR_WHITE, RADAR, TILES};
-use crate::screen::shader::{POSITION_X_NAME, POSITION_Y_NAME};
+use crate::screen::shader::names::{
+    COLOR_BLACK, COLOR_WHITE, POSITION_X_NAME, POSITION_Y_NAME, RADAR, REFEREE_SAW, TILES,
+};
 use crate::screen::theme::Theme;
 use crate::world::board::{Board, other_pieces_at};
 use crate::world::moves::possible_moves;
@@ -65,16 +66,20 @@ impl Board {
     fn draw_piece_meshes(&self, theme: &Theme) {
         let mut meshes = Vec::new();
         let mut character_meshes = Vec::new();
-        for piece in &self.pieces {
-            character_meshes.push(mesh_figure_texture(
-                piece,
-                if piece.team.is_white() {
-                    theme.palette.mask_white
-                } else {
-                    theme.palette.mask_black
-                },
-                theme.textures.placeholder.clone(),
-                self.piece_size,
+        for (i, piece) in self.pieces.iter().enumerate() {
+            let saw = self.referee.saw_any_piece(self.pieces(), vec![i]);
+            character_meshes.push((
+                saw,
+                mesh_figure_texture(
+                    piece,
+                    if piece.team.is_white() {
+                        theme.palette.mask_white
+                    } else {
+                        theme.palette.mask_black
+                    },
+                    theme.textures.placeholder.clone(),
+                    self.piece_size,
+                ),
             ));
             // meshes.push(to_mesh(
             //     floor_corners(piece.pos + Coord::new_f(0.5, 0.5), FLOOR_PIECE_HEIGHT * 1.1, 0.2),
@@ -110,8 +115,12 @@ impl Board {
         }
 
         gl_use_material(&theme.materials.character);
-        character_meshes.sort_by(|a, b| depth(a).total_cmp(&depth(b)));
-        for character in character_meshes {
+        character_meshes.sort_by(|a, b| depth(&a.1).total_cmp(&depth(&b.1)));
+        for (saw, character) in character_meshes {
+            theme
+                .materials
+                .character
+                .set_uniform(REFEREE_SAW, saw as i32);
             draw_mesh(&character);
         }
         gl_use_default_material();
