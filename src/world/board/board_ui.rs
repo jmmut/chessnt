@@ -22,6 +22,7 @@ pub enum Message {
     TargetFPS(Option<f64>),
     ReloadShaderCharacter,
     ToggleSinCity,
+    Zoom(bool),
 }
 
 impl Board {

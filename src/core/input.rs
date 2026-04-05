@@ -91,7 +91,7 @@ fn maybe_move_team(gamepad: Option<&mut Gamepad>, board: &mut Board) -> AnyResul
 fn move_team(gamepad_outer: &mut Gamepad, board: &mut Board) -> AnyResult<()> {
     let mut delta = gamepad_outer.left_stick();
     delta += gamepad_outer.right_stick();
-    let gamepad = &mut gamepad_outer.inner;
+    let gamepad = &gamepad_outer.inner;
     let team = gamepad_outer.team;
     let max = 0.05;
     if gamepad.is_just_pressed(Button::ActionDown)

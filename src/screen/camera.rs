@@ -19,10 +19,18 @@ impl Default for CameraPos {
 }
 
 impl CameraPos {
-    pub fn set_zoom(&mut self) {}
-    pub fn get_zoom(&self) {}
+    pub fn set_zoom_rel(&mut self, coef: f32) {
+        let target = self.target();
+        let pos = self.pos();
+        let new_pos = (pos - target) * coef + target;
+        self.set_pos(new_pos);
+    }
     pub fn pos(&self) -> Vec3 {
         vec3(0.0, self.y, self.z)
+    }
+    pub fn set_pos(&mut self, new_pos: Vec3) {
+        self.y = new_pos.y;
+        self.z = new_pos.z;
     }
     pub fn up(&self) -> Vec3 {
         vec3(0.0, 1.0, 0.0)

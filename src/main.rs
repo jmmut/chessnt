@@ -19,12 +19,12 @@ use juquad::widgets::anchor::Anchor;
 use macroquad::Error;
 use macroquad::camera::set_default_camera;
 use macroquad::input::{KeyCode, is_key_down, is_key_pressed};
-use macroquad::math::vec2;
+use macroquad::math::{Vec2, vec2};
 use macroquad::miniquad::FilterMode;
-use macroquad::prelude::load_ttf_font;
 use macroquad::prelude::{
     Conf, Texture2D, clear_background, next_frame, screen_height, screen_width,
 };
+use macroquad::prelude::{load_ttf_font, mouse_wheel};
 use std::collections::HashMap;
 use std::fs::read_to_string;
 
@@ -82,7 +82,16 @@ async fn fallible_main() -> AnyResult<()> {
             &mut bots,
             &mut gamepads,
         )?);
-        if handle_ui_actions(messages, &mut board, &mut bots, &mut time, &mut theme).await? {
+        if handle_ui_actions(
+            messages,
+            &mut board,
+            &mut bots,
+            &mut time,
+            &mut camera,
+            &mut theme,
+        )
+        .await?
+        {
             break;
         }
         time.tick_end();
@@ -96,6 +105,7 @@ async fn handle_ui_actions(
     board: &mut Board,
     bots: &mut Bots,
     time: &mut Time,
+    camera: &mut CameraPos,
     theme: &mut Theme,
 ) -> AnyResult<bool> {
     let mut should_exit = false;
@@ -143,6 +153,14 @@ async fn handle_ui_actions(
             }
             Message::ToggleSinCity => {
                 theme.sin_city = !theme.sin_city;
+            }
+            Message::Zoom(increase) => {
+                let zoom_speed = 1.1;
+                if increase {
+                    camera.set_zoom_rel(1.0 / zoom_speed);
+                } else {
+                    camera.set_zoom_rel(zoom_speed);
+                }
             }
         }
     }
@@ -227,6 +245,12 @@ fn handle_inputs_shoud_exit(
     }
     if is_key_pressed(KeyCode::M) {
         messages.push(Message::ReloadShaderCharacter);
+    }
+    let wheel = Vec2::from(mouse_wheel());
+    if wheel.y > 0.01 {
+        messages.push(Message::Zoom(true));
+    } else if wheel.y < -0.01 {
+        messages.push(Message::Zoom(false));
     }
     Ok(messages)
 }
