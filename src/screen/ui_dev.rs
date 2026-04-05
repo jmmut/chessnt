@@ -164,15 +164,15 @@ impl DevUi {
                 messages.push(Message::TargetFPS(Some(target as f64)));
             }
         }
-        render_slider("Camera Y", theme, 0.0, 100.0, &mut camera.y, rect);
-        render_slider("Camera Z", theme, 0.0, 100.0, &mut camera.z, rect);
+        render_slider("Camera Y", theme, 0.0, 100.0, &mut camera.pos.y, rect);
+        render_slider("Camera Z", theme, 0.0, 100.0, &mut camera.pos.z, rect);
         render_slider("Camera Width", theme, 43.5, 47.5, &mut camera.fovy, rect);
         render_slider(
             "Camera target Y",
             theme,
             -5.0,
             10.0,
-            &mut camera.target_y,
+            &mut camera.target.y,
             rect,
         );
         if render_button_dev_mut("Reset camera", theme, below_left, rect).is_clicked() {

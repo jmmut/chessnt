@@ -9,7 +9,7 @@ use juquad::elm::container::Container;
 use juquad::elm::text::Text;
 use juquad::elm::widget::compute_layout;
 use juquad::widgets::anchor::{Anchor, Horizontal, Layout, Vertical};
-use macroquad::math::Rect;
+use macroquad::math::{Rect, Vec2};
 
 #[derive(Copy, Clone)]
 pub enum Message {
@@ -23,6 +23,8 @@ pub enum Message {
     ReloadShaderCharacter,
     ToggleSinCity,
     Zoom(bool),
+    MoveCamera(Vec2),
+    RotateCamera(Vec2),
 }
 
 impl Board {

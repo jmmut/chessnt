@@ -1,19 +1,17 @@
-use macroquad::math::{Vec3, vec3};
+use macroquad::math::{Vec2, Vec3, vec2, vec3};
 
 pub struct CameraPos {
-    pub y: f32,
-    pub z: f32,
+    pub pos: Vec3,
+    pub target: Vec3,
     pub fovy: f32,
-    pub target_y: f32,
 }
 
 impl Default for CameraPos {
     fn default() -> Self {
         CameraPos {
-            y: 12.69,      // 6.0,
-            z: 17.57,      // 8.0,
-            fovy: 44.33,   // 45.0,
-            target_y: 0.5, // 0.0,
+            pos: vec3(0.0, 12.69, 17.57),
+            target: vec3(0.0, 0.5, 0.0),
+            fovy: 44.33, // 45.0,
         }
     }
 }
@@ -25,17 +23,36 @@ impl CameraPos {
         let new_pos = (pos - target) * coef + target;
         self.set_pos(new_pos);
     }
+    pub fn get_zoom(&self) -> f32 {
+        (self.pos - self.target).length()
+    }
     pub fn pos(&self) -> Vec3 {
-        vec3(0.0, self.y, self.z)
+        self.pos
     }
     pub fn set_pos(&mut self, new_pos: Vec3) {
-        self.y = new_pos.y;
-        self.z = new_pos.z;
+        self.pos = new_pos;
+    }
+    pub fn set_pos_rel(&mut self, delta: Vec2) {
+        let zoom = self.get_zoom();
+        set_rel(&mut self.pos, delta, zoom);
+    }
+    pub fn set_target_rel(&mut self, delta: Vec2) {
+        let zoom = self.get_zoom();
+        set_rel(&mut self.target, delta, zoom);
     }
     pub fn up(&self) -> Vec3 {
         vec3(0.0, 1.0, 0.0)
     }
     pub fn target(&self) -> Vec3 {
-        vec3(0.0, self.target_y, 0.0)
+        self.target
     }
+    pub fn rotate(&self, delta: Vec2) {
+
+        // vec3(0.0, self.target_y, 0.0)
+    }
+}
+pub fn set_rel(p: &mut Vec3, delta: Vec2, zoom: f32) {
+    let move_speed = 0.32 * zoom;
+    p.z += delta.y * move_speed;
+    p.x += delta.x * move_speed;
 }

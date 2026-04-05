@@ -18,7 +18,10 @@ use chessnt::{
 use juquad::widgets::anchor::Anchor;
 use macroquad::Error;
 use macroquad::camera::set_default_camera;
-use macroquad::input::{KeyCode, is_key_down, is_key_pressed};
+use macroquad::input::{
+    KeyCode, MouseButton, is_key_down, is_key_pressed, is_mouse_button_down,
+    is_mouse_button_pressed, mouse_delta_position,
+};
 use macroquad::math::{Vec2, vec2};
 use macroquad::miniquad::FilterMode;
 use macroquad::prelude::{
@@ -162,6 +165,13 @@ async fn handle_ui_actions(
                     camera.set_zoom_rel(zoom_speed);
                 }
             }
+            Message::MoveCamera(delta) => {
+                camera.set_pos_rel(delta);
+                camera.set_target_rel(delta);
+            }
+            Message::RotateCamera(delta) => {
+                camera.rotate(delta);
+            }
         }
     }
     Ok(should_exit)
@@ -251,6 +261,12 @@ fn handle_inputs_shoud_exit(
         messages.push(Message::Zoom(true));
     } else if wheel.y < -0.01 {
         messages.push(Message::Zoom(false));
+    }
+    if is_mouse_button_down(MouseButton::Left) && !is_mouse_button_pressed(MouseButton::Left) {
+        messages.push(Message::MoveCamera(Vec2::from(mouse_delta_position())));
+    }
+    if is_mouse_button_down(MouseButton::Right) && !is_mouse_button_pressed(MouseButton::Right) {
+        messages.push(Message::RotateCamera(Vec2::from(mouse_delta_position())));
     }
     Ok(messages)
 }
