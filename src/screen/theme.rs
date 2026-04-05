@@ -134,22 +134,6 @@ impl Theme {
         }
     }
 }
-pub struct CameraPos {
-    pub y: f32,
-    pub z: f32,
-    pub fovy: f32,
-    pub target_y: f32,
-}
-impl Default for CameraPos {
-    fn default() -> Self {
-        CameraPos {
-            y: 12.69,      // 6.0,
-            z: 17.57,      // 8.0,
-            fovy: 44.33,   // 45.0,
-            target_y: 0.5, // 0.0,
-        }
-    }
-}
 pub struct Textures {
     pub placeholder: Texture2D,
     pub pieces: HashMap<(Team, Move), Texture2D>,

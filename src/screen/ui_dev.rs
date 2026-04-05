@@ -3,8 +3,9 @@ use crate::core::clipboard::Clipboard;
 use crate::core::coord::fmt_vec2;
 use crate::core::input::Gamepads;
 use crate::core::time::{DEFAULT_FPS, Time};
+use crate::screen::camera::CameraPos;
 use crate::screen::theme::{
-    CameraPos, Palette, Theme, coloring_elem, named_coloring, named_state_style, new_coloring,
+    Palette, Theme, coloring_elem, named_coloring, named_state_style, new_coloring,
     set_theme_coloring, state_style_elem,
 };
 use crate::screen::ui;

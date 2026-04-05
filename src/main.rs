@@ -1,8 +1,9 @@
 use chessnt::core::coord::Coord;
 use chessnt::core::input::Gamepads;
 use chessnt::core::time::Time;
+use chessnt::screen::camera::CameraPos;
 use chessnt::screen::shader::{character_shader, init_shaders};
-use chessnt::screen::theme::{CameraPos, Fonts, Textures, Theme, new_text_coloring};
+use chessnt::screen::theme::{Fonts, Textures, Theme, new_text_coloring};
 use chessnt::screen::ui::{SCALE, render_text_no_font, render_title};
 use chessnt::screen::ui_dev::DevUi;
 use chessnt::world::board::Board;
