@@ -5,7 +5,8 @@ use crate::screen::render::{
     mesh_progress_bar, mesh_quad, mesh_texture_quad, mesh_triangle, mesh_vertical_texture, quad,
 };
 use crate::screen::shader::names::{
-    COLOR_BLACK, COLOR_WHITE, POSITION_X_NAME, POSITION_Y_NAME, RADAR, REFEREE_SAW, TEAM, TILES,
+    COLOR_BLACK, COLOR_WHITE, POSITION_X_NAME, POSITION_Y_NAME, RADAR, REFEREE_SAW, SIN_CITY, TEAM,
+    TILES,
 };
 use crate::screen::theme::Theme;
 use crate::world::board::{Board, other_pieces_at};
@@ -125,11 +126,10 @@ impl Board {
                 .materials
                 .character
                 .set_uniform(TEAM, !self.pieces()[i].team.is_white() as i32);
-
             theme
                 .materials
                 .character
-                .set_uniform(TEAM, theme.sin_city as i32);
+                .set_uniform(SIN_CITY, theme.sin_city as i32);
 
             draw_mesh(&character);
         }

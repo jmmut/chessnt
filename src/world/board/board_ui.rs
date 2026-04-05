@@ -21,6 +21,7 @@ pub enum Message {
     ToggleReferee,
     TargetFPS(Option<f64>),
     ReloadShaderCharacter,
+    ToggleSinCity,
 }
 
 impl Board {

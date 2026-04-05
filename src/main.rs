@@ -136,6 +136,9 @@ async fn handle_ui_actions(
                     }
                 }
             }
+            Message::ToggleSinCity => {
+                theme.sin_city = !theme.sin_city;
+            }
         }
     }
     Ok(should_exit)

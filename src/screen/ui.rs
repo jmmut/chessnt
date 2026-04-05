@@ -85,9 +85,6 @@ pub fn measure_title(text: &str, theme: &Theme, anchor: Anchor) -> TextRect {
 pub fn render_button(text: &str, theme: &Theme, anchor: Anchor) -> (Rect, Interaction) {
     render_button_font(text, theme, theme.font(), theme.font_size(), anchor)
 }
-pub fn render_button_dev(text: &str, theme: &Theme, anchor: Anchor) -> (Rect, Interaction) {
-    render_button_font(text, theme, theme.font_dev(), theme.font_size_dev(), anchor)
-}
 pub fn render_button_dev_mut(
     text: &str,
     theme: &Theme,

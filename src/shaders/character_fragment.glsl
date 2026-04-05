@@ -15,9 +15,9 @@ void main() {
     vec3 diff = abs(code - sampled.rgb);
     float dist = length(diff);
     bool is_code_color = dist < 0.01;
-    
+
     if (is_code_color) {
-        if (referee_saw > 0) {
+        if (referee_saw == 1 && sin_city == 0) {
             int white_or_black_i = 1 - team;
             float white_or_black = float(white_or_black_i);
             gl_FragColor = vec4(white_or_black, white_or_black, white_or_black, sampled.a);

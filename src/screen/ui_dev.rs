@@ -89,6 +89,17 @@ impl DevUi {
         }
         Ok(Vec::new())
     }
+
+    fn draw_main(&mut self, theme: &mut Theme) {
+        let rect = &mut Self::dev_ui_title(theme);
+        self.navigation(theme, "FPS & Camera", DevUiMenu::Screen, rect);
+        self.navigation(theme, "Board & Characters", DevUiMenu::Board, rect);
+        self.navigation(theme, "Gamepads", DevUiMenu::Gamepads, rect);
+        self.navigation(theme, "Edit world palette", DevUiMenu::PaletteWorld, rect);
+        self.navigation(theme, "Edit ui palette", DevUiMenu::PaletteUi, rect);
+        self.navigation(theme, "Hide Dev UI", DevUiMenu::Hidden, rect);
+    }
+
     fn dev_ui_title(theme: &mut Theme) -> Rect {
         render_text_dev(
             "DEV UI (toggle with '/')",
@@ -113,16 +124,6 @@ impl DevUi {
         if back_clicked.is_clicked() {
             self.menu = menu;
         }
-    }
-
-    fn draw_main(&mut self, theme: &mut Theme) {
-        let rect = &mut Self::dev_ui_title(theme);
-        self.navigation(theme, "Screen", DevUiMenu::Screen, rect);
-        self.navigation(theme, "Board & Characters", DevUiMenu::Board, rect);
-        self.navigation(theme, "Gamepads", DevUiMenu::Gamepads, rect);
-        self.navigation(theme, "Edit world palette", DevUiMenu::PaletteWorld, rect);
-        self.navigation(theme, "Edit ui palette", DevUiMenu::PaletteUi, rect);
-        self.navigation(theme, "Hide Dev UI", DevUiMenu::Hidden, rect);
     }
 
     fn draw_screen(
@@ -193,8 +194,13 @@ impl DevUi {
         bots: &mut Bots,
     ) -> Vec<Message> {
         let rect = &mut Self::dev_ui_title(theme);
+        let mut messages = Vec::new();
 
-        let _rect = render_slider(
+        let text = format!("{} Sin City mode", enable_or_disable(theme.sin_city));
+        if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
+            messages.push(Message::ToggleSinCity);
+        }
+        render_slider(
             "Texture size X",
             theme,
             0.1,
@@ -202,7 +208,7 @@ impl DevUi {
             &mut board.piece_size.x,
             rect,
         );
-        let _rect = render_slider(
+        render_slider(
             "Texture size Y",
             theme,
             0.1,
@@ -213,7 +219,6 @@ impl DevUi {
         if render_button_dev_mut("Reset texture size", theme, below_left, rect).is_clicked() {
             board.piece_size = DEFAULT_PIECE_SIZE;
         }
-        let mut messages = Vec::new();
         if render_button_dev_mut("Reload textures (T)", theme, below_left, rect).is_clicked() {
             messages.push(Message::ReloadTextures);
         }

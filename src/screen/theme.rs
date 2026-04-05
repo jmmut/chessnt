@@ -10,7 +10,7 @@ use juquad::elm::style::Style;
 use juquad::lazy::{Margin, Pad, Size};
 use juquad::widgets::anchor::{Horizontal, Layout, Vertical};
 use juquad::widgets::{StateColor, StateStyle, Style as Coloring};
-use macroquad::color::{BLUE, Color, DARKBLUE, GRAY, GREEN, LIGHTGRAY, PURPLE, RED, WHITE, YELLOW};
+use macroquad::color::{BLUE, Color, DARKBLUE, GRAY, GREEN, LIGHTGRAY, PURPLE, RED, YELLOW};
 use macroquad::color_u8;
 use macroquad::material::Material;
 use macroquad::math::{Rect, vec2};
