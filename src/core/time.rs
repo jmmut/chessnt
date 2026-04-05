@@ -59,7 +59,7 @@ impl Time {
             }
         }
     }
-    pub fn delta(&self) -> f64 {
+    pub fn delta_s(&self) -> f64 {
         self.current_s - self.last_s
     }
     pub fn fps(&self) -> f64 {

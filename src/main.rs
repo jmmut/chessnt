@@ -68,8 +68,8 @@ async fn fallible_main() -> AnyResult<()> {
         theme.update_screen_size(screen);
 
         let mut messages = handle_inputs_shoud_exit(&mut board, &mut gamepads, &mut dev_ui)?;
-        board.tick(time.delta());
-        bots.tick(time.delta(), &mut board)?;
+        board.tick(time.delta_s());
+        bots.tick(time.delta_s(), &mut board)?;
 
         set_3d_camera(&camera);
         clear_background(theme.palette.background);
@@ -111,6 +111,7 @@ async fn handle_ui_actions(
     camera: &mut CameraPos,
     theme: &mut Theme,
 ) -> AnyResult<bool> {
+    let _delta_s = time.delta_s();
     let mut should_exit = false;
     for message in messages {
         match message {
@@ -158,7 +159,8 @@ async fn handle_ui_actions(
                 theme.sin_city = !theme.sin_city;
             }
             Message::Zoom(increase) => {
-                let zoom_speed = 1.1;
+                let zoom_speed = 1.2;
+                // let zoom_speed = zoom_speed* 60.0 * delta_s as f32;
                 if increase {
                     camera.set_zoom_rel(1.0 / zoom_speed);
                 } else {

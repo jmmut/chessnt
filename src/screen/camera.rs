@@ -1,8 +1,9 @@
-use macroquad::math::{Vec2, Vec3, vec2, vec3};
+use macroquad::math::{Vec2, Vec3, vec3};
 
 pub struct CameraPos {
     pub pos: Vec3,
     pub target: Vec3,
+    pub up: Vec3,
     pub fovy: f32,
 }
 
@@ -11,6 +12,7 @@ impl Default for CameraPos {
         CameraPos {
             pos: vec3(0.0, 12.69, 17.57),
             target: vec3(0.0, 0.5, 0.0),
+            up: vec3(0.0, 1.0, 0.0),
             fovy: 44.33, // 45.0,
         }
     }
@@ -41,14 +43,24 @@ impl CameraPos {
         set_rel(&mut self.target, delta, zoom);
     }
     pub fn up(&self) -> Vec3 {
-        vec3(0.0, 1.0, 0.0)
+        self.up
     }
     pub fn target(&self) -> Vec3 {
         self.target
     }
-    pub fn rotate(&self, delta: Vec2) {
+    pub fn rotate(&mut self, delta: Vec2) {
+        if delta.x.abs() > 0.01 || delta.y.abs() > 0.01 {
+            let rotate_speed = 30.0;
+            let front = self.target - self.pos;
+            let zoom = front.length();
+            let right = front.cross(self.up).normalize();
 
-        // vec3(0.0, self.target_y, 0.0)
+            let new_front =
+                front - right * delta.x * rotate_speed + self.up * delta.y * rotate_speed;
+            let new_front_same_zoom = new_front.normalize() * zoom;
+            self.up = right.cross(new_front_same_zoom).normalize();
+            self.pos = self.target - new_front_same_zoom;
+        }
     }
 }
 pub fn set_rel(p: &mut Vec3, delta: Vec2, zoom: f32) {
