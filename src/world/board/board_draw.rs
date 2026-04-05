@@ -77,7 +77,7 @@ impl Board {
                     } else {
                         theme.palette.mask_black
                     },
-                    theme.textures.placeholder.clone(),
+                    theme.textures.characters[&piece.moveset.single()].clone(),
                     self.piece_size,
                 ),
             ));
@@ -142,7 +142,7 @@ impl Board {
         let mesh = mesh_vertical_texture(
             coord_00,
             WHITE,
-            Some(theme.textures.placeholder.clone()),
+            Some(theme.textures.referee.clone()),
             looking_leftwards,
             self.piece_size,
         );

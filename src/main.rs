@@ -103,6 +103,114 @@ async fn fallible_main() -> AnyResult<()> {
     Ok(())
 }
 
+async fn load_textures() -> AnyResult<Textures> {
+    #[rustfmt::skip]
+    let textures = Textures {
+        placeholder: load_texture("assets/images/ph_chara.png").await?,
+        referee: load_texture("assets/images/ph_chara.png").await?,
+        characters: HashMap::from([
+            (Move::Pawn, load_texture("assets/images/characters/peon.png").await?),
+            (Move::Rook, load_texture("assets/images/characters/torre.png").await?),
+            (Move::Knight, load_texture("assets/images/characters/torre.png").await?), // TODO: replace with correct textures when they exist
+            (Move::Bishop, load_texture("assets/images/characters/torre.png").await?), // TODO: replace with correct textures when they exist
+            (Move::King, load_texture("assets/images/characters/torre.png").await?), // TODO: replace with correct textures when they exist
+            (Move::Queen, load_texture("assets/images/characters/torre.png").await?), // TODO: replace with correct textures when they exist
+            // (Move::Knight, load_texture("assets/images/characters/caballo.png").await?),
+            // (Move::Bishop, load_texture("assets/images/characters/alfil.png").await?),
+            // (Move::King, load_texture("assets/images/characters/rey.png").await?),
+            // (Move::Queen, load_texture("assets/images/characters/reina.png").await?),
+        ]),
+        pieces: HashMap::from([
+            ((Team::White, Move::Pawn), load_texture("assets/images/pieces/icon-w-peon.png").await?),
+            ((Team::White, Move::Rook), load_texture("assets/images/pieces/icon-w-torre.png").await?),
+            ((Team::White, Move::Knight), load_texture("assets/images/pieces/icon-w-caballo.png").await?),
+            ((Team::White, Move::Bishop), load_texture("assets/images/pieces/icon-w-alfil.png").await?),
+            ((Team::White, Move::Queen), load_texture("assets/images/pieces/icon-w-reina.png").await?),
+            ((Team::White, Move::King), load_texture("assets/images/pieces/icon-w-rey.png").await?),
+            ((Team::Black, Move::Pawn), load_texture("assets/images/pieces/icon-b-peon.png").await?),
+            ((Team::Black, Move::Rook), load_texture("assets/images/pieces/icon-b-torre.png").await?),
+            ((Team::Black, Move::Knight), load_texture("assets/images/pieces/icon-b-caballo.png").await?),
+            ((Team::Black, Move::Bishop), load_texture("assets/images/pieces/icon-b-alfil.png").await?),
+            ((Team::Black, Move::Queen), load_texture("assets/images/pieces/icon-b-reina.png").await?),
+            ((Team::Black, Move::King), load_texture("assets/images/pieces/icon-b-rey.png").await?),
+        ]),
+    };
+    Ok(textures)
+}
+pub async fn load_texture(path: &str) -> Result<Texture2D, Error> {
+    let tex = macroquad::prelude::load_texture(path).await?;
+    tex.set_filter(FilterMode::Nearest);
+    Ok(tex)
+}
+
+fn handle_inputs_shoud_exit(
+    board: &mut Board,
+    gamepads: &mut Gamepads,
+    dev_ui: &mut DevUi,
+) -> AnyResult<Vec<Message>> {
+    if is_key_pressed(KeyCode::Slash)
+        || is_key_pressed(KeyCode::KpDivide)
+        || is_key_pressed(KeyCode::LeftBracket)
+        || is_key_pressed(KeyCode::Backslash)
+    {
+        dev_ui.toggle();
+    }
+
+    move_cursor_or_piece(board, gamepads)?;
+
+    select(board, &[KeyCode::Space], Team::Black)?;
+    select(board, &[KeyCode::KpEnter, KeyCode::Enter], Team::White)?;
+
+    if is_key_pressed(KeyCode::KpAdd) {
+        unsafe {
+            SCALE *= 1.3;
+        }
+    }
+    if is_key_pressed(KeyCode::KpSubtract) {
+        unsafe {
+            SCALE /= 1.3;
+        }
+    }
+    let mut messages = Vec::new();
+    if is_key_pressed(KeyCode::R) {
+        messages.push(Message::Restart)
+    }
+    if is_key_pressed(KeyCode::P) {
+        messages.push(Message::ToggleReferee)
+    }
+    if is_key_pressed(KeyCode::O) {
+        messages.push(Message::ToggleRadar)
+    }
+    if is_key_pressed(KeyCode::Escape) {
+        messages.push(Message::Exit);
+    }
+    if is_key_pressed(KeyCode::T) {
+        messages.push(Message::ReloadTextures);
+    }
+    if is_key_pressed(KeyCode::B) {
+        messages.push(Message::ToggleBot(Team::Black));
+    }
+    if is_key_pressed(KeyCode::V) {
+        messages.push(Message::ToggleBot(Team::White));
+    }
+    if is_key_pressed(KeyCode::M) {
+        messages.push(Message::ReloadShaderCharacter);
+    }
+    let wheel = Vec2::from(mouse_wheel());
+    if wheel.y > 0.01 {
+        messages.push(Message::Zoom(true));
+    } else if wheel.y < -0.01 {
+        messages.push(Message::Zoom(false));
+    }
+    if is_mouse_button_down(MouseButton::Left) && !is_mouse_button_pressed(MouseButton::Left) {
+        messages.push(Message::MoveCamera(Vec2::from(mouse_delta_position())));
+    }
+    if is_mouse_button_down(MouseButton::Right) && !is_mouse_button_pressed(MouseButton::Right) {
+        messages.push(Message::RotateCamera(Vec2::from(mouse_delta_position())));
+    }
+    Ok(messages)
+}
+
 async fn handle_ui_actions(
     messages: Vec<Message>,
     board: &mut Board,
@@ -177,100 +285,6 @@ async fn handle_ui_actions(
         }
     }
     Ok(should_exit)
-}
-
-async fn load_textures() -> AnyResult<Textures> {
-    #[rustfmt::skip]
-    let textures = Textures {
-        placeholder: load_texture("assets/images/ph_chara.png").await?,
-        pieces: HashMap::from([
-            ((Team::White, Move::Pawn), load_texture("assets/images/pieces/icon-w-peon.png").await?),
-            ((Team::White, Move::Rook), load_texture("assets/images/pieces/icon-w-torre.png").await?),
-            ((Team::White, Move::Knight), load_texture("assets/images/pieces/icon-w-caballo.png").await?),
-            ((Team::White, Move::Bishop), load_texture("assets/images/pieces/icon-w-alfil.png").await?),
-            ((Team::White, Move::Queen), load_texture("assets/images/pieces/icon-w-reina.png").await?),
-            ((Team::White, Move::King), load_texture("assets/images/pieces/icon-w-rey.png").await?),
-            ((Team::Black, Move::Pawn), load_texture("assets/images/pieces/icon-b-peon.png").await?),
-            ((Team::Black, Move::Rook), load_texture("assets/images/pieces/icon-b-torre.png").await?),
-            ((Team::Black, Move::Knight), load_texture("assets/images/pieces/icon-b-caballo.png").await?),
-            ((Team::Black, Move::Bishop), load_texture("assets/images/pieces/icon-b-alfil.png").await?),
-            ((Team::Black, Move::Queen), load_texture("assets/images/pieces/icon-b-reina.png").await?),
-            ((Team::Black, Move::King), load_texture("assets/images/pieces/icon-b-rey.png").await?),
-        ]),
-    };
-    Ok(textures)
-}
-pub async fn load_texture(path: &str) -> Result<Texture2D, Error> {
-    let tex = macroquad::prelude::load_texture(path).await?;
-    tex.set_filter(FilterMode::Nearest);
-    Ok(tex)
-}
-fn handle_inputs_shoud_exit(
-    board: &mut Board,
-    gamepads: &mut Gamepads,
-    dev_ui: &mut DevUi,
-) -> AnyResult<Vec<Message>> {
-    if is_key_pressed(KeyCode::Slash)
-        || is_key_pressed(KeyCode::KpDivide)
-        || is_key_pressed(KeyCode::LeftBracket)
-        || is_key_pressed(KeyCode::Backslash)
-    {
-        dev_ui.toggle();
-    }
-
-    move_cursor_or_piece(board, gamepads)?;
-
-    select(board, &[KeyCode::Space], Team::Black)?;
-    select(board, &[KeyCode::KpEnter, KeyCode::Enter], Team::White)?;
-
-    if is_key_pressed(KeyCode::KpAdd) {
-        unsafe {
-            SCALE *= 1.3;
-        }
-    }
-    if is_key_pressed(KeyCode::KpSubtract) {
-        unsafe {
-            SCALE /= 1.3;
-        }
-    }
-    let mut messages = Vec::new();
-    if is_key_pressed(KeyCode::R) {
-        messages.push(Message::Restart)
-    }
-    if is_key_pressed(KeyCode::P) {
-        messages.push(Message::ToggleReferee)
-    }
-    if is_key_pressed(KeyCode::O) {
-        messages.push(Message::ToggleRadar)
-    }
-    if is_key_pressed(KeyCode::Escape) {
-        messages.push(Message::Exit);
-    }
-    if is_key_pressed(KeyCode::T) {
-        messages.push(Message::ReloadTextures);
-    }
-    if is_key_pressed(KeyCode::B) {
-        messages.push(Message::ToggleBot(Team::Black));
-    }
-    if is_key_pressed(KeyCode::V) {
-        messages.push(Message::ToggleBot(Team::White));
-    }
-    if is_key_pressed(KeyCode::M) {
-        messages.push(Message::ReloadShaderCharacter);
-    }
-    let wheel = Vec2::from(mouse_wheel());
-    if wheel.y > 0.01 {
-        messages.push(Message::Zoom(true));
-    } else if wheel.y < -0.01 {
-        messages.push(Message::Zoom(false));
-    }
-    if is_mouse_button_down(MouseButton::Left) && !is_mouse_button_pressed(MouseButton::Left) {
-        messages.push(Message::MoveCamera(Vec2::from(mouse_delta_position())));
-    }
-    if is_mouse_button_down(MouseButton::Right) && !is_mouse_button_pressed(MouseButton::Right) {
-        messages.push(Message::RotateCamera(Vec2::from(mouse_delta_position())));
-    }
-    Ok(messages)
 }
 
 struct Directions {
