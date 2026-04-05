@@ -16,11 +16,15 @@ use chessnt::{
     DEFAULT_WINDOW_WIDTH, set_3d_camera,
 };
 use juquad::widgets::anchor::Anchor;
+use macroquad::Error;
 use macroquad::camera::set_default_camera;
 use macroquad::input::{KeyCode, is_key_down, is_key_pressed};
 use macroquad::math::vec2;
-use macroquad::prelude::{Conf, clear_background, next_frame, screen_height, screen_width};
-use macroquad::prelude::{load_texture, load_ttf_font};
+use macroquad::miniquad::FilterMode;
+use macroquad::prelude::load_ttf_font;
+use macroquad::prelude::{
+    Conf, Texture2D, clear_background, next_frame, screen_height, screen_width,
+};
 use std::collections::HashMap;
 use std::fs::read_to_string;
 
@@ -166,7 +170,11 @@ async fn load_textures() -> AnyResult<Textures> {
     };
     Ok(textures)
 }
-
+pub async fn load_texture(path: &str) -> Result<Texture2D, Error> {
+    let tex = macroquad::prelude::load_texture(path).await?;
+    tex.set_filter(FilterMode::Nearest);
+    Ok(tex)
+}
 fn handle_inputs_shoud_exit(
     board: &mut Board,
     gamepads: &mut Gamepads,
