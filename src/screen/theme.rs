@@ -26,6 +26,7 @@ pub struct Theme {
     coloring: AllColoring,
     pub textures: Textures,
     pub materials: Materials,
+    pub sin_city: bool,
 }
 pub struct Materials {
     pub floor: Material,
@@ -47,6 +48,7 @@ impl Theme {
             coloring: new_coloring(),
             textures,
             materials,
+            sin_city: false,
         }
     }
     pub fn update_screen_size(&mut self, screen: Vec2) {
@@ -256,8 +258,8 @@ impl Default for Palette {
             tiles_black: from_hex_rgba(0x312C79FF),
             cursor_white: color_average_weight(color_average(GREEN, GRAY), YELLOW, 0.3),
             cursor_black: color_average_weight(color_average(GREEN, GRAY), DARKBLUE, 0.3),
-            mask_white: WHITE,
-            mask_black: GRAY,
+            mask_white: from_hex_rgba(0x75B2F4FF),
+            mask_black: from_hex_rgba(0x267013FF),
             background: from_hex_rgba(0x381C73FF),
             spotlight: color_average(GREEN, LIGHTGRAY),
             radar: color_average(RED, TRANSPARENT),

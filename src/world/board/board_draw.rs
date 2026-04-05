@@ -5,7 +5,7 @@ use crate::screen::render::{
     mesh_progress_bar, mesh_quad, mesh_texture_quad, mesh_triangle, mesh_vertical_texture, quad,
 };
 use crate::screen::shader::names::{
-    COLOR_BLACK, COLOR_WHITE, POSITION_X_NAME, POSITION_Y_NAME, RADAR, REFEREE_SAW, TILES,
+    COLOR_BLACK, COLOR_WHITE, POSITION_X_NAME, POSITION_Y_NAME, RADAR, REFEREE_SAW, TEAM, TILES,
 };
 use crate::screen::theme::Theme;
 use crate::world::board::{Board, other_pieces_at};
@@ -67,9 +67,8 @@ impl Board {
         let mut meshes = Vec::new();
         let mut character_meshes = Vec::new();
         for (i, piece) in self.pieces.iter().enumerate() {
-            let saw = self.referee.saw_any_piece(self.pieces(), vec![i]);
             character_meshes.push((
-                saw,
+                i,
                 mesh_figure_texture(
                     piece,
                     if piece.team.is_white() {
@@ -116,11 +115,22 @@ impl Board {
 
         gl_use_material(&theme.materials.character);
         character_meshes.sort_by(|a, b| depth(&a.1).total_cmp(&depth(&b.1)));
-        for (saw, character) in character_meshes {
+        for (i, character) in character_meshes {
+            let saw = self.referee.saw_any_piece(self.pieces(), vec![i]);
             theme
                 .materials
                 .character
                 .set_uniform(REFEREE_SAW, saw as i32);
+            theme
+                .materials
+                .character
+                .set_uniform(TEAM, !self.pieces()[i].team.is_white() as i32);
+
+            theme
+                .materials
+                .character
+                .set_uniform(TEAM, theme.sin_city as i32);
+
             draw_mesh(&character);
         }
         gl_use_default_material();
