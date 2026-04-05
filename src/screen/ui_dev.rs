@@ -157,7 +157,8 @@ impl DevUi {
             if fps_limited && let Some(target) = time.get_target_fps() {
                 let mut target = target as f32;
                 let text = &format!("Target FPS: {:>5.1}", target);
-                render_slider_fmt(text, theme, 10.0, 200.0, &mut target, below_left, rect);
+                let rect = &mut rect.clone();
+                render_slider_fmt(text, theme, 10.0, 200.0, &mut target, rightwards, rect);
                 messages.push(Message::TargetFPS(Some(target as f64)));
             }
         }

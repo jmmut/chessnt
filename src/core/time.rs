@@ -19,7 +19,7 @@ impl Time {
         Self::new_fps(None)
     }
 
-    fn new_fps(fps: Option<f64>) -> Time {
+    pub fn new_fps(fps: Option<f64>) -> Time {
         let now = now();
         Self {
             current_s: now - 1.0 / 60.0,

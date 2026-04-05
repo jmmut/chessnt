@@ -52,7 +52,7 @@ async fn fallible_main() -> AnyResult<()> {
     let mut bots = Bots::new();
     let mut gamepads = Gamepads::new();
     let mut dev_ui = DevUi::new()?;
-    let mut time = Time::new();
+    let mut time = Time::new_fps(Some(55.0));
     loop {
         time.tick();
         gamepads.tick();
@@ -171,6 +171,7 @@ fn handle_inputs_shoud_exit(
     if is_key_pressed(KeyCode::Slash)
         || is_key_pressed(KeyCode::KpDivide)
         || is_key_pressed(KeyCode::LeftBracket)
+        || is_key_pressed(KeyCode::Backslash)
     {
         dev_ui.toggle();
     }
