@@ -34,6 +34,7 @@ pub enum DevUiMenu {
     Main,
     Screen,
     Board,
+    NPCs,
     PaletteWorld,
     PaletteUi,
     EditWorldColor(usize),
@@ -79,7 +80,8 @@ impl DevUi {
             DevUiMenu::Hidden => {}
             DevUiMenu::Main => self.draw_main(theme),
             DevUiMenu::Screen => return Ok(self.draw_screen(time, theme, camera)),
-            DevUiMenu::Board => return Ok(self.draw_characters(theme, board, bots)),
+            DevUiMenu::Board => return Ok(self.draw_characters(theme, board)),
+            DevUiMenu::NPCs => return Ok(self.draw_npcs(theme, board, bots)),
             DevUiMenu::PaletteWorld => self.draw_palette(theme)?,
             DevUiMenu::PaletteUi => self.draw_palette_ui(theme)?,
             DevUiMenu::EditWorldColor(index) => self.draw_edit_world_color(index, theme)?,
@@ -94,7 +96,8 @@ impl DevUi {
     fn draw_main(&mut self, theme: &mut Theme) {
         let rect = &mut Self::dev_ui_title(theme);
         self.navigation(theme, "FPS & Camera", DevUiMenu::Screen, rect);
-        self.navigation(theme, "Board & Characters", DevUiMenu::Board, rect);
+        self.navigation(theme, "Textures", DevUiMenu::Board, rect);
+        self.navigation(theme, "Referee and Bots", DevUiMenu::NPCs, rect);
         self.navigation(theme, "Gamepads", DevUiMenu::Gamepads, rect);
         self.navigation(theme, "Edit world palette", DevUiMenu::PaletteWorld, rect);
         self.navigation(theme, "Edit ui palette", DevUiMenu::PaletteUi, rect);
@@ -188,49 +191,48 @@ impl DevUi {
         messages
     }
 
-    fn draw_characters(
-        &mut self,
-        theme: &mut Theme,
-        board: &mut Board,
-        bots: &mut Bots,
-    ) -> Vec<Message> {
+    fn draw_characters(&mut self, theme: &mut Theme, board: &mut Board) -> Vec<Message> {
         let rect = &mut Self::dev_ui_title(theme);
         let mut messages = Vec::new();
 
-        let text = format!("{} Sin City mode", enable_or_disable(theme.sin_city));
+        let text = format!(
+            "{} Sin City mode",
+            enable_or_disable(theme.materials.sin_city)
+        );
         if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
             messages.push(Message::ToggleSinCity);
         }
 
         let text = format!(
             "{} shader refresh",
-            enable_or_disable(theme.refresh_shaders.character)
+            enable_or_disable(theme.materials.refresh_shaders.character)
         );
         if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
             messages.push(Message::ToggleRefreshShaderCharacter);
         }
-        render_slider(
-            "Texture size X",
-            theme,
-            0.1,
-            2.0,
-            &mut board.piece_size.x,
-            rect,
-        );
-        render_slider(
-            "Texture size Y",
-            theme,
-            0.1,
-            2.0,
-            &mut board.piece_size.y,
-            rect,
-        );
+        let value = &mut board.piece_size.x;
+        render_slider("Texture size X", theme, 0.1, 2.0, value, rect);
+
+        let value = &mut board.piece_size.y;
+        render_slider("Texture size Y", theme, 0.1, 2.0, value, rect);
+
         if render_button_dev_mut("Reset texture size", theme, below_left, rect).is_clicked() {
             board.piece_size = DEFAULT_PIECE_SIZE;
         }
         if render_button_dev_mut("Reload textures (T)", theme, below_left, rect).is_clicked() {
             messages.push(Message::ReloadTextures);
         }
+        let mut value = theme.materials.shadow_offset;
+        theme.materials.shadow_offset =
+            render_slider("Shadow offset", theme, -1.0, 1.0, &mut value, rect);
+
+        self.navigation(theme, "Back", DevUiMenu::Main, rect);
+        messages
+    }
+
+    fn draw_npcs(&mut self, theme: &mut Theme, board: &mut Board, bots: &mut Bots) -> Vec<Message> {
+        let rect = &mut Self::dev_ui_title(theme);
+        let mut messages = Vec::new();
 
         let dir = board.referee.dir_c();
         let text = format!("Referee dir: {:>5.2} {:>5.2}", dir.column, dir.row);

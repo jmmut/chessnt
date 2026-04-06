@@ -203,13 +203,18 @@ fn handle_inputs_shoud_exit(
     } else if wheel.y < -0.01 {
         messages.push(Message::Zoom(false));
     }
-    if is_mouse_button_down(MouseButton::Left) && !is_mouse_button_pressed(MouseButton::Left) {
+    let control = is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl);
+    if control && is_dragging(MouseButton::Left) {
         messages.push(Message::MoveCamera(Vec2::from(mouse_delta_position())));
     }
-    if is_mouse_button_down(MouseButton::Right) && !is_mouse_button_pressed(MouseButton::Right) {
+    if control && is_dragging(MouseButton::Right) {
         messages.push(Message::RotateCamera(Vec2::from(mouse_delta_position())));
     }
     Ok(messages)
+}
+
+fn is_dragging(button: MouseButton) -> bool {
+    is_mouse_button_down(button) && !is_mouse_button_pressed(button)
 }
 
 async fn handle_ui_actions(
@@ -251,10 +256,11 @@ async fn handle_ui_actions(
                 time.set_target_fps(fps);
             }
             Message::ToggleRefreshShaderCharacter => {
-                theme.refresh_shaders.character = !theme.refresh_shaders.character;
+                theme.materials.refresh_shaders.character =
+                    !theme.materials.refresh_shaders.character;
             }
             Message::ToggleSinCity => {
-                theme.sin_city = !theme.sin_city;
+                theme.materials.sin_city = !theme.materials.sin_city;
             }
             Message::Zoom(increase) => {
                 let zoom_speed = 1.2;

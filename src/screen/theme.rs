@@ -28,8 +28,6 @@ pub struct Theme {
     coloring: AllColoring,
     pub textures: Textures,
     pub materials: Materials,
-    pub sin_city: bool,
-    pub refresh_shaders: RefreshShaders,
 }
 pub struct RefreshShaders {
     pub character: bool,
@@ -50,8 +48,6 @@ impl Theme {
             coloring: new_coloring(),
             textures,
             materials,
-            sin_city: false,
-            refresh_shaders: RefreshShaders { character: false },
         }
     }
     pub fn update_screen_size(&mut self, screen: Vec2) {
@@ -60,7 +56,7 @@ impl Theme {
     }
     pub fn tick(&mut self, _delta_s: f64, screen: Vec2) -> AnyResult<()> {
         self.update_screen_size(screen);
-        if self.refresh_shaders.character {
+        if self.materials.refresh_shaders.character {
             let reloaded = character_shader(
                 &read_to_string("src/shaders/character_vertex.glsl")?,
                 &read_to_string("src/shaders/character_fragment.glsl")?,

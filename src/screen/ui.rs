@@ -239,7 +239,7 @@ pub fn render_slider(
     max: f32,
     value: &mut f32,
     rect: &mut Rect,
-) {
+) -> f32 {
     let text = &format!("{}: {:>5.2}", text, value);
     render_slider_fmt(text, theme, min, max, value, below_left, rect)
 }
@@ -252,7 +252,7 @@ pub fn render_slider_fmt(
     value: &mut f32,
     anchor: fn(Rect) -> Anchor,
     rect: &mut Rect,
-) {
+) -> f32 {
     let text_rect = render_text_dev(formatted_text, theme, anchor(*rect));
     let mut style = Style::default();
     style.coloring = theme.button_coloring();
@@ -267,4 +267,5 @@ pub fn render_slider_fmt(
         .unwrap());
     slider.render_interactive(Interaction::None);
     *rect = slider.rect().combine_with(text_rect);
+    *value
 }

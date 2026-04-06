@@ -1,5 +1,6 @@
 use crate::AnyResult;
 use crate::screen::shader::names::*;
+use crate::screen::theme::RefreshShaders;
 use macroquad::material::{Material, MaterialParams, load_material};
 use macroquad::miniquad::{
     BlendFactor, BlendState, BlendValue, Equation, ShaderSource, UniformDesc, UniformType,
@@ -18,6 +19,7 @@ pub mod names {
     pub const SIN_CITY: &str = "sin_city";
     pub const CURSOR_COLOR: &str = "cursor_color";
     pub const CURSOR_ON_TOP: &str = "cursor_on_top";
+    pub const SHADOW_OFFSET: &str = "shadow_offset";
 }
 
 const FLOOR_FRAGMENT_SHADER: &'static str = include_str!("../shaders/floor_fragment.glsl");
@@ -29,12 +31,21 @@ const CHARACTER_VERTEX_SHADER: &'static str = include_str!("../shaders/character
 pub struct Materials {
     pub floor: Material,
     pub character: Material,
+    pub sin_city: bool,
+    pub shadow_offset: f32,
+    pub refresh_shaders: RefreshShaders,
 }
 
 pub fn init_shaders() -> AnyResult<Materials> {
     let floor = floor_shader(FLOOR_VERTEX_SHADER, FLOOR_FRAGMENT_SHADER)?;
     let character = character_shader(CHARACTER_VERTEX_SHADER, CHARACTER_FRAGMENT_SHADER)?;
-    Ok(Materials { floor, character })
+    Ok(Materials {
+        floor,
+        character,
+        sin_city: false,
+        shadow_offset: 0.2,
+        refresh_shaders: RefreshShaders { character: false },
+    })
 }
 
 pub fn floor_shader(vertex_code: &str, fragment_code: &str) -> AnyResult<Material> {
@@ -116,13 +127,18 @@ pub fn character_shader(vertex_code: &str, fragment_code: &str) -> AnyResult<Mat
                 array_count: 1,
             },
             UniformDesc {
+                name: CURSOR_ON_TOP.to_string(),
+                uniform_type: UniformType::Int1,
+                array_count: 1,
+            },
+            UniformDesc {
                 name: CURSOR_COLOR.to_string(),
                 uniform_type: UniformType::Float4,
                 array_count: 1,
             },
             UniformDesc {
-                name: CURSOR_ON_TOP.to_string(),
-                uniform_type: UniformType::Int1,
+                name: SHADOW_OFFSET.to_string(),
+                uniform_type: UniformType::Float1,
                 array_count: 1,
             },
         ],
