@@ -15,23 +15,35 @@ void main() {
     vec3 diff = abs(code - sampled.rgb);
     float dist = length(diff);
     bool is_code_color = dist < 0.01;
-
-    if (is_code_color) {
-        if (referee_saw == 1 && sin_city == 0) {
-            int white_or_black_i = 1 - team;
-            float white_or_black = float(white_or_black_i);
-            gl_FragColor = vec4(white_or_black, white_or_black, white_or_black, sampled.a);
+    vec3 cursor_white = vec3(0.48,0.78, 0.24);
+    vec3 cursor_black = vec3(0.18, 0.59, 0.45);
+    if (sampled.a < 0.1) {
+        vec4 right = texture2D(Texture, uv + vec2(0.1, 0.0));
+        vec3 shadow;
+        if (team == 0) {
+            shadow = cursor_white;
         } else {
-            vec3 color_out = color.rgb;
-            gl_FragColor = vec4(color_out, sampled.a);
+            shadow  = cursor_black;
         }
+        gl_FragColor = vec4(shadow, right.a);
     } else {
-        if (referee_saw > 0) {
-            float avg = (sampled.r + sampled.g + sampled.b) / 3.0;
-            vec3 grey = vec3(avg, avg, avg);
-            gl_FragColor = vec4(grey, sampled.a);
+        if (is_code_color) {
+            if (referee_saw == 1 && sin_city == 0) {
+                int white_or_black_i = 1 - team;
+                float white_or_black = float(white_or_black_i);
+                gl_FragColor = vec4(white_or_black, white_or_black, white_or_black, sampled.a);
+            } else {
+                vec3 color_out = color.rgb;
+                gl_FragColor = vec4(color_out, sampled.a);
+            }
         } else {
-            gl_FragColor = sampled;
+            if (referee_saw > 0) {
+                float avg = (sampled.r + sampled.g + sampled.b) / 3.0;
+                vec3 grey = vec3(avg, avg, avg);
+                gl_FragColor = vec4(grey, sampled.a);
+            } else {
+                gl_FragColor = sampled;
+            }
         }
     }
     

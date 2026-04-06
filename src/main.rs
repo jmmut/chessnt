@@ -22,10 +22,11 @@ use macroquad::input::{
     KeyCode, MouseButton, is_key_down, is_key_pressed, is_mouse_button_down,
     is_mouse_button_pressed, mouse_delta_position,
 };
+use macroquad::logging::info;
 use macroquad::math::{Vec2, vec2};
 use macroquad::miniquad::FilterMode;
 use macroquad::prelude::{
-    Conf, Texture2D, clear_background, next_frame, screen_height, screen_width,
+    Conf, Texture2D, clear_background, get_time, next_frame, screen_height, screen_width,
 };
 use macroquad::prelude::{load_ttf_font, mouse_wheel};
 use std::collections::HashMap;
@@ -65,11 +66,11 @@ async fn fallible_main() -> AnyResult<()> {
         time.tick();
         gamepads.tick();
         let screen = vec2(screen_width(), screen_height());
-        theme.update_screen_size(screen);
 
         let mut messages = handle_inputs_shoud_exit(&mut board, &mut gamepads, &mut dev_ui)?;
         board.tick(time.delta_s());
         bots.tick(time.delta_s(), &mut board)?;
+        theme.tick(time.delta_s(), screen)?;
 
         set_3d_camera(&camera);
         clear_background(theme.palette.background);
@@ -194,7 +195,7 @@ fn handle_inputs_shoud_exit(
         messages.push(Message::ToggleBot(Team::White));
     }
     if is_key_pressed(KeyCode::M) {
-        messages.push(Message::ReloadShaderCharacter);
+        messages.push(Message::ToggleRefreshShaderCharacter);
     }
     let wheel = Vec2::from(mouse_wheel());
     if wheel.y > 0.01 {
@@ -249,19 +250,8 @@ async fn handle_ui_actions(
             Message::TargetFPS(fps) => {
                 time.set_target_fps(fps);
             }
-            Message::ReloadShaderCharacter => {
-                let reloaded = character_shader(
-                    &read_to_string("src/shaders/character_vertex.glsl")?,
-                    &read_to_string("src/shaders/character_fragment.glsl")?,
-                );
-                match reloaded {
-                    Ok(ok) => {
-                        theme.materials.character = ok;
-                    }
-                    Err(e) => {
-                        println!("{}", e);
-                    }
-                }
+            Message::ToggleRefreshShaderCharacter => {
+                theme.refresh_shaders.character = !theme.refresh_shaders.character;
             }
             Message::ToggleSinCity => {
                 theme.sin_city = !theme.sin_city;

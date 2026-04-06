@@ -16,6 +16,7 @@ pub mod screen {
     pub mod anchorer;
     pub mod camera;
     pub mod render;
+    pub mod screen;
     pub mod shader;
     pub mod theme;
     pub mod ui;

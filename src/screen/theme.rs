@@ -1,9 +1,10 @@
 use crate::core::array_union::{ArrayUnion, ArrayUnionTrait, ExternalArrayUnion};
+use crate::screen::shader::character_shader;
 use crate::world::moves::Move;
 use crate::world::team::Team;
 use crate::{
-    DEFAULT_ASPECT_RATIO, DEFAULT_FONT_SIZE, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_WIDTH,
-    TRANSPARENT, height_to_width,
+    AnyResult, DEFAULT_ASPECT_RATIO, DEFAULT_FONT_SIZE, DEFAULT_WINDOW_HEIGHT,
+    DEFAULT_WINDOW_WIDTH, TRANSPARENT, height_to_width,
 };
 use juquad::draw::to_rect;
 use juquad::elm::style::Style;
@@ -16,6 +17,7 @@ use macroquad::material::Material;
 use macroquad::math::{Rect, vec2};
 use macroquad::prelude::{Font, Texture2D, Vec2};
 use std::collections::HashMap;
+use std::fs::read_to_string;
 
 pub struct Theme {
     pub screen: Vec2,
@@ -27,10 +29,14 @@ pub struct Theme {
     pub textures: Textures,
     pub materials: Materials,
     pub sin_city: bool,
+    pub refresh_shaders: RefreshShaders,
 }
 pub struct Materials {
     pub floor: Material,
     pub character: Material,
+}
+pub struct RefreshShaders {
+    pub character: bool,
 }
 
 impl Theme {
@@ -49,11 +55,30 @@ impl Theme {
             textures,
             materials,
             sin_city: false,
+            refresh_shaders: RefreshShaders { character: false },
         }
     }
     pub fn update_screen_size(&mut self, screen: Vec2) {
         self.screen = screen;
         self.font_size = choose_scale(screen.x, screen.y, self.base_font_size);
+    }
+    pub fn tick(&mut self, _delta_s: f64, screen: Vec2) -> AnyResult<()> {
+        self.update_screen_size(screen);
+        if self.refresh_shaders.character {
+            let reloaded = character_shader(
+                &read_to_string("src/shaders/character_vertex.glsl")?,
+                &read_to_string("src/shaders/character_fragment.glsl")?,
+            );
+            match reloaded {
+                Ok(ok) => {
+                    self.materials.character = ok;
+                }
+                Err(e) => {
+                    println!("{}", e);
+                }
+            }
+        }
+        Ok(())
     }
     pub fn screen_rect(&self) -> Rect {
         to_rect(vec2(0.0, 0.0), self.screen)

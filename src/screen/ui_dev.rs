@@ -201,6 +201,14 @@ impl DevUi {
         if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
             messages.push(Message::ToggleSinCity);
         }
+
+        let text = format!(
+            "{} shader refresh",
+            enable_or_disable(theme.refresh_shaders.character)
+        );
+        if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
+            messages.push(Message::ToggleRefreshShaderCharacter);
+        }
         render_slider(
             "Texture size X",
             theme,

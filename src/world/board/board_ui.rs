@@ -20,7 +20,7 @@ pub enum Message {
     ToggleRadar,
     ToggleReferee,
     TargetFPS(Option<f64>),
-    ReloadShaderCharacter,
+    ToggleRefreshShaderCharacter,
     ToggleSinCity,
     Zoom(bool),
     MoveCamera(Vec2),
