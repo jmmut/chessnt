@@ -5,8 +5,8 @@ use crate::screen::render::{
     mesh_progress_bar, mesh_quad, mesh_texture_quad, mesh_triangle, mesh_vertical_texture, quad,
 };
 use crate::screen::shader::names::{
-    COLOR_BLACK, COLOR_WHITE, POSITION_X_NAME, POSITION_Y_NAME, RADAR, REFEREE_SAW, SIN_CITY, TEAM,
-    TILES,
+    COLOR_BLACK, COLOR_WHITE, CURSOR_COLOR, CURSOR_ON_TOP, POSITION_X_NAME, POSITION_Y_NAME, RADAR,
+    REFEREE_SAW, SIN_CITY, TEAM, TILES,
 };
 use crate::screen::theme::Theme;
 use crate::world::board::{Board, other_pieces_at};
@@ -115,9 +115,19 @@ impl Board {
         }
 
         gl_use_material(&theme.materials.character);
+        theme
+            .materials
+            .character
+            .set_uniform(SIN_CITY, theme.sin_city as i32);
         character_meshes.sort_by(|a, b| depth(&a.1).total_cmp(&depth(&b.1)));
         for (i, character) in character_meshes {
             let saw = self.referee.saw_any_piece(self.pieces(), vec![i]);
+            let team = self.pieces()[i].team;
+            let cursor_on_top = if let Some(selected) = self.selected(team) {
+                (selected == i) as i32
+            } else {
+                (self.cursor(team).round().into::<ICoord>() == self.pieces[i].initial_pos) as i32
+            };
             theme
                 .materials
                 .character
@@ -125,11 +135,17 @@ impl Board {
             theme
                 .materials
                 .character
-                .set_uniform(TEAM, !self.pieces()[i].team.is_white() as i32);
+                .set_uniform(TEAM, !team.is_white() as i32);
+
             theme
                 .materials
                 .character
-                .set_uniform(SIN_CITY, theme.sin_city as i32);
+                .set_uniform(CURSOR_ON_TOP, cursor_on_top);
+
+            theme
+                .materials
+                .character
+                .set_uniform(CURSOR_COLOR, cursor_color(self.pieces[i].team, theme));
 
             draw_mesh(&character);
         }

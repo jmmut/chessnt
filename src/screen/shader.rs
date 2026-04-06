@@ -1,6 +1,5 @@
 use crate::AnyResult;
 use crate::screen::shader::names::*;
-use crate::screen::theme::Materials;
 use macroquad::material::{Material, MaterialParams, load_material};
 use macroquad::miniquad::{
     BlendFactor, BlendState, BlendValue, Equation, ShaderSource, UniformDesc, UniformType,
@@ -17,6 +16,8 @@ pub mod names {
     pub const REFEREE_SAW: &str = "referee_saw";
     pub const TEAM: &str = "team";
     pub const SIN_CITY: &str = "sin_city";
+    pub const CURSOR_COLOR: &str = "cursor_color";
+    pub const CURSOR_ON_TOP: &str = "cursor_on_top";
 }
 
 const FLOOR_FRAGMENT_SHADER: &'static str = include_str!("../shaders/floor_fragment.glsl");
@@ -24,6 +25,11 @@ const FLOOR_VERTEX_SHADER: &'static str = include_str!("../shaders/floor_vertex.
 
 const CHARACTER_FRAGMENT_SHADER: &'static str = include_str!("../shaders/character_fragment.glsl");
 const CHARACTER_VERTEX_SHADER: &'static str = include_str!("../shaders/character_vertex.glsl");
+
+pub struct Materials {
+    pub floor: Material,
+    pub character: Material,
+}
 
 pub fn init_shaders() -> AnyResult<Materials> {
     let floor = floor_shader(FLOOR_VERTEX_SHADER, FLOOR_FRAGMENT_SHADER)?;
@@ -106,6 +112,16 @@ pub fn character_shader(vertex_code: &str, fragment_code: &str) -> AnyResult<Mat
             },
             UniformDesc {
                 name: SIN_CITY.to_string(),
+                uniform_type: UniformType::Int1,
+                array_count: 1,
+            },
+            UniformDesc {
+                name: CURSOR_COLOR.to_string(),
+                uniform_type: UniformType::Float4,
+                array_count: 1,
+            },
+            UniformDesc {
+                name: CURSOR_ON_TOP.to_string(),
                 uniform_type: UniformType::Int1,
                 array_count: 1,
             },

@@ -1,5 +1,5 @@
 use crate::core::array_union::{ArrayUnion, ArrayUnionTrait, ExternalArrayUnion};
-use crate::screen::shader::character_shader;
+use crate::screen::shader::{Materials, character_shader};
 use crate::world::moves::Move;
 use crate::world::team::Team;
 use crate::{
@@ -30,10 +30,6 @@ pub struct Theme {
     pub materials: Materials,
     pub sin_city: bool,
     pub refresh_shaders: RefreshShaders,
-}
-pub struct Materials {
-    pub floor: Material,
-    pub character: Material,
 }
 pub struct RefreshShaders {
     pub character: bool,

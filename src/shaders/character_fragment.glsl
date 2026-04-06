@@ -8,6 +8,8 @@ uniform sampler2D Texture;
 uniform int referee_saw;
 uniform int team;
 uniform int sin_city;
+uniform vec4 cursor_color;
+uniform int cursor_on_top;
 
 void main() {
     vec3 code = vec3(0.0, 1.0, 1.0); // cyan
@@ -18,14 +20,10 @@ void main() {
     vec3 cursor_white = vec3(0.48,0.78, 0.24);
     vec3 cursor_black = vec3(0.18, 0.59, 0.45);
     if (sampled.a < 0.1) {
-        vec4 right = texture2D(Texture, uv + vec2(0.1, 0.0));
-        vec3 shadow;
-        if (team == 0) {
-            shadow = cursor_white;
-        } else {
-            shadow  = cursor_black;
+        vec4 right = texture2D(Texture, uv + vec2(0.2, 0.0));
+        if (right.a > 0.5 && cursor_on_top == 1) {
+            gl_FragColor = cursor_color;
         }
-        gl_FragColor = vec4(shadow, right.a);
     } else {
         if (is_code_color) {
             if (referee_saw == 1 && sin_city == 0) {
