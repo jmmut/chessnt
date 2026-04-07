@@ -1,6 +1,7 @@
 use macroquad::camera::{Camera3D, set_camera};
 use macroquad::color::Color;
 use macroquad::math::vec3;
+use macroquad::prelude::RenderTarget;
 use screen::camera::CameraPos;
 use screen::ui_dev::DevUiMenu;
 
@@ -63,13 +64,14 @@ pub const fn height_to_width(height: f32, aspect_ratio: f32) -> f32 {
     height * aspect_ratio
 }
 
-pub fn set_3d_camera(camera: &CameraPos) {
+pub fn set_3d_camera(camera: &CameraPos, texture_target: RenderTarget) {
     let board_displacement = vec3(COLUMNS as f32 * 0.5, 0.0, ROWS as f32 * 0.5);
     set_camera(&Camera3D {
         position: camera.pos() + board_displacement,
         up: camera.up(),
         target: camera.target() + board_displacement,
         fovy: camera.fovy,
+        render_target: Some(texture_target),
         ..Default::default()
     });
 }

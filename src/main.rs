@@ -17,15 +17,18 @@ use chessnt::{
 };
 use juquad::widgets::anchor::Anchor;
 use macroquad::Error;
-use macroquad::camera::set_default_camera;
+use macroquad::camera::{Camera2D, set_camera, set_default_camera};
+use macroquad::color::WHITE;
 use macroquad::input::{
     KeyCode, MouseButton, is_key_down, is_key_pressed, is_mouse_button_down,
     is_mouse_button_pressed, mouse_delta_position,
 };
+use macroquad::logging::info;
 use macroquad::math::{Vec2, vec2};
 use macroquad::miniquad::FilterMode;
 use macroquad::prelude::{
-    Conf, Texture2D, clear_background, next_frame, screen_height, screen_width,
+    Conf, DrawTextureParams, RenderTarget, Texture2D, clear_background, draw_texture_ex,
+    next_frame, render_target, screen_height, screen_width,
 };
 use macroquad::prelude::{load_ttf_font, mouse_wheel};
 use std::collections::HashMap;
@@ -33,12 +36,12 @@ use std::collections::HashMap;
 #[macroquad::main(window_conf)]
 async fn main() {
     if let Err(e) = fallible_main().await {
-        println!("{} failed with error: {}", DEFAULT_WINDOW_TITLE, e);
+        info!("{} failed with error: {}", DEFAULT_WINDOW_TITLE, e);
     }
 }
 
 async fn fallible_main() -> AnyResult<()> {
-    let screen = vec2(screen_width(), screen_height());
+    let mut screen = vec2(screen_width(), screen_height());
     render_text_no_font(
         "Loading...",
         DEFAULT_FONT_SIZE * 2.0,
@@ -46,6 +49,8 @@ async fn fallible_main() -> AnyResult<()> {
         Anchor::center_v(screen * 0.5),
     );
     next_frame().await;
+
+    let mut render_texture = resize(screen);
     let textures = load_textures().await?;
     let fonts = Fonts {
         titles: load_ttf_font("assets/fonts/LilitaOne-Regular.ttf").await?,
@@ -62,19 +67,36 @@ async fn fallible_main() -> AnyResult<()> {
     let mut time = Time::new_fps(Some(55.0));
     loop {
         time.tick();
-        gamepads.tick();
-        let screen = vec2(screen_width(), screen_height());
+        let new_screen = vec2(screen_width(), screen_height());
+        if new_screen != screen {
+            screen = new_screen;
+            render_texture = resize(screen);
+        }
 
-        let mut messages = handle_inputs_shoud_exit(&mut board, &mut gamepads, &mut dev_ui)?;
+        let mut messages = handle_inputs_should_exit(&mut board, &mut gamepads, &mut dev_ui)?;
+        gamepads.tick();
         board.tick(time.delta_s());
         bots.tick(time.delta_s(), &mut board)?;
         theme.tick(time.delta_s(), screen)?;
 
-        set_3d_camera(&camera);
+        set_3d_camera(&camera, render_texture.clone());
         clear_background(theme.palette.background);
         board.draw_world(&theme);
 
         set_default_camera();
+        clear_background(WHITE);
+        draw_texture_ex(
+            &render_texture.texture,
+            0.,
+            0.,
+            WHITE,
+            DrawTextureParams {
+                dest_size: Some(screen),
+                flip_y: true,
+                ..Default::default()
+            },
+        );
+
         messages.extend(board.draw_ui(&theme));
         messages.extend(dev_ui.draw(
             &time,
@@ -96,10 +118,17 @@ async fn fallible_main() -> AnyResult<()> {
         {
             break;
         }
+
         time.tick_end();
         next_frame().await
     }
     Ok(())
+}
+
+fn resize(screen: Vec2) -> RenderTarget {
+    let render_texture = render_target(screen.x as u32, screen.y as u32);
+    render_texture.texture.set_filter(FilterMode::Nearest);
+    render_texture
 }
 
 async fn load_textures() -> AnyResult<Textures> {
@@ -142,7 +171,7 @@ pub async fn load_texture(path: &str) -> Result<Texture2D, Error> {
     Ok(tex)
 }
 
-fn handle_inputs_shoud_exit(
+fn handle_inputs_should_exit(
     board: &mut Board,
     gamepads: &mut Gamepads,
     dev_ui: &mut DevUi,
