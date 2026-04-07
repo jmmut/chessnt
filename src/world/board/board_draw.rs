@@ -16,7 +16,7 @@ use crate::world::team::Team;
 use macroquad::color::{Color, WHITE};
 use macroquad::input::mouse_position;
 use macroquad::material::{gl_use_default_material, gl_use_material};
-use macroquad::math::{Vec2, Vec3, vec3};
+use macroquad::math::{Vec2, Vec3, vec2, vec3};
 use macroquad::models::{Mesh, draw_mesh};
 use macroquad::prelude::{screen_height, screen_width};
 
@@ -79,6 +79,7 @@ impl Board {
                     },
                     theme.textures.characters[&piece.moveset.single()].clone(),
                     self.piece_size,
+                    vec2(theme.materials.shadow_offset.abs(), 0.0),
                 ),
             ));
             // meshes.push(to_mesh(

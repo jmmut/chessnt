@@ -2,7 +2,7 @@ use chessnt::core::coord::Coord;
 use chessnt::core::input::Gamepads;
 use chessnt::core::time::Time;
 use chessnt::screen::camera::CameraPos;
-use chessnt::screen::shader::{character_shader, init_shaders};
+use chessnt::screen::shader::init_shaders;
 use chessnt::screen::theme::{Fonts, Textures, Theme, new_text_coloring};
 use chessnt::screen::ui::{SCALE, render_text_no_font, render_title};
 use chessnt::screen::ui_dev::DevUi;
@@ -22,15 +22,13 @@ use macroquad::input::{
     KeyCode, MouseButton, is_key_down, is_key_pressed, is_mouse_button_down,
     is_mouse_button_pressed, mouse_delta_position,
 };
-use macroquad::logging::info;
 use macroquad::math::{Vec2, vec2};
 use macroquad::miniquad::FilterMode;
 use macroquad::prelude::{
-    Conf, Texture2D, clear_background, get_time, next_frame, screen_height, screen_width,
+    Conf, Texture2D, clear_background, next_frame, screen_height, screen_width,
 };
 use macroquad::prelude::{load_ttf_font, mouse_wheel};
 use std::collections::HashMap;
-use std::fs::read_to_string;
 
 #[macroquad::main(window_conf)]
 async fn main() {

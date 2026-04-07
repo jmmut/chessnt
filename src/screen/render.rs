@@ -76,9 +76,29 @@ pub fn quad(coord_00: Vec3, a: Vec3, b: Vec3) -> [Vec3; 4] {
 //     let coord_00 = (piece.pos + Coord::new_f(0.0, 0.5)).to_vec3(0.0);
 //     mesh_vertical_texture(coord_00, 2.0, color, None)
 // }
-pub fn mesh_figure_texture(piece: &Piece, color: Color, texture: Texture2D, size: Vec2) -> Mesh {
-    let coord_00 = (piece.pos_f() + Coord::new_f(0.5 - size.x * 0.5, 0.5)).to_vec3(0.0);
-    mesh_vertical_texture(coord_00, color, Some(texture), piece.team.is_white(), size)
+pub fn mesh_figure_texture(
+    piece: &Piece,
+    color: Color,
+    texture: Texture2D,
+    size: Vec2,
+    extra: Vec2,
+) -> Mesh {
+    let coord_00 =
+        (piece.pos_f() + Coord::new_f(0.5 - size.x * (0.5 + extra.x), 0.5)).to_vec3(0.0 - extra.y);
+    let corners = vertical_quad(
+        coord_00,
+        size.x * (1.0 + 2.0 * extra.x),
+        size.y * (1.0 + 2.0 * extra.y),
+    );
+    let mesh = mesh_texture_quad_extra(
+        corners,
+        color,
+        Some(texture),
+        piece.team.is_white(),
+        false,
+        extra,
+    );
+    mesh
 }
 pub fn mesh_vertical_texture(
     coord_00: Vec3,
@@ -116,12 +136,33 @@ pub fn mesh_texture_quad(
     flip_horiz: bool,
     flip_vert: bool,
 ) -> Mesh {
+    mesh_texture_quad_extra(
+        corners,
+        color,
+        texture,
+        flip_horiz,
+        flip_vert,
+        vec2(0.0, 0.0),
+    )
+}
+pub fn mesh_texture_quad_extra(
+    corners: [Vec3; 4],
+    color: Color,
+    texture: Option<Texture2D>,
+    flip_horiz: bool,
+    flip_vert: bool,
+    extra: Vec2,
+) -> Mesh {
     let coords = corners.to_vec();
     let mut vertices = Vec::new();
-    let yes_horiz_flip = flip_horiz as i32 as f32;
-    let not_horiz_flip = !flip_horiz as i32 as f32;
-    let yes_vert_flip = flip_vert as i32 as f32;
-    let not_vert_flip = !flip_vert as i32 as f32;
+    let left = -extra.x;
+    let right = 1.0 + extra.x;
+    let up = -extra.y;
+    let down = 1.0 + extra.y;
+    let yes_horiz_flip = if flip_horiz { right } else { left };
+    let not_horiz_flip = if !flip_horiz { right } else { left };
+    let yes_vert_flip = if flip_vert { down } else { up };
+    let not_vert_flip = if !flip_vert { down } else { up };
     let uvs = vec![
         vec2(yes_horiz_flip, not_vert_flip),
         vec2(not_horiz_flip, not_vert_flip),
