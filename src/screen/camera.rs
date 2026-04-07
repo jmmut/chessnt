@@ -49,10 +49,10 @@ impl CameraPos {
         self.target
     }
     pub fn rotate(&mut self, delta: Vec2) {
-        if delta.x.abs() > 0.01 || delta.y.abs() > 0.01 {
-            let rotate_speed = 30.0;
+        if delta.x.abs() > 0.001 || delta.y.abs() > 0.001 {
             let front = self.target - self.pos;
             let zoom = front.length();
+            let rotate_speed = 1.0 * zoom;
             let right = front.cross(self.up).normalize();
 
             let new_front =
