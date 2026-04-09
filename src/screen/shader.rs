@@ -3,7 +3,8 @@ use crate::screen::shader::names::*;
 use crate::screen::theme::RefreshShaders;
 use macroquad::material::{Material, MaterialParams, load_material};
 use macroquad::miniquad::{
-    BlendFactor, BlendState, BlendValue, Equation, ShaderSource, UniformDesc, UniformType,
+    BlendFactor, BlendState, BlendValue, Comparison, Equation, ShaderSource, UniformDesc,
+    UniformType,
 };
 use macroquad::prelude::PipelineParams;
 
@@ -102,11 +103,6 @@ pub fn character_shader(vertex_code: &str, fragment_code: &str) -> AnyResult<Mat
                 Equation::Add,
                 BlendFactor::Value(BlendValue::SourceAlpha),
                 BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
-            )),
-            alpha_blend: Some(BlendState::new(
-                Equation::Add,
-                BlendFactor::Zero,
-                BlendFactor::One,
             )),
             ..Default::default()
         },
