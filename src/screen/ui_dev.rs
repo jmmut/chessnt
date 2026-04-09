@@ -204,11 +204,18 @@ impl DevUi {
         }
 
         let text = format!(
-            "{} shader refresh",
+            "{} shader refresh character",
             enable_or_disable(theme.materials.refresh_shaders.character)
         );
         if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
             messages.push(Message::ToggleRefreshShaderCharacter);
+        }
+        let text = format!(
+            "{} shader refresh antialias",
+            enable_or_disable(theme.materials.refresh_shaders.antialias)
+        );
+        if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
+            messages.push(Message::ToggleRefreshShaderAntialias);
         }
         let value = &mut board.piece_size.x;
         render_slider("Texture size X", theme, 0.1, 2.0, value, rect);

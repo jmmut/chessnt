@@ -3,8 +3,7 @@ use crate::screen::shader::names::*;
 use crate::screen::theme::RefreshShaders;
 use macroquad::material::{Material, MaterialParams, load_material};
 use macroquad::miniquad::{
-    BlendFactor, BlendState, BlendValue, Comparison, Equation, ShaderSource, UniformDesc,
-    UniformType,
+    BlendFactor, BlendState, BlendValue, Equation, ShaderSource, UniformDesc, UniformType,
 };
 use macroquad::prelude::PipelineParams;
 
@@ -29,9 +28,13 @@ const FLOOR_VERTEX_SHADER: &'static str = include_str!("../shaders/floor_vertex.
 const CHARACTER_FRAGMENT_SHADER: &'static str = include_str!("../shaders/character_fragment.glsl");
 const CHARACTER_VERTEX_SHADER: &'static str = include_str!("../shaders/character_vertex.glsl");
 
+const ANTIALIAS_FRAGMENT_SHADER: &'static str = include_str!("../shaders/antialias_fragment.glsl");
+const ANTIALIAS_VERTEX_SHADER: &'static str = include_str!("../shaders/antialias_vertex.glsl");
+
 pub struct Materials {
     pub floor: Material,
     pub character: Material,
+    pub antialias: Material,
     pub sin_city: bool,
     pub shadow_offset: f32,
     pub refresh_shaders: RefreshShaders,
@@ -40,12 +43,17 @@ pub struct Materials {
 pub fn init_shaders() -> AnyResult<Materials> {
     let floor = floor_shader(FLOOR_VERTEX_SHADER, FLOOR_FRAGMENT_SHADER)?;
     let character = character_shader(CHARACTER_VERTEX_SHADER, CHARACTER_FRAGMENT_SHADER)?;
+    let antialias = antialias_shader(ANTIALIAS_VERTEX_SHADER, ANTIALIAS_FRAGMENT_SHADER)?;
     Ok(Materials {
         floor,
         character,
+        antialias,
         sin_city: false,
         shadow_offset: 0.2,
-        refresh_shaders: RefreshShaders { character: false },
+        refresh_shaders: RefreshShaders {
+            character: false,
+            antialias: false,
+        },
     })
 }
 
@@ -104,6 +112,11 @@ pub fn character_shader(vertex_code: &str, fragment_code: &str) -> AnyResult<Mat
                 BlendFactor::Value(BlendValue::SourceAlpha),
                 BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
             )),
+            alpha_blend: Some(BlendState::new(
+                Equation::Add,
+                BlendFactor::Zero,
+                BlendFactor::One,
+            )),
             ..Default::default()
         },
         uniforms: vec![
@@ -148,4 +161,20 @@ pub fn character_shader(vertex_code: &str, fragment_code: &str) -> AnyResult<Mat
         material_params,
     )?;
     Ok(character)
+}
+
+pub fn antialias_shader(vertex_code: &str, fragment_code: &str) -> AnyResult<Material> {
+    let material_params = MaterialParams {
+        pipeline_params: Default::default(),
+        uniforms: vec![],
+        textures: vec![],
+    };
+    let floor = load_material(
+        ShaderSource::Glsl {
+            vertex: vertex_code,
+            fragment: fragment_code,
+        },
+        material_params,
+    )?;
+    Ok(floor)
 }

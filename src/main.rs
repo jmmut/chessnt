@@ -24,6 +24,7 @@ use macroquad::input::{
     is_mouse_button_pressed, mouse_delta_position,
 };
 use macroquad::logging::info;
+use macroquad::material::{gl_use_default_material, gl_use_material};
 use macroquad::math::{Vec2, vec2};
 use macroquad::miniquad::FilterMode;
 use macroquad::prelude::{
@@ -85,6 +86,7 @@ async fn fallible_main() -> AnyResult<()> {
 
         set_default_camera();
         clear_background(WHITE);
+        gl_use_material(&theme.materials.antialias);
         draw_texture_ex(
             &render_texture.texture,
             0.,
@@ -96,6 +98,7 @@ async fn fallible_main() -> AnyResult<()> {
                 ..Default::default()
             },
         );
+        gl_use_default_material();
 
         messages.extend(board.draw_ui(&theme));
         messages.extend(dev_ui.draw(
@@ -223,6 +226,7 @@ fn handle_inputs_should_exit(
     }
     if is_key_pressed(KeyCode::M) {
         messages.push(Message::ToggleRefreshShaderCharacter);
+        messages.push(Message::ToggleRefreshShaderAntialias);
     }
     let wheel = Vec2::from(mouse_wheel());
     if wheel.y > 0.01 {
@@ -285,6 +289,10 @@ async fn handle_ui_actions(
             Message::ToggleRefreshShaderCharacter => {
                 theme.materials.refresh_shaders.character =
                     !theme.materials.refresh_shaders.character;
+            }
+            Message::ToggleRefreshShaderAntialias => {
+                theme.materials.refresh_shaders.antialias =
+                    !theme.materials.refresh_shaders.antialias;
             }
             Message::ToggleSinCity => {
                 theme.materials.sin_city = !theme.materials.sin_city;

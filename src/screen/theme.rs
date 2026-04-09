@@ -1,5 +1,5 @@
 use crate::core::array_union::{ArrayUnion, ArrayUnionTrait, ExternalArrayUnion};
-use crate::screen::shader::{Materials, character_shader};
+use crate::screen::shader::{Materials, antialias_shader, character_shader};
 use crate::world::moves::Move;
 use crate::world::team::Team;
 use crate::{
@@ -30,6 +30,7 @@ pub struct Theme {
 }
 pub struct RefreshShaders {
     pub character: bool,
+    pub antialias: bool,
 }
 
 impl Theme {
@@ -63,6 +64,20 @@ impl Theme {
             match reloaded {
                 Ok(ok) => {
                     self.materials.character = ok;
+                }
+                Err(e) => {
+                    println!("{}", e);
+                }
+            }
+        }
+        if self.materials.refresh_shaders.antialias {
+            let reloaded = antialias_shader(
+                &read_to_string("src/shaders/antialias_vertex.glsl")?,
+                &read_to_string("src/shaders/antialias_fragment.glsl")?,
+            );
+            match reloaded {
+                Ok(ok) => {
+                    self.materials.antialias = ok;
                 }
                 Err(e) => {
                     println!("{}", e);
