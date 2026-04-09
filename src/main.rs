@@ -3,6 +3,7 @@ use chessnt::core::input::Gamepads;
 use chessnt::core::time::Time;
 use chessnt::screen::camera::CameraPos;
 use chessnt::screen::shader::init_shaders;
+use chessnt::screen::shader::names::SCREEN;
 use chessnt::screen::theme::{Fonts, Textures, Theme, new_text_coloring};
 use chessnt::screen::ui::{SCALE, render_text_no_font, render_title};
 use chessnt::screen::ui_dev::DevUi;
@@ -17,7 +18,7 @@ use chessnt::{
 };
 use juquad::widgets::anchor::Anchor;
 use macroquad::Error;
-use macroquad::camera::{Camera2D, set_camera, set_default_camera};
+use macroquad::camera::set_default_camera;
 use macroquad::color::WHITE;
 use macroquad::input::{
     KeyCode, MouseButton, is_key_down, is_key_pressed, is_mouse_button_down,
@@ -86,20 +87,7 @@ async fn fallible_main() -> AnyResult<()> {
 
         set_default_camera();
         clear_background(WHITE);
-        gl_use_material(&theme.materials.antialias);
-        draw_texture_ex(
-            &render_texture.texture,
-            0.,
-            0.,
-            WHITE,
-            DrawTextureParams {
-                dest_size: Some(screen),
-                flip_y: true,
-                ..Default::default()
-            },
-        );
-        gl_use_default_material();
-
+        draw_board_antialias(screen, &render_texture, &theme);
         messages.extend(board.draw_ui(&theme));
         messages.extend(dev_ui.draw(
             &time,
@@ -126,6 +114,23 @@ async fn fallible_main() -> AnyResult<()> {
         next_frame().await
     }
     Ok(())
+}
+
+fn draw_board_antialias(screen: Vec2, render_texture: &RenderTarget, theme: &Theme) {
+    gl_use_material(&theme.materials.antialias);
+    theme.materials.antialias.set_uniform(SCREEN, screen);
+    draw_texture_ex(
+        &render_texture.texture,
+        0.,
+        0.,
+        WHITE,
+        DrawTextureParams {
+            dest_size: Some(screen),
+            flip_y: true,
+            ..Default::default()
+        },
+    );
+    gl_use_default_material();
 }
 
 fn resize(screen: Vec2) -> RenderTarget {

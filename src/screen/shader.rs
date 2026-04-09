@@ -20,6 +20,7 @@ pub mod names {
     pub const CURSOR_COLOR: &str = "cursor_color";
     pub const CURSOR_ON_TOP: &str = "cursor_on_top";
     pub const SHADOW_OFFSET: &str = "shadow_offset";
+    pub const SCREEN: &str = "screen";
 }
 
 const FLOOR_FRAGMENT_SHADER: &'static str = include_str!("../shaders/floor_fragment.glsl");
@@ -166,7 +167,11 @@ pub fn character_shader(vertex_code: &str, fragment_code: &str) -> AnyResult<Mat
 pub fn antialias_shader(vertex_code: &str, fragment_code: &str) -> AnyResult<Material> {
     let material_params = MaterialParams {
         pipeline_params: Default::default(),
-        uniforms: vec![],
+        uniforms: vec![UniformDesc {
+            name: SCREEN.to_string(),
+            uniform_type: UniformType::Int2,
+            array_count: 1,
+        }],
         textures: vec![],
     };
     let floor = load_material(

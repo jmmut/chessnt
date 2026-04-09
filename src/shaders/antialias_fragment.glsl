@@ -6,6 +6,7 @@ varying vec2 uv;
 
 uniform sampler2D Texture;
 
+uniform ivec2 screen;
 
 void main() {
     float delta = 0.01;
