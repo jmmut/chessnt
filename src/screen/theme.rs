@@ -28,10 +28,6 @@ pub struct Theme {
     pub textures: Textures,
     pub materials: Materials,
 }
-pub struct RefreshShaders {
-    pub character: bool,
-    pub antialias: bool,
-}
 
 impl Theme {
     pub fn new(textures: Textures, fonts: Fonts, materials: Materials) -> Self {
@@ -64,9 +60,11 @@ impl Theme {
             match reloaded {
                 Ok(ok) => {
                     self.materials.character = ok;
+                    self.materials.refresh_shaders.character_error = None;
                 }
                 Err(e) => {
                     println!("{}", e);
+                    self.materials.refresh_shaders.character_error = Some(e.to_string());
                 }
             }
         }
@@ -78,9 +76,11 @@ impl Theme {
             match reloaded {
                 Ok(ok) => {
                     self.materials.antialias = ok;
+                    self.materials.refresh_shaders.antialias_error = None;
                 }
                 Err(e) => {
                     println!("{}", e);
+                    self.materials.refresh_shaders.antialias_error = Some(e.to_string());
                 }
             }
         }

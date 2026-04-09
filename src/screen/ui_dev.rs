@@ -210,13 +210,29 @@ impl DevUi {
         if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
             messages.push(Message::ToggleRefreshShaderCharacter);
         }
+        if let Some(e) = &theme.materials.refresh_shaders.character_error {
+            render_text_dev(e, theme, rightwards(*rect));
+        }
+
+        let text = format!(
+            "{} shader antialias",
+            enable_or_disable(theme.materials.antialias_enabled)
+        );
+        if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
+            messages.push(Message::ToggleShaderAntialias);
+        }
         let text = format!(
             "{} shader refresh antialias",
             enable_or_disable(theme.materials.refresh_shaders.antialias)
         );
-        if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
+        let mut refresh_rect = *rect;
+        if render_button_dev_mut(&text, theme, rightwards, &mut refresh_rect).is_clicked() {
             messages.push(Message::ToggleRefreshShaderAntialias);
         }
+        if let Some(e) = &theme.materials.refresh_shaders.antialias_error {
+            render_text_dev(e, theme, rightwards(refresh_rect));
+        }
+
         let value = &mut board.piece_size.x;
         render_slider("Texture size X", theme, 0.1, 2.0, value, rect);
 

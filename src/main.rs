@@ -116,23 +116,6 @@ async fn fallible_main() -> AnyResult<()> {
     Ok(())
 }
 
-fn draw_board_antialias(screen: Vec2, render_texture: &RenderTarget, theme: &Theme) {
-    gl_use_material(&theme.materials.antialias);
-    theme.materials.antialias.set_uniform(SCREEN, screen);
-    draw_texture_ex(
-        &render_texture.texture,
-        0.,
-        0.,
-        WHITE,
-        DrawTextureParams {
-            dest_size: Some(screen),
-            flip_y: true,
-            ..Default::default()
-        },
-    );
-    gl_use_default_material();
-}
-
 fn resize(screen: Vec2) -> RenderTarget {
     let render_texture = render_target(screen.x as u32, screen.y as u32);
     render_texture.texture.set_filter(FilterMode::Nearest);
@@ -253,6 +236,27 @@ fn is_dragging(button: MouseButton) -> bool {
     is_mouse_button_down(button) && !is_mouse_button_pressed(button)
 }
 
+fn draw_board_antialias(screen: Vec2, render_texture: &RenderTarget, theme: &Theme) {
+    if theme.materials.antialias_enabled {
+        gl_use_material(&theme.materials.antialias);
+        theme.materials.antialias.set_uniform(SCREEN, screen);
+    }
+    draw_texture_ex(
+        &render_texture.texture,
+        0.,
+        0.,
+        WHITE,
+        DrawTextureParams {
+            dest_size: Some(screen),
+            flip_y: true,
+            ..Default::default()
+        },
+    );
+    if theme.materials.antialias_enabled {
+        gl_use_default_material();
+    }
+}
+
 async fn handle_ui_actions(
     messages: Vec<Message>,
     board: &mut Board,
@@ -298,6 +302,9 @@ async fn handle_ui_actions(
             Message::ToggleRefreshShaderAntialias => {
                 theme.materials.refresh_shaders.antialias =
                     !theme.materials.refresh_shaders.antialias;
+            }
+            Message::ToggleShaderAntialias => {
+                theme.materials.antialias_enabled = !theme.materials.antialias_enabled;
             }
             Message::ToggleSinCity => {
                 theme.materials.sin_city = !theme.materials.sin_city;

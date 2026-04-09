@@ -22,6 +22,7 @@ pub enum Message {
     TargetFPS(Option<f64>),
     ToggleRefreshShaderCharacter,
     ToggleRefreshShaderAntialias,
+    ToggleShaderAntialias,
     ToggleSinCity,
     Zoom(bool),
     MoveCamera(Vec2),

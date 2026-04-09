@@ -1,6 +1,5 @@
 use crate::AnyResult;
 use crate::screen::shader::names::*;
-use crate::screen::theme::RefreshShaders;
 use macroquad::material::{Material, MaterialParams, load_material};
 use macroquad::miniquad::{
     BlendFactor, BlendState, BlendValue, Equation, ShaderSource, UniformDesc, UniformType,
@@ -38,7 +37,14 @@ pub struct Materials {
     pub antialias: Material,
     pub sin_city: bool,
     pub shadow_offset: f32,
+    pub antialias_enabled: bool,
     pub refresh_shaders: RefreshShaders,
+}
+pub struct RefreshShaders {
+    pub character: bool,
+    pub antialias: bool,
+    pub character_error: Option<String>,
+    pub antialias_error: Option<String>,
 }
 
 pub fn init_shaders() -> AnyResult<Materials> {
@@ -51,9 +57,12 @@ pub fn init_shaders() -> AnyResult<Materials> {
         antialias,
         sin_city: false,
         shadow_offset: 0.2,
+        antialias_enabled: true,
         refresh_shaders: RefreshShaders {
             character: false,
             antialias: false,
+            character_error: None,
+            antialias_error: None,
         },
     })
 }
@@ -113,11 +122,6 @@ pub fn character_shader(vertex_code: &str, fragment_code: &str) -> AnyResult<Mat
                 BlendFactor::Value(BlendValue::SourceAlpha),
                 BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
             )),
-            alpha_blend: Some(BlendState::new(
-                Equation::Add,
-                BlendFactor::Zero,
-                BlendFactor::One,
-            )),
             ..Default::default()
         },
         uniforms: vec![
@@ -169,7 +173,7 @@ pub fn antialias_shader(vertex_code: &str, fragment_code: &str) -> AnyResult<Mat
         pipeline_params: Default::default(),
         uniforms: vec![UniformDesc {
             name: SCREEN.to_string(),
-            uniform_type: UniformType::Int2,
+            uniform_type: UniformType::Float2,
             array_count: 1,
         }],
         textures: vec![],
