@@ -17,7 +17,6 @@ use chessnt::{
     DEFAULT_WINDOW_WIDTH, set_3d_camera,
 };
 use juquad::widgets::anchor::Anchor;
-use macroquad::Error;
 use macroquad::camera::set_default_camera;
 use macroquad::color::WHITE;
 use macroquad::input::{
@@ -33,6 +32,7 @@ use macroquad::prelude::{
     next_frame, render_target, screen_height, screen_width,
 };
 use macroquad::prelude::{load_ttf_font, mouse_wheel};
+use macroquad::{Error, miniquad};
 use std::collections::HashMap;
 
 #[macroquad::main(window_conf)]
@@ -409,6 +409,10 @@ fn window_conf() -> Conf {
         window_width: DEFAULT_WINDOW_WIDTH,
         window_height: DEFAULT_WINDOW_HEIGHT,
         high_dpi: true,
+        platform: miniquad::conf::Platform {
+            webgl_version: miniquad::conf::WebGLVersion::WebGL2,
+            ..Default::default()
+        },
         ..Default::default()
     }
 }
