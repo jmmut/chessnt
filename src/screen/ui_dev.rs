@@ -223,14 +223,9 @@ impl DevUi {
         if let Some(e) = &theme.materials.refresh_shaders.antialias_error {
             render_text_dev(e, theme, rightwards(refresh_rect));
         }
-        let slider =
-            SliderConfig::new("Antialias strength", Message::AntialiasStrength, 0.0, 100.0);
-        slider.render(
-            theme.materials.antialias_strength,
-            theme,
-            rect,
-            &mut messages,
-        );
+        let slider = SliderConfig::new("Antialias strength", Message::AntialiasStrength, 0.0, 1.0);
+        let value = theme.materials.antialias_strength;
+        slider.render(value, theme, rect, &mut messages);
 
         let value = &mut board.piece_size.x;
         render_slider("Texture size X", theme, 0.1, 2.0, value, rect);

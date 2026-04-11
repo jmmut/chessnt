@@ -37,26 +37,26 @@ void main() {
 //        + sampled_down_left
 //        + sampled_down_right
 //    ) / 32.0;
-    float darkness = (sampled.r + sampled.g + sampled.b) /3.0;
-    float main_coef = 100.0 - antialias_strength;
-    if (darkness < 0.5) {
-        main_coef = 0.0;
-    }
+    float lightness = (sampled.r + sampled.g + sampled.b) / 3.0;
+    float main_coef = pow(100.0, (1.0 - antialias_strength) * lightness);// * pow(lightness, 0.5));
+//    if (lightness <= 0.5 * antialias_strength) {
+//        main_coef = 1.0;
+//    }
     gl_FragColor = (
         sampled * main_coef 
-        + sampled_left * 5.0
-        + sampled_right * 5.0
-        + sampled_up * 5.0
-        + sampled_down * 5.0
-        + sampled_left_2 * 1.0
-        + sampled_right_2 * 1.0
-        + sampled_up_2 * 1.0
-        + sampled_down_2 * 1.0
-        + sampled_up_left * 1.0
-        + sampled_up_right * 1.0
-        + sampled_down_left * 1.0
-        + sampled_down_right * 1.0
-    ) / (28.0 + main_coef);
+        + sampled_left * 5.0 * antialias_strength
+        + sampled_right * 5.0 * antialias_strength
+        + sampled_up * 5.0 * antialias_strength
+        + sampled_down * 5.0 * antialias_strength
+        + sampled_left_2 * 1.0 * antialias_strength
+        + sampled_right_2 * 1.0 * antialias_strength
+        + sampled_up_2 * 1.0 * antialias_strength
+        + sampled_down_2 * 1.0 * antialias_strength
+        + sampled_up_left * 1.0 * antialias_strength
+        + sampled_up_right * 1.0 * antialias_strength
+        + sampled_down_left * 1.0 * antialias_strength
+        + sampled_down_right * 1.0 * antialias_strength
+    ) / (antialias_strength * 28.0 + main_coef);
 //    gl_FragColor = (sampled * 6.0 + sampled_left + sampled_right + sampled_up + sampled_down) *0.125;
 //    gl_FragColor = (sampled * 14.0 + sampled_left + sampled_right) /16.0;
 //    gl_FragColor = sampled;
