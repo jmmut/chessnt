@@ -27,6 +27,8 @@ pub enum Message {
     Zoom(bool),
     MoveCamera(Vec2),
     RotateCamera(Vec2),
+    ShadowOffset(f32),
+    AntialiasStrength(f32),
 }
 
 impl Board {

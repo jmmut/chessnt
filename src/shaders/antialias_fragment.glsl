@@ -7,6 +7,8 @@ varying vec2 uv;
 uniform sampler2D Texture;
 
 uniform vec2 screen;
+uniform float antialias_strength;
+
 
 void main() {
     float delta = 0.01;
@@ -36,7 +38,7 @@ void main() {
 //        + sampled_down_right
 //    ) / 32.0;
     float darkness = (sampled.r + sampled.g + sampled.b) /3.0;
-    float main_coef = 50.0;
+    float main_coef = 100.0 - antialias_strength;
     if (darkness < 0.5) {
         main_coef = 0.0;
     }

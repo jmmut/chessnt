@@ -10,8 +10,8 @@ use crate::screen::theme::{
 };
 use crate::screen::ui;
 use crate::screen::ui::{
-    render_button_dev_mut, render_slider, render_slider_fmt, render_text_dev, render_text_dev_mut,
-    rightwards,
+    SliderConfig, render_button_dev_mut, render_slider, render_slider_fmt, render_text_dev,
+    render_text_dev_mut, rightwards,
 };
 use crate::world::board::board_ui::Message;
 use crate::world::board::{Board, DEFAULT_PIECE_SIZE};
@@ -104,7 +104,7 @@ impl DevUi {
         self.navigation(theme, "Hide Dev UI", DevUiMenu::Hidden, rect);
     }
 
-    fn dev_ui_title(theme: &mut Theme) -> Rect {
+    fn dev_ui_title(theme: &Theme) -> Rect {
         render_text_dev(
             "DEV UI (toggle with '/')",
             theme,
@@ -195,18 +195,13 @@ impl DevUi {
         let rect = &mut Self::dev_ui_title(theme);
         let mut messages = Vec::new();
 
-        let text = format!(
-            "{} Sin City mode",
-            enable_or_disable(theme.materials.sin_city)
-        );
+        let text = do_or_not(theme.materials.sin_city, "Sin City mode", enable_or_disable);
         if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
             messages.push(Message::ToggleSinCity);
         }
 
-        let text = format!(
-            "{} shader refresh character",
-            enable_or_disable(theme.materials.refresh_shaders.character)
-        );
+        let verb = enable_or_disable(theme.materials.refresh_shaders.character);
+        let text = format!("{} shader refresh character", verb);
         if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
             messages.push(Message::ToggleRefreshShaderCharacter);
         }
@@ -214,17 +209,13 @@ impl DevUi {
             render_text_dev(e, theme, rightwards(*rect));
         }
 
-        let text = format!(
-            "{} shader antialias",
-            enable_or_disable(theme.materials.antialias_enabled)
-        );
+        let verb = enable_or_disable(theme.materials.antialias_enabled);
+        let text = format!("{} shader antialias", verb);
         if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
             messages.push(Message::ToggleShaderAntialias);
         }
-        let text = format!(
-            "{} shader refresh antialias",
-            enable_or_disable(theme.materials.refresh_shaders.antialias)
-        );
+        let verb = enable_or_disable(theme.materials.refresh_shaders.antialias);
+        let text = format!("{} shader refresh antialias", verb);
         let mut refresh_rect = *rect;
         if render_button_dev_mut(&text, theme, rightwards, &mut refresh_rect).is_clicked() {
             messages.push(Message::ToggleRefreshShaderAntialias);
@@ -232,6 +223,14 @@ impl DevUi {
         if let Some(e) = &theme.materials.refresh_shaders.antialias_error {
             render_text_dev(e, theme, rightwards(refresh_rect));
         }
+        let slider =
+            SliderConfig::new("Antialias strength", Message::AntialiasStrength, 0.0, 100.0);
+        slider.render(
+            theme.materials.antialias_strength,
+            theme,
+            rect,
+            &mut messages,
+        );
 
         let value = &mut board.piece_size.x;
         render_slider("Texture size X", theme, 0.1, 2.0, value, rect);
@@ -245,15 +244,14 @@ impl DevUi {
         if render_button_dev_mut("Reload textures (T)", theme, below_left, rect).is_clicked() {
             messages.push(Message::ReloadTextures);
         }
-        let mut value = theme.materials.shadow_offset;
-        theme.materials.shadow_offset =
-            render_slider("Shadow offset", theme, -1.0, 1.0, &mut value, rect);
+        let slider = SliderConfig::new("Shadow offset", Message::ShadowOffset, -1.0, 1.0);
+        slider.render(theme.materials.shadow_offset, theme, rect, &mut messages);
 
         self.navigation(theme, "Back", DevUiMenu::Main, rect);
         messages
     }
 
-    fn draw_npcs(&mut self, theme: &mut Theme, board: &mut Board, bots: &mut Bots) -> Vec<Message> {
+    fn draw_npcs(&mut self, theme: &Theme, board: &mut Board, bots: &mut Bots) -> Vec<Message> {
         let rect = &mut Self::dev_ui_title(theme);
         let mut messages = Vec::new();
 
@@ -504,6 +502,9 @@ pub fn hide_or_show(enabled: bool) -> &'static str {
 }
 pub fn enable_or_disable(enabled: bool) -> &'static str {
     if enabled { "Disable" } else { "Enable" }
+}
+pub fn do_or_not(enabled: bool, what: &str, verb: fn(bool) -> &'static str) -> String {
+    format!("{} {}", what, verb(enabled))
 }
 pub fn as_hex(color: Color) -> String {
     let [r, g, b, a]: [u8; 4] = color.into();

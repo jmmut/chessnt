@@ -1,6 +1,7 @@
 use crate::AnyResult;
 use crate::core::coord::{Coord, ICoord};
-use crate::world::board::{Board, EverMoved, PieceIndex, PieceIndexSmall};
+use crate::world::board::tracking::EverMoved;
+use crate::world::board::{Board, PieceIndex, PieceIndexSmall};
 use crate::world::bot::{Plan, PlanSelect};
 use crate::world::moves::{
     Move, Moveset, Occupied, PieceIndexes, board_to_str_indent, checked_index_at, index_at,

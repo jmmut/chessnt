@@ -1,5 +1,6 @@
 use crate::core::coord::{Coord, ICoord};
-use crate::world::board::{AllowedCastle, EverMoved, PieceIndex, PieceIndexSmall};
+use crate::world::board::tracking::{AllowedCastle, EverMoved};
+use crate::world::board::{PieceIndex, PieceIndexSmall};
 use crate::world::piece::{Piece, Pieces};
 use crate::world::team::Team;
 

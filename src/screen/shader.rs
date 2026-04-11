@@ -20,6 +20,7 @@ pub mod names {
     pub const CURSOR_ON_TOP: &str = "cursor_on_top";
     pub const SHADOW_OFFSET: &str = "shadow_offset";
     pub const SCREEN: &str = "screen";
+    pub const ANTIALIAS_STRENGTH: &str = "antialias_strength";
 }
 
 const FLOOR_FRAGMENT_SHADER: &'static str = include_str!("../shaders/floor_fragment.glsl");
@@ -38,6 +39,7 @@ pub struct Materials {
     pub sin_city: bool,
     pub shadow_offset: f32,
     pub antialias_enabled: bool,
+    pub antialias_strength: f32,
     pub refresh_shaders: RefreshShaders,
 }
 pub struct RefreshShaders {
@@ -58,6 +60,7 @@ pub fn init_shaders() -> AnyResult<Materials> {
         sin_city: false,
         shadow_offset: 0.2,
         antialias_enabled: true,
+        antialias_strength: 0.0,
         refresh_shaders: RefreshShaders {
             character: false,
             antialias: false,
@@ -171,11 +174,18 @@ pub fn character_shader(vertex_code: &str, fragment_code: &str) -> AnyResult<Mat
 pub fn antialias_shader(vertex_code: &str, fragment_code: &str) -> AnyResult<Material> {
     let material_params = MaterialParams {
         pipeline_params: Default::default(),
-        uniforms: vec![UniformDesc {
-            name: SCREEN.to_string(),
-            uniform_type: UniformType::Float2,
-            array_count: 1,
-        }],
+        uniforms: vec![
+            UniformDesc {
+                name: SCREEN.to_string(),
+                uniform_type: UniformType::Float2,
+                array_count: 1,
+            },
+            UniformDesc {
+                name: ANTIALIAS_STRENGTH.to_string(),
+                uniform_type: UniformType::Float1,
+                array_count: 1,
+            },
+        ],
         textures: vec![],
     };
     let floor = load_material(

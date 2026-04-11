@@ -3,7 +3,7 @@ use chessnt::core::input::Gamepads;
 use chessnt::core::time::Time;
 use chessnt::screen::camera::CameraPos;
 use chessnt::screen::shader::init_shaders;
-use chessnt::screen::shader::names::SCREEN;
+use chessnt::screen::shader::names::{ANTIALIAS_STRENGTH, SCREEN};
 use chessnt::screen::theme::{Fonts, Textures, Theme, new_text_coloring};
 use chessnt::screen::ui::{SCALE, render_text_no_font, render_title};
 use chessnt::screen::ui_dev::DevUi;
@@ -167,11 +167,7 @@ fn handle_inputs_should_exit(
     gamepads: &mut Gamepads,
     dev_ui: &mut DevUi,
 ) -> AnyResult<Vec<Message>> {
-    if is_key_pressed(KeyCode::Slash)
-        || is_key_pressed(KeyCode::KpDivide)
-        || is_key_pressed(KeyCode::LeftBracket)
-        || is_key_pressed(KeyCode::Backslash)
-    {
+    if is_key_pressed(KeyCode::GraveAccent) {
         dev_ui.toggle();
     }
 
@@ -240,6 +236,10 @@ fn draw_board_antialias(screen: Vec2, render_texture: &RenderTarget, theme: &The
     if theme.materials.antialias_enabled {
         gl_use_material(&theme.materials.antialias);
         theme.materials.antialias.set_uniform(SCREEN, screen);
+        theme
+            .materials
+            .antialias
+            .set_uniform(ANTIALIAS_STRENGTH, theme.materials.antialias_strength);
     }
     draw_texture_ex(
         &render_texture.texture,
@@ -324,6 +324,12 @@ async fn handle_ui_actions(
             }
             Message::RotateCamera(delta) => {
                 camera.rotate(delta);
+            }
+            Message::ShadowOffset(new_value) => {
+                theme.materials.shadow_offset = new_value;
+            }
+            Message::AntialiasStrength(new_value) => {
+                theme.materials.antialias_strength = new_value;
             }
         }
     }

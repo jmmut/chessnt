@@ -1,4 +1,5 @@
 use crate::screen::theme::Theme;
+use crate::world::board::board_ui::Message;
 use juquad::draw::draw_rect;
 use juquad::input::input_macroquad::InputMacroquad;
 use juquad::lazy::{Interactable, Renderable, Style, WidgetTrait};
@@ -235,6 +236,45 @@ pub fn draw_text(
     macroquad::text::draw_text_ex(text, x, y, params);
 }
 
+pub struct SliderConfig<'a> {
+    text: &'a str,
+    message: fn(f32) -> Message,
+    min: f32,
+    max: f32,
+}
+impl<'a> SliderConfig<'a> {
+    pub fn new(text: &'a str, message: fn(f32) -> Message, min: f32, max: f32) -> Self {
+        Self {
+            text,
+            min,
+            max,
+            message,
+        }
+    }
+    pub fn render(&self, value: f32, theme: &Theme, rect: &mut Rect, messages: &mut Vec<Message>) {
+        render_slider_msg(value, &self, theme, rect, messages);
+    }
+}
+pub fn render_slider_msg(
+    value: f32,
+    config: &SliderConfig,
+    theme: &Theme,
+    rect: &mut Rect,
+    messages: &mut Vec<Message>,
+) {
+    let mut value_copy = value;
+    render_slider(
+        config.text,
+        theme,
+        config.min,
+        config.max,
+        &mut value_copy,
+        rect,
+    );
+    if (value_copy - value).abs() > ((config.max - config.min) * 0.01).abs() {
+        messages.push((config.message)(value_copy));
+    }
+}
 pub fn render_slider(
     text: &str,
     theme: &Theme,
