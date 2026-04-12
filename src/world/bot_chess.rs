@@ -514,8 +514,6 @@ fn move_in_caches(
 ) {
     let team = pieces[i].team;
     pieces[i].set_pos_and_initial_i(to);
-    set_occupied(from, None, occupied);
-    set_occupied(to, Some(team), occupied);
     set_index_at(from, None, indexes);
     set_index_at(to, Some(i as PieceIndexSmall), indexes);
 }
@@ -529,7 +527,6 @@ fn kill_in_caches(
     pieces[i].alive = false;
     let old_killed_pos = pieces[i].initial_pos;
     pieces[i].set_pos_and_initial(Coord::new_i(0, -2));
-    set_occupied(old_killed_pos, None, occupied);
     set_index_at(old_killed_pos, None, indexes);
     old_killed_pos
 }
@@ -543,7 +540,6 @@ fn unkill_in_caches(
 ) {
     pieces[i].alive = true;
     pieces[i].set_pos_and_initial_i(pos_before_dying);
-    set_occupied(pos_before_dying, Some(pieces[i].team), occupied);
     set_index_at(pos_before_dying, Some(i as PieceIndexSmall), indexes);
 }
 
