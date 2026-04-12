@@ -193,7 +193,7 @@ pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
             }
             moves.clear();
             possible_moves_matrix_mut(
-                i, &pieces, board_size, &occupied, indexes, ever_moved, &mut moves,
+                i, &pieces, board_size, indexes, ever_moved, &mut moves,
             );
             for movement in &moves {
                 let mut debug_here = DebugState::new();
