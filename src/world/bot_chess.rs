@@ -230,7 +230,6 @@ impl<'a> Evaluator<'a> {
                     i,
                     &self.pieces,
                     board_size,
-                    &occupied,
                     indexes,
                     ever_moved,
                     &mut moves,
