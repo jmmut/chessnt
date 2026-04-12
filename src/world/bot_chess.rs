@@ -333,9 +333,9 @@ impl<'a> Evaluator<'a> {
 
                     let future_score = if depth >= 2 {
                         let old_killed_pos =
-                            kill_in_caches(other_i, self.pieces, occupied, indexes);
+                            kill_in_caches(other_i, self.pieces, indexes);
                         let old_pos = self.pieces[i].initial_pos;
-                        move_in_caches(i, old_pos, movement, self.pieces, occupied, indexes);
+                        move_in_caches(i, old_pos, movement, self.pieces, indexes);
                         ever_moved.register_movement(i, self.pieces, old_pos, movement, board_size);
 
                         let (_, future_score) = self.choose_target_score_mut::<DEBUG_PLANNING>(
@@ -352,8 +352,8 @@ impl<'a> Evaluator<'a> {
                         if piece_change != 0.0 {
                             self.pieces[i].moveset = Moveset::new(Move::Pawn);
                         }
-                        move_in_caches(i, movement, old_pos, self.pieces, occupied, indexes);
-                        unkill_in_caches(other_i, old_killed_pos, self.pieces, occupied, indexes);
+                        move_in_caches(i, movement, old_pos, self.pieces, indexes);
+                        unkill_in_caches(other_i, old_killed_pos, self.pieces, indexes);
                         ever_moved.undo_movement(i);
                         future_score
                     } else {
@@ -408,7 +408,7 @@ impl<'a> Evaluator<'a> {
                     } else {
                         None
                     };
-                    move_in_caches(i, old_pos, movement, self.pieces, occupied, indexes);
+                    move_in_caches(i, old_pos, movement, self.pieces, indexes);
                     ever_moved.register_movement(i, self.pieces, old_pos, movement, board_size);
 
                     if let Some((rook, old_rook_pos, new_rook_pos)) =
@@ -420,7 +420,6 @@ impl<'a> Evaluator<'a> {
                             old_rook_pos,
                             new_rook_pos,
                             self.pieces,
-                            occupied,
                             indexes,
                         );
                     }
@@ -441,7 +440,7 @@ impl<'a> Evaluator<'a> {
                         self.pieces[i].moveset = Moveset::new(Move::Pawn);
                     }
 
-                    move_in_caches(i, movement, old_pos, self.pieces, occupied, indexes);
+                    move_in_caches(i, movement, old_pos, self.pieces, indexes);
                     ever_moved.undo_movement(i);
 
                     if let Some((rook, old_rook_pos, new_rook_pos)) =
@@ -453,7 +452,6 @@ impl<'a> Evaluator<'a> {
                             new_rook_pos,
                             old_rook_pos,
                             self.pieces,
-                            occupied,
                             indexes,
                         );
                     }
@@ -509,7 +507,6 @@ fn move_in_caches(
     from: ICoord,
     to: ICoord,
     pieces: &mut Vec<Piece>,
-    occupied: &mut Occupied,
     indexes: &mut PieceIndexes,
 ) {
     let team = pieces[i].team;
@@ -521,7 +518,6 @@ fn move_in_caches(
 fn kill_in_caches(
     i: usize,
     pieces: &mut Vec<Piece>,
-    occupied: &mut Occupied,
     indexes: &mut PieceIndexes,
 ) -> ICoord {
     pieces[i].alive = false;
@@ -535,7 +531,6 @@ fn unkill_in_caches(
     i: usize,
     pos_before_dying: ICoord,
     pieces: &mut Vec<Piece>,
-    occupied: &mut Occupied,
     indexes: &mut PieceIndexes,
 ) {
     pieces[i].alive = true;
