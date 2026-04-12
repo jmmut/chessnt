@@ -174,7 +174,6 @@ pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
         depth,
         overall_best,
         ever_moved,
-        occupied,
         indexes,
         debug,
     )
@@ -189,7 +188,6 @@ impl<'a> Evaluator<'a> {
         depth: i32,
         overall_best: &Option<(PieceIndex, ICoord, Score)>,
         ever_moved: &mut EverMoved,
-        occupied: &mut Occupied,
         indexes: &mut PieceIndexes,
         debug: &mut DebugState,
     ) -> AnyResult<(Option<(PieceIndex, ICoord)>, Score)> {
@@ -247,7 +245,6 @@ impl<'a> Evaluator<'a> {
                         overall_best,
                         &mut best,
                         ever_moved,
-                        occupied,
                         indexes,
                         &mut debug_here,
                     )?;
@@ -300,7 +297,6 @@ impl<'a> Evaluator<'a> {
         overall_best: &Option<(PieceIndex, ICoord, Score)>,
         best: &mut Option<(PieceIndex, ICoord, Score)>,
         ever_moved: &mut EverMoved,
-        occupied: &mut Occupied,
         indexes: &mut PieceIndexes,
         debug: &mut DebugState,
     ) -> AnyResult<bool> {
@@ -345,7 +341,6 @@ impl<'a> Evaluator<'a> {
                             depth - 1,
                             best,
                             ever_moved,
-                            occupied,
                             indexes,
                             debug,
                         )?;
@@ -431,7 +426,6 @@ impl<'a> Evaluator<'a> {
                         depth - 1,
                         &best,
                         ever_moved,
-                        occupied,
                         indexes,
                         debug,
                     )?;
@@ -509,7 +503,6 @@ fn move_in_caches(
     pieces: &mut Vec<Piece>,
     indexes: &mut PieceIndexes,
 ) {
-    let team = pieces[i].team;
     pieces[i].set_pos_and_initial_i(to);
     set_index_at(from, None, indexes);
     set_index_at(to, Some(i as PieceIndexSmall), indexes);
