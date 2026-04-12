@@ -150,6 +150,10 @@ fn choose_target_inner_depth_plan<const DEBUG_PLANNING: i32>(
     }
 }
 
+pub struct Evaluator {
+    // pieces: &Pieces,
+}
+
 pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
     team: Team,
     pieces: &mut Vec<Piece>,
@@ -162,161 +166,274 @@ pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
     indexes: &mut PieceIndexes,
     debug: &mut DebugState,
 ) -> AnyResult<(Option<(PieceIndex, ICoord)>, Score)> {
-    if DEBUG_PLANNING >= debug_level::TREE {
-        // print!("{}choosing move for board as {}:\n{}", ".".repeat(depth as usize), team, board_to_str(pieces));
-        print!("\n{}", board_to_str_indent(pieces, board_size, depth - 1));
-    }
-    if depth <= 0 {
-        if DEBUG_PLANNING >= debug_level::VERBOSE {
-            println!(
-                "{} returning (depth==0) with score {} for {} ************",
-                ".*".repeat(depth as usize),
-                0.0,
-                team
-            );
-        }
-        return Ok((None, 0.0));
-    }
-    let mut moves = Vec::with_capacity(17);
-    let mut best = None;
-    let mut debug_best_plan = DebugState::new();
-    for i in 0..pieces.len() {
-        if pieces[i].team == team && pieces[i].alive {
-            if DEBUG_PLANNING >= debug_level::CONCISE {
-                println!(
-                    "{}. where to move piece {} {:?} at {:?}?",
-                    ".*".repeat(depth as usize - 1),
-                    pieces[i].team,
-                    pieces[i].moveset.single(),
-                    pieces[i].initial_pos
-                );
-            }
-            moves.clear();
-            possible_moves_matrix_mut(
-                i, &pieces, board_size, &occupied, indexes, ever_moved, &mut moves,
-            );
-            for movement in &moves {
-                let mut debug_here = DebugState::new();
-                let movement = *movement;
-                let is_better = evaluate_movement::<DEBUG_PLANNING>(
-                    movement,
-                    i,
-                    team,
-                    board_size,
-                    turn,
-                    depth,
-                    overall_best,
-                    &mut best,
-                    ever_moved,
-                    pieces,
-                    occupied,
-                    indexes,
-                    &mut debug_here,
-                )?;
-                if is_better && DEBUG_PLANNING >= debug_level::PLAN {
-                    debug_best_plan = debug_here;
-                }
-                if let (Some((overall_i, _, overall_score)), Some((i, movement, score))) =
-                    (overall_best, &best)
-                {
-                    let mut overall_score = *overall_score;
-                    if pieces[*overall_i].team != pieces[*i].team {
-                        overall_score = -overall_score;
-                    }
-                    if *score > overall_score {
-                        return Ok((Some((*i, *movement)), *score));
-                    }
-                }
-            }
-        }
-    }
-    if let Some((best_i, best_move, best_score)) = best {
-        if DEBUG_PLANNING >= debug_level::CONCISE {
-            println!(
-                "{} best move for {} is {:?} to {:?} with score {}",
-                ".*".repeat(depth as usize),
-                team,
-                pieces[best_i].moveset.single(),
-                best_move,
-                best_score
-            )
-        }
-        if DEBUG_PLANNING >= debug_level::PLAN {
-            debug.plan.push((best_i, best_move));
-            debug.plan.extend(debug_best_plan.plan);
-        }
-        Ok((Some((best_i, best_move)), best_score))
-    } else {
-        Ok((None, 0.0))
-    }
+    let mut evaluator = Evaluator {};
+    evaluator.choose_target_score_mut::<DEBUG_PLANNING>(
+        team,
+        pieces,
+        board_size,
+        turn,
+        depth,
+        overall_best,
+        ever_moved,
+        occupied,
+        indexes,
+        debug,
+    )
 }
 
-fn evaluate_movement<const DEBUG_PLANNING: i32>(
-    movement: ICoord,
-    i: usize,
-    team: Team,
-    board_size: ICoord,
-    turn: Team,
-    depth: i32,
-    overall_best: &Option<(PieceIndex, ICoord, Score)>,
-    best: &mut Option<(PieceIndex, ICoord, Score)>,
-    ever_moved: &mut EverMoved,
-    pieces: &mut Vec<Piece>,
-    occupied: &mut Occupied,
-    indexes: &mut PieceIndexes,
-    debug: &mut DebugState,
-) -> AnyResult<bool> {
-    if DEBUG_PLANNING >= debug_level::VERBOSE {
-        println!(
-            "{} evaluating move to {:?}",
-            ".*".repeat(depth as usize - 1),
-            movement
-        );
+impl Evaluator {
+    pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
+        &mut self,
+        team: Team,
+        pieces: &mut Vec<Piece>,
+        board_size: ICoord,
+        turn: Team,
+        depth: i32,
+        overall_best: &Option<(PieceIndex, ICoord, Score)>,
+        ever_moved: &mut EverMoved,
+        occupied: &mut Occupied,
+        indexes: &mut PieceIndexes,
+        debug: &mut DebugState,
+    ) -> AnyResult<(Option<(PieceIndex, ICoord)>, Score)> {
+        if DEBUG_PLANNING >= debug_level::TREE {
+            // print!("{}choosing move for board as {}:\n{}", ".".repeat(depth as usize), team, board_to_str(pieces));
+            print!("\n{}", board_to_str_indent(pieces, board_size, depth - 1));
+        }
+        if depth <= 0 {
+            if DEBUG_PLANNING >= debug_level::VERBOSE {
+                println!(
+                    "{} returning (depth==0) with score {} for {} ************",
+                    ".*".repeat(depth as usize),
+                    0.0,
+                    team
+                );
+            }
+            return Ok((None, 0.0));
+        }
+        let mut moves = Vec::with_capacity(17);
+        let mut best = None;
+        let mut debug_best_plan = DebugState::new();
+        for i in 0..pieces.len() {
+            if pieces[i].team == team && pieces[i].alive {
+                if DEBUG_PLANNING >= debug_level::CONCISE {
+                    println!(
+                        "{}. where to move piece {} {:?} at {:?}?",
+                        ".*".repeat(depth as usize - 1),
+                        pieces[i].team,
+                        pieces[i].moveset.single(),
+                        pieces[i].initial_pos
+                    );
+                }
+                moves.clear();
+                possible_moves_matrix_mut(
+                    i, &pieces, board_size, &occupied, indexes, ever_moved, &mut moves,
+                );
+                for movement in &moves {
+                    let mut debug_here = DebugState::new();
+                    let movement = *movement;
+                    let is_better = self.evaluate_movement::<DEBUG_PLANNING>(
+                        movement,
+                        i,
+                        team,
+                        board_size,
+                        turn,
+                        depth,
+                        overall_best,
+                        &mut best,
+                        ever_moved,
+                        pieces,
+                        occupied,
+                        indexes,
+                        &mut debug_here,
+                    )?;
+                    if is_better && DEBUG_PLANNING >= debug_level::PLAN {
+                        debug_best_plan = debug_here;
+                    }
+                    if let (Some((overall_i, _, overall_score)), Some((i, movement, score))) =
+                        (overall_best, &best)
+                    {
+                        let mut overall_score = *overall_score;
+                        if pieces[*overall_i].team != pieces[*i].team {
+                            overall_score = -overall_score;
+                        }
+                        if *score > overall_score {
+                            return Ok((Some((*i, *movement)), *score));
+                        }
+                    }
+                }
+            }
+        }
+        if let Some((best_i, best_move, best_score)) = best {
+            if DEBUG_PLANNING >= debug_level::CONCISE {
+                println!(
+                    "{} best move for {} is {:?} to {:?} with score {}",
+                    ".*".repeat(depth as usize),
+                    team,
+                    pieces[best_i].moveset.single(),
+                    best_move,
+                    best_score
+                )
+            }
+            if DEBUG_PLANNING >= debug_level::PLAN {
+                debug.plan.push((best_i, best_move));
+                debug.plan.extend(debug_best_plan.plan);
+            }
+            Ok((Some((best_i, best_move)), best_score))
+        } else {
+            Ok((None, 0.0))
+        }
     }
-    let piece_change = if pieces[i].moveset.single() == Move::Pawn {
-        if team == Team::White && movement.column == 0
-            || team == Team::Black && movement.column == board_size.column - 1
-        {
-            // TODO: allow user to choose promotion
-            pieces[i].moveset = Moveset::new(Move::Queen);
-            piece_type_value(Move::Queen) - piece_type_value(Move::Pawn)
+
+    pub fn evaluate_movement<const DEBUG_PLANNING: i32>(
+        &mut self,
+        movement: ICoord,
+        i: usize,
+        team: Team,
+        board_size: ICoord,
+        turn: Team,
+        depth: i32,
+        overall_best: &Option<(PieceIndex, ICoord, Score)>,
+        best: &mut Option<(PieceIndex, ICoord, Score)>,
+        ever_moved: &mut EverMoved,
+        pieces: &mut Vec<Piece>,
+        occupied: &mut Occupied,
+        indexes: &mut PieceIndexes,
+        debug: &mut DebugState,
+    ) -> AnyResult<bool> {
+        if DEBUG_PLANNING >= debug_level::VERBOSE {
+            println!(
+                "{} evaluating move to {:?}",
+                ".*".repeat(depth as usize - 1),
+                movement
+            );
+        }
+        let piece_change = if pieces[i].moveset.single() == Move::Pawn {
+            if team == Team::White && movement.column == 0
+                || team == Team::Black && movement.column == board_size.column - 1
+            {
+                // TODO: allow user to choose promotion
+                pieces[i].moveset = Moveset::new(Move::Queen);
+                piece_type_value(Move::Queen) - piece_type_value(Move::Pawn)
+            } else {
+                0.0
+            }
         } else {
             0.0
-        }
-    } else {
-        0.0
-    };
-    Ok(
-        if let Some(other_i) = other_killable(i, pieces, movement, indexes, ever_moved) {
-            let other_i = other_i as usize;
-            if pieces[other_i].team != team && turn == team {
-                // don't think about killing when it's not your turn
-                let kill_value = piece_value(&pieces[other_i], team);
+        };
+        Ok(
+            if let Some(other_i) = other_killable(i, pieces, movement, indexes, ever_moved) {
+                let other_i = other_i as usize;
+                if pieces[other_i].team != team && turn == team {
+                    // don't think about killing when it's not your turn
+                    let kill_value = piece_value(&pieces[other_i], team);
 
+                    let future_score = if depth >= 2 {
+                        let old_killed_pos = kill_in_caches(other_i, pieces, occupied, indexes);
+                        let old_pos = pieces[i].initial_pos;
+                        move_in_caches(i, old_pos, movement, pieces, occupied, indexes);
+                        ever_moved.register_movement(i, pieces, old_pos, movement, board_size);
+
+                        let (_, future_score) = choose_target_score_mut::<DEBUG_PLANNING>(
+                            team.opposite(),
+                            pieces,
+                            board_size,
+                            turn.opposite(),
+                            depth - 1,
+                            best,
+                            ever_moved,
+                            occupied,
+                            indexes,
+                            debug,
+                        )?;
+                        if piece_change != 0.0 {
+                            pieces[i].moveset = Moveset::new(Move::Pawn);
+                        }
+                        move_in_caches(i, movement, old_pos, pieces, occupied, indexes);
+                        unkill_in_caches(other_i, old_killed_pos, pieces, occupied, indexes);
+                        ever_moved.undo_movement(i);
+                        future_score
+                    } else {
+                        if DEBUG_PLANNING > debug_level::NO {
+                            unsafe {
+                                EVALUATIONS += 1;
+                            }
+                        }
+                        0.0
+                    };
+                    let future_score = -future_score - kill_value + piece_change;
+                    maybe_store_better_and_debug::<DEBUG_PLANNING>(
+                        depth,
+                        pieces,
+                        i,
+                        movement,
+                        future_score,
+                        overall_best,
+                        best,
+                    )
+                } else {
+                    false
+                }
+            } else {
+                // TODO: modify score due to our movement's benefit
                 let future_score = if depth >= 2 {
-                    let old_killed_pos = kill_in_caches(other_i, pieces, occupied, indexes);
                     let old_pos = pieces[i].initial_pos;
+                    let castle_rook_index_and_pos_and_new_pos = if pieces[i].moveset.single()
+                        == Move::King
+                        && (movement - old_pos).length_squared() == 2 * 2
+                    {
+                        let to_rook = (movement - old_pos) / 2;
+                        if let Some(rook) = checked_index_at(old_pos + to_rook * 3, indexes) {
+                            Some((rook, pieces[rook as usize].initial_pos, old_pos + to_rook))
+                        } else if let Some(rook) = checked_index_at(old_pos + to_rook * 4, indexes)
+                        {
+                            Some((rook, pieces[rook as usize].initial_pos, old_pos + to_rook))
+                        } else {
+                            return Err(format!(
+                        "castling appeared possible but couldn't find rook at {:?} nor {:?}. board:\n{}",
+                        to_rook * 3, to_rook * 4, pieces_to_str(pieces)
+                    ).into());
+                        }
+                    } else {
+                        None
+                    };
                     move_in_caches(i, old_pos, movement, pieces, occupied, indexes);
                     ever_moved.register_movement(i, pieces, old_pos, movement, board_size);
+
+                    if let Some((rook, old_rook_pos, new_rook_pos)) =
+                        castle_rook_index_and_pos_and_new_pos.clone()
+                    {
+                        let rook = rook as usize;
+                        move_in_caches(rook, old_rook_pos, new_rook_pos, pieces, occupied, indexes);
+                    }
 
                     let (_, future_score) = choose_target_score_mut::<DEBUG_PLANNING>(
                         team.opposite(),
                         pieces,
                         board_size,
-                        turn.opposite(),
+                        team.opposite(), // team: not a bug. on the first level we want to evaluate movements out of our turn before the other team moves
                         depth - 1,
-                        best,
+                        &best,
                         ever_moved,
                         occupied,
                         indexes,
                         debug,
                     )?;
+
                     if piece_change != 0.0 {
                         pieces[i].moveset = Moveset::new(Move::Pawn);
                     }
+
                     move_in_caches(i, movement, old_pos, pieces, occupied, indexes);
-                    unkill_in_caches(other_i, old_killed_pos, pieces, occupied, indexes);
                     ever_moved.undo_movement(i);
+
+                    if let Some((rook, old_rook_pos, new_rook_pos)) =
+                        castle_rook_index_and_pos_and_new_pos.clone()
+                    {
+                        let rook = rook as usize;
+                        move_in_caches(rook, new_rook_pos, old_rook_pos, pieces, occupied, indexes);
+                    }
+
+                    let future_score = -future_score + piece_change;
                     future_score
                 } else {
                     if DEBUG_PLANNING > debug_level::NO {
@@ -326,7 +443,6 @@ fn evaluate_movement<const DEBUG_PLANNING: i32>(
                     }
                     0.0
                 };
-                let future_score = -future_score - kill_value + piece_change;
                 maybe_store_better_and_debug::<DEBUG_PLANNING>(
                     depth,
                     pieces,
@@ -336,89 +452,9 @@ fn evaluate_movement<const DEBUG_PLANNING: i32>(
                     overall_best,
                     best,
                 )
-            } else {
-                false
-            }
-        } else {
-            // TODO: modify score due to our movement's benefit
-            let future_score = if depth >= 2 {
-                let old_pos = pieces[i].initial_pos;
-                let castle_rook_index_and_pos_and_new_pos = if pieces[i].moveset.single()
-                    == Move::King
-                    && (movement - old_pos).length_squared() == 2 * 2
-                {
-                    let to_rook = (movement - old_pos) / 2;
-                    if let Some(rook) = checked_index_at(old_pos + to_rook * 3, indexes) {
-                        Some((rook, pieces[rook as usize].initial_pos, old_pos + to_rook))
-                    } else if let Some(rook) = checked_index_at(old_pos + to_rook * 4, indexes) {
-                        Some((rook, pieces[rook as usize].initial_pos, old_pos + to_rook))
-                    } else {
-                        return Err(format!(
-                        "castling appeared possible but couldn't find rook at {:?} nor {:?}. board:\n{}",
-                        to_rook * 3, to_rook * 4, pieces_to_str(pieces)
-                    ).into());
-                    }
-                } else {
-                    None
-                };
-                move_in_caches(i, old_pos, movement, pieces, occupied, indexes);
-                ever_moved.register_movement(i, pieces, old_pos, movement, board_size);
-
-                if let Some((rook, old_rook_pos, new_rook_pos)) =
-                    castle_rook_index_and_pos_and_new_pos.clone()
-                {
-                    let rook = rook as usize;
-                    move_in_caches(rook, old_rook_pos, new_rook_pos, pieces, occupied, indexes);
-                }
-
-                let (_, future_score) = choose_target_score_mut::<DEBUG_PLANNING>(
-                    team.opposite(),
-                    pieces,
-                    board_size,
-                    team.opposite(), // team: not a bug. on the first level we want to evaluate movements out of our turn before the other team moves
-                    depth - 1,
-                    &best,
-                    ever_moved,
-                    occupied,
-                    indexes,
-                    debug,
-                )?;
-
-                if piece_change != 0.0 {
-                    pieces[i].moveset = Moveset::new(Move::Pawn);
-                }
-
-                move_in_caches(i, movement, old_pos, pieces, occupied, indexes);
-                ever_moved.undo_movement(i);
-
-                if let Some((rook, old_rook_pos, new_rook_pos)) =
-                    castle_rook_index_and_pos_and_new_pos.clone()
-                {
-                    let rook = rook as usize;
-                    move_in_caches(rook, new_rook_pos, old_rook_pos, pieces, occupied, indexes);
-                }
-
-                let future_score = -future_score + piece_change;
-                future_score
-            } else {
-                if DEBUG_PLANNING > debug_level::NO {
-                    unsafe {
-                        EVALUATIONS += 1;
-                    }
-                }
-                0.0
-            };
-            maybe_store_better_and_debug::<DEBUG_PLANNING>(
-                depth,
-                pieces,
-                i,
-                movement,
-                future_score,
-                overall_best,
-                best,
-            )
-        },
-    )
+            },
+        )
+    }
 }
 
 fn other_killable(
