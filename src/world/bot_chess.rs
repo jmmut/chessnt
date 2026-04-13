@@ -151,7 +151,6 @@ fn choose_target_inner_depth_plan<const DEBUG_PLANNING: i32>(
 pub struct Evaluator<'a> {
     pieces: &'a mut Pieces,
     board_size: ICoord,
-    ever_moved: EverMoved,
     indexes: &'a mut PieceIndexes,
 }
 
@@ -166,17 +165,15 @@ pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
     indexes: &mut PieceIndexes,
     debug: &mut DebugState,
 ) -> AnyResult<(Option<(PieceIndex, ICoord)>, Score)> {
-    let mut tmp_ever_moved = EverMoved::new_forbidden();
-    std::mem::swap(&mut tmp_ever_moved, ever_moved);
-    let mut evaluator = Evaluator { pieces, board_size, ever_moved: tmp_ever_moved, indexes };
-   let res = evaluator.choose_target_score_mut::<DEBUG_PLANNING>(
+    let mut evaluator = Evaluator { pieces, board_size, indexes };
+    let res = evaluator.choose_target_score_mut::<DEBUG_PLANNING>(
         team,
         turn,
         depth,
         overall_best,
+        ever_moved,
         debug,
     );
-    *ever_moved = evaluator.ever_moved;
     res
 }
 
@@ -187,6 +184,7 @@ impl<'a> Evaluator<'a> {
         turn: Team,
         depth: i32,
         overall_best: &Option<(PieceIndex, ICoord, Score)>,
+        ever_moved: &mut EverMoved,
         debug: &mut DebugState,
     ) -> AnyResult<(Option<(PieceIndex, ICoord)>, Score)> {
         if DEBUG_PLANNING >= debug_level::TREE {
@@ -227,7 +225,7 @@ impl<'a> Evaluator<'a> {
                     &self.pieces,
                     self.board_size,
                     self.indexes,
-                    &self.ever_moved,
+                    ever_moved,
                     &mut moves,
                 );
                 for movement in &moves {
@@ -240,6 +238,7 @@ impl<'a> Evaluator<'a> {
                         turn,
                         depth,
                         overall_best,
+                        ever_moved,
                         &mut best,
                         &mut debug_here,
                     )?;
@@ -289,6 +288,7 @@ impl<'a> Evaluator<'a> {
         turn: Team,
         depth: i32,
         overall_best: &Option<(PieceIndex, ICoord, Score)>,
+        ever_moved: &mut EverMoved,
         best: &mut Option<(PieceIndex, ICoord, Score)>,
         debug: &mut DebugState,
     ) -> AnyResult<bool> {
@@ -313,7 +313,7 @@ impl<'a> Evaluator<'a> {
             0.0
         };
         Ok(
-            if let Some(other_i) = other_killable(i, self.pieces, movement, &self.indexes, &self.ever_moved) {
+            if let Some(other_i) = other_killable(i, self.pieces, movement, &self.indexes, ever_moved) {
                 let other_i = other_i as usize;
                 if self.pieces[other_i].team != team && turn == team {
                     // don't think about killing when it's not your turn
@@ -324,13 +324,14 @@ impl<'a> Evaluator<'a> {
                             kill_in_caches(other_i, self.pieces, &mut self.indexes);
                         let old_pos = self.pieces[i].initial_pos;
                         move_in_caches(i, old_pos, movement, self.pieces, &mut self.indexes);
-                        self.ever_moved.register_movement(i, self.pieces, old_pos, movement, self.board_size);
+                        ever_moved.register_movement(i, self.pieces, old_pos, movement, self.board_size);
 
                         let (_, future_score) = self.choose_target_score_mut::<DEBUG_PLANNING>(
                             team.opposite(),
                             turn.opposite(),
                             depth - 1,
                             best,
+                            ever_moved,
                             debug,
                         )?;
                         if piece_change != 0.0 {
@@ -338,7 +339,7 @@ impl<'a> Evaluator<'a> {
                         }
                         move_in_caches(i, movement, old_pos, self.pieces, &mut self.indexes);
                         unkill_in_caches(other_i, old_killed_pos, self.pieces, &mut self.indexes);
-                        self.ever_moved.undo_movement(i);
+                        ever_moved.undo_movement(i);
                         future_score
                     } else {
                         if DEBUG_PLANNING > debug_level::NO {
@@ -393,7 +394,7 @@ impl<'a> Evaluator<'a> {
                         None
                     };
                     move_in_caches(i, old_pos, movement, self.pieces, &mut self.indexes);
-                    self.ever_moved.register_movement(i, self.pieces, old_pos, movement, self.board_size);
+                    ever_moved.register_movement(i, self.pieces, old_pos, movement, self.board_size);
 
                     if let Some((rook, old_rook_pos, new_rook_pos)) =
                         castle_rook_index_and_pos_and_new_pos.clone()
@@ -413,6 +414,7 @@ impl<'a> Evaluator<'a> {
                         team.opposite(), // team: not a bug. on the first level we want to evaluate movements out of our turn before the other team moves
                         depth - 1,
                         &best,
+                        ever_moved,
                         debug,
                     )?;
 
@@ -421,7 +423,7 @@ impl<'a> Evaluator<'a> {
                     }
 
                     move_in_caches(i, movement, old_pos, self.pieces, &mut self.indexes);
-                    self.ever_moved.undo_movement(i);
+                    ever_moved.undo_movement(i);
 
                     if let Some((rook, old_rook_pos, new_rook_pos)) =
                         castle_rook_index_and_pos_and_new_pos.clone()
