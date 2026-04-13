@@ -150,6 +150,7 @@ fn choose_target_inner_depth_plan<const DEBUG_PLANNING: i32>(
 
 pub struct Evaluator<'a> {
     pieces: &'a mut Pieces,
+    board_size: ICoord,
 }
 
 pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
@@ -163,10 +164,9 @@ pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
     indexes: &mut PieceIndexes,
     debug: &mut DebugState,
 ) -> AnyResult<(Option<(PieceIndex, ICoord)>, Score)> {
-    let mut evaluator = Evaluator { pieces };
+    let mut evaluator = Evaluator { pieces, board_size };
     evaluator.choose_target_score_mut::<DEBUG_PLANNING>(
         team,
-        board_size,
         turn,
         depth,
         overall_best,
@@ -180,7 +180,6 @@ impl<'a> Evaluator<'a> {
     pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
         &mut self,
         team: Team,
-        board_size: ICoord,
         turn: Team,
         depth: i32,
         overall_best: &Option<(PieceIndex, ICoord, Score)>,
@@ -192,7 +191,7 @@ impl<'a> Evaluator<'a> {
             // print!("{}choosing move for board as {}:\n{}", ".".repeat(depth as usize), team, board_to_str(pieces));
             print!(
                 "\n{}",
-                board_to_str_indent(self.pieces, board_size, depth - 1)
+                board_to_str_indent(self.pieces, self.board_size, depth - 1)
             );
         }
         if depth <= 0 {
@@ -224,7 +223,7 @@ impl<'a> Evaluator<'a> {
                 possible_moves_matrix_mut(
                     i,
                     &self.pieces,
-                    board_size,
+                    self.board_size,
                     indexes,
                     ever_moved,
                     &mut moves,
@@ -236,7 +235,6 @@ impl<'a> Evaluator<'a> {
                         movement,
                         i,
                         team,
-                        board_size,
                         turn,
                         depth,
                         overall_best,
@@ -288,7 +286,6 @@ impl<'a> Evaluator<'a> {
         movement: ICoord,
         i: usize,
         team: Team,
-        board_size: ICoord,
         turn: Team,
         depth: i32,
         overall_best: &Option<(PieceIndex, ICoord, Score)>,
@@ -306,7 +303,7 @@ impl<'a> Evaluator<'a> {
         }
         let piece_change = if self.pieces[i].moveset.single() == Move::Pawn {
             if team == Team::White && movement.column == 0
-                || team == Team::Black && movement.column == board_size.column - 1
+                || team == Team::Black && movement.column == self.board_size.column - 1
             {
                 // TODO: allow user to choose promotion
                 self.pieces[i].moveset = Moveset::new(Move::Queen);
@@ -329,11 +326,10 @@ impl<'a> Evaluator<'a> {
                             kill_in_caches(other_i, self.pieces, indexes);
                         let old_pos = self.pieces[i].initial_pos;
                         move_in_caches(i, old_pos, movement, self.pieces, indexes);
-                        ever_moved.register_movement(i, self.pieces, old_pos, movement, board_size);
+                        ever_moved.register_movement(i, self.pieces, old_pos, movement, self.board_size);
 
                         let (_, future_score) = self.choose_target_score_mut::<DEBUG_PLANNING>(
                             team.opposite(),
-                            board_size,
                             turn.opposite(),
                             depth - 1,
                             best,
@@ -401,7 +397,7 @@ impl<'a> Evaluator<'a> {
                         None
                     };
                     move_in_caches(i, old_pos, movement, self.pieces, indexes);
-                    ever_moved.register_movement(i, self.pieces, old_pos, movement, board_size);
+                    ever_moved.register_movement(i, self.pieces, old_pos, movement, self.board_size);
 
                     if let Some((rook, old_rook_pos, new_rook_pos)) =
                         castle_rook_index_and_pos_and_new_pos.clone()
@@ -418,7 +414,6 @@ impl<'a> Evaluator<'a> {
 
                     let (_, future_score) = self.choose_target_score_mut::<DEBUG_PLANNING>(
                         team.opposite(),
-                        board_size,
                         team.opposite(), // team: not a bug. on the first level we want to evaluate movements out of our turn before the other team moves
                         depth - 1,
                         &best,
