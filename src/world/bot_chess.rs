@@ -151,7 +151,7 @@ fn choose_target_inner_depth_plan<const DEBUG_PLANNING: i32>(
 pub struct Evaluator<'a> {
     pieces: &'a mut Pieces,
     board_size: ICoord,
-    ever_moved: &'a mut EverMoved,
+    ever_moved: EverMoved,
 }
 
 pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
@@ -165,15 +165,19 @@ pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
     indexes: &mut PieceIndexes,
     debug: &mut DebugState,
 ) -> AnyResult<(Option<(PieceIndex, ICoord)>, Score)> {
-    let mut evaluator = Evaluator { pieces, board_size, ever_moved };
-    evaluator.choose_target_score_mut::<DEBUG_PLANNING>(
+    let mut tmp_ever_moved = EverMoved::new_forbidden();
+    std::mem::swap(&mut tmp_ever_moved, ever_moved);
+    let mut evaluator = Evaluator { pieces, board_size, ever_moved: tmp_ever_moved };
+   let res = evaluator.choose_target_score_mut::<DEBUG_PLANNING>(
         team,
         turn,
         depth,
         overall_best,
         indexes,
         debug,
-    )
+    );
+    *ever_moved = evaluator.ever_moved;
+    res
 }
 
 impl<'a> Evaluator<'a> {
@@ -224,7 +228,7 @@ impl<'a> Evaluator<'a> {
                     &self.pieces,
                     self.board_size,
                     indexes,
-                    self.ever_moved,
+                    &self.ever_moved,
                     &mut moves,
                 );
                 for movement in &moves {
@@ -312,7 +316,7 @@ impl<'a> Evaluator<'a> {
             0.0
         };
         Ok(
-            if let Some(other_i) = other_killable(i, self.pieces, movement, indexes, self.ever_moved) {
+            if let Some(other_i) = other_killable(i, self.pieces, movement, indexes, &self.ever_moved) {
                 let other_i = other_i as usize;
                 if self.pieces[other_i].team != team && turn == team {
                     // don't think about killing when it's not your turn
