@@ -167,10 +167,13 @@ fn handle_inputs_should_exit(
     gamepads: &mut Gamepads,
     dev_ui: &mut DevUi,
 ) -> AnyResult<Vec<Message>> {
-    if is_key_pressed(KeyCode::GraveAccent) {
+    if is_key_pressed(KeyCode::GraveAccent)
+        || is_key_pressed(KeyCode::Slash)
+        || is_key_pressed(KeyCode::LeftBracket)
+        || is_key_pressed(KeyCode::U)
+    {
         dev_ui.toggle();
     }
-
     move_cursor_or_piece(board, gamepads)?;
 
     select(board, &[KeyCode::Space], Team::Black)?;
