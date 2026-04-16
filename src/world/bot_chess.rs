@@ -891,7 +891,8 @@ mod tests {
         let depth = 6;
         let mut debug = DebugState::new();
         let start = Instant::now();
-        let plan = choose_target_board_depth::<{ debug_level::PLAN }>(
+        const CHOSEN_DEBUG_LEVEL: i32 = debug_level::PLAN;
+        let plan = choose_target_board_depth::<{ CHOSEN_DEBUG_LEVEL }>(
             &board,
             Team::Black,
             depth,
@@ -904,17 +905,22 @@ mod tests {
             (Instant::now() - start).as_secs_f64() * 1000.0
         );
         assert_eq!(plan.1, Some(-1.0));
-        assert_eq!(
-            debug.plan,
-            vec![
-                (1, ICoord { column: 2, row: 0 }),
-                (2, ICoord { column: 6, row: 0 }),
-                (3, ICoord { column: 2, row: 2 }),
-                (2, ICoord { column: 5, row: 0 }),
-                (0, ICoord { column: 1, row: 0 }),
-                (2, ICoord { column: 2, row: 0 })
-            ]
-        )
+
+        if CHOSEN_DEBUG_LEVEL >= debug_level::PLAN {
+            assert_eq!(
+                debug.plan,
+                vec![
+                    (1, ICoord { column: 2, row: 0 }),
+                    (2, ICoord { column: 6, row: 0 }),
+                    (3, ICoord { column: 2, row: 2 }),
+                    (2, ICoord { column: 5, row: 0 }),
+                    (0, ICoord { column: 1, row: 0 }),
+                    (2, ICoord { column: 2, row: 0 })
+                ]
+            )
+        } else {
+            assert_eq!(plan.0, Some(Plan::Select(PlanSelect::new_raw(1, ICoord { column: 2, row: 0 }))));
+        }
         // latest:
         // For depth 6 took: 4300 ms
     }
