@@ -128,7 +128,6 @@ fn choose_target_inner_depth_plan<const DEBUG_PLANNING: i32>(
         depth,
         &None,
         &mut ever_moved,
-        &mut occupied,
         &mut indexes,
         debug,
     )? {
@@ -158,7 +157,6 @@ pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
     depth: i32,
     overall_best: &Option<(PieceIndex, ICoord, Score)>,
     ever_moved: &mut EverMoved,
-    occupied: &mut Occupied,
     indexes: &mut PieceIndexes,
     debug: &mut DebugState,
 ) -> AnyResult<(Option<(PieceIndex, ICoord)>, Score)> {
@@ -209,7 +207,6 @@ pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
                     &mut best,
                     ever_moved,
                     pieces,
-                    occupied,
                     indexes,
                     &mut debug_here,
                 )?;
@@ -262,7 +259,6 @@ fn evaluate_movement<const DEBUG_PLANNING: i32>(
     best: &mut Option<(PieceIndex, ICoord, Score)>,
     ever_moved: &mut EverMoved,
     pieces: &mut Vec<Piece>,
-    occupied: &mut Occupied,
     indexes: &mut PieceIndexes,
     debug: &mut DebugState,
 ) -> AnyResult<bool> {
@@ -307,7 +303,6 @@ fn evaluate_movement<const DEBUG_PLANNING: i32>(
                         depth - 1,
                         best,
                         ever_moved,
-                        occupied,
                         indexes,
                         debug,
                     )?;
@@ -379,7 +374,6 @@ fn evaluate_movement<const DEBUG_PLANNING: i32>(
                     depth - 1,
                     &best,
                     ever_moved,
-                    occupied,
                     indexes,
                     debug,
                 )?;
