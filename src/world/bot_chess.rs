@@ -119,6 +119,10 @@ fn choose_target_inner_depth_plan<const DEBUG_PLANNING: i32>(
     }
     let mut indexes = to_piece_index_matrix_small(pieces, board_size);
     let mut ever_moved = ever_moved.clone();
+    let mut all_moves: Vec<Vec<ICoord>> = vec![vec![]; depth as usize + 1];
+    for moves in &mut all_moves {
+        moves.reserve(50);
+    }
     if let (Some((i, movement)), score) = choose_target_score_mut::<DEBUG_PLANNING>(
         team,
         &mut pieces.clone(),
@@ -128,6 +132,7 @@ fn choose_target_inner_depth_plan<const DEBUG_PLANNING: i32>(
         &None,
         &mut ever_moved,
         &mut indexes,
+        &mut all_moves,
         debug,
     )? {
         if DEBUG_PLANNING > debug_level::NO {
@@ -157,6 +162,7 @@ pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
     overall_best: &Option<(PieceIndex, ICoord, Score)>,
     ever_moved: &mut EverMoved,
     indexes: &mut PieceIndexes,
+    all_moves: &mut Vec<Vec<ICoord>>,
     debug: &mut DebugState,
 ) -> AnyResult<(Option<(PieceIndex, ICoord)>, Score)> {
     if DEBUG_PLANNING >= debug_level::TREE {
@@ -174,7 +180,7 @@ pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
         }
         return Ok((None, 0.0));
     }
-    let mut moves = Vec::with_capacity(17);
+    let mut moves = std::mem::take(&mut all_moves[depth as usize]);
     let mut best = None;
     let mut debug_best_plan = DebugState::new();
     for i in 0..pieces.len() {
@@ -192,7 +198,7 @@ pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
             possible_moves_matrix_mut(
                 i, &pieces, board_size, indexes, ever_moved, &mut moves,
             );
-            for movement in &moves {
+            for movement in &*moves {
                 let mut debug_here = DebugState::new();
                 let movement = *movement;
                 let is_better = evaluate_movement::<DEBUG_PLANNING>(
@@ -207,6 +213,7 @@ pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
                     ever_moved,
                     pieces,
                     indexes,
+                    all_moves,
                     &mut debug_here,
                 )?;
                 if is_better && DEBUG_PLANNING >= debug_level::PLAN {
@@ -220,12 +227,14 @@ pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
                         overall_score = -overall_score;
                     }
                     if *score > overall_score {
+                        all_moves[depth as usize] = std::mem::take(&mut moves);
                         return Ok((Some((*i, *movement)), *score));
                     }
                 }
             }
         }
     }
+    all_moves[depth as usize] = std::mem::take(&mut moves);
     if let Some((best_i, best_move, best_score)) = best {
         if DEBUG_PLANNING >= debug_level::CONCISE {
             println!(
@@ -259,6 +268,7 @@ fn evaluate_movement<const DEBUG_PLANNING: i32>(
     ever_moved: &mut EverMoved,
     pieces: &mut Vec<Piece>,
     indexes: &mut PieceIndexes,
+    all_moves: &mut Vec<Vec<ICoord>>,
     debug: &mut DebugState,
 ) -> AnyResult<bool> {
     if DEBUG_PLANNING >= debug_level::VERBOSE {
@@ -303,6 +313,7 @@ fn evaluate_movement<const DEBUG_PLANNING: i32>(
                         best,
                         ever_moved,
                         indexes,
+                        all_moves,
                         debug,
                     )?;
                     if piece_change != 0.0 {
@@ -374,6 +385,7 @@ fn evaluate_movement<const DEBUG_PLANNING: i32>(
                     &best,
                     ever_moved,
                     indexes,
+                    all_moves,
                     debug,
                 )?;
 
@@ -904,6 +916,6 @@ mod tests {
             ]
         )
         // latest:
-        // For depth 6 took: 4530.082ms
+        // For depth 6 took: 4300 ms
     }
 }
