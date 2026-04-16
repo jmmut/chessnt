@@ -4,9 +4,9 @@ use crate::world::board::tracking::EverMoved;
 use crate::world::board::{Board, PieceIndex, PieceIndexSmall};
 use crate::world::bot::{Plan, PlanSelect};
 use crate::world::moves::{
-    Move, Moveset, Occupied, PieceIndexes, board_to_str_indent, checked_index_at, index_at,
+    Move, Moveset, PieceIndexes, board_to_str_indent, checked_index_at, index_at,
     pieces_to_str, possible_moves, possible_moves_matrix_mut, print_pieces, set_index_at,
-    to_occupied_matrix, to_piece_index_matrix_small,
+    to_piece_index_matrix_small,
 };
 use crate::world::piece::Piece;
 use crate::world::team::Team;
@@ -117,7 +117,6 @@ fn choose_target_inner_depth_plan<const DEBUG_PLANNING: i32>(
             EVALUATIONS = 0;
         }
     }
-    let mut occupied = to_occupied_matrix(pieces, board_size);
     let mut indexes = to_piece_index_matrix_small(pieces, board_size);
     let mut ever_moved = ever_moved.clone();
     if let (Some((i, movement)), score) = choose_target_score_mut::<DEBUG_PLANNING>(
