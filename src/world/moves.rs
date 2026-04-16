@@ -341,7 +341,7 @@ fn get_pawn_attacks_mut(
     }
     let piece_pos = pieces[piece_index].initial_pos;
     let team = pieces[piece_index].team;
-    let direction = ICoord::new_i(if team.is_white() { -1 } else { 1 }, 0);
+    let direction = get_direction(team);
 
     add_if_enemy_is_at(
         ICoord::new_i(0, 1),
@@ -365,6 +365,15 @@ fn get_pawn_attacks_mut(
         piece_pos,
         direction,
     );
+}
+
+fn get_direction(team: Team) -> ICoord {
+    let direction = get_direction_sideways(team, 0);
+    direction
+}
+fn get_direction_sideways(team: Team, row_diff: i32) -> ICoord {
+    let direction = ICoord::new_i(if team.is_white() { -1 } else { 1 }, row_diff);
+    direction
 }
 
 fn get_rook_positions_mut(
@@ -459,7 +468,7 @@ fn add_castle(
             match allowed_castle {
                 AllowedCastle::Yes => {
                     let targets = [piece.initial_pos, adjacent, jump];
-                    if !is_any_attacked(&targets, team, pieces, board_size, &SKIP_CASTLE, indexes) {
+                    if !is_any_attacked_2(&targets, team, pieces, board_size, &SKIP_CASTLE, indexes) {
                         positions.push(jump);
                     }
                 }
@@ -468,7 +477,7 @@ fn add_castle(
                             && index_at(rook_close, indexes).is_none()
                             && ever_moved.castle_allowed_rook_pos(team, rook_far, pieces) == AllowedCastle::Yes {
                         let targets = [piece.initial_pos, adjacent, jump];
-                        if !is_any_attacked(&targets, team, pieces, board_size, &SKIP_CASTLE, indexes) {
+                        if !is_any_attacked_2(&targets, team, pieces, board_size, &SKIP_CASTLE, indexes) {
                             positions.push(jump);
                         }
                     }
@@ -591,6 +600,41 @@ fn add_direction(
     }
 }
 
+fn is_reachable_direction(
+    target: ICoord,
+    piece: &Piece,
+    board_size: ICoord,
+    indexes: &PieceIndexes,
+    delta: ICoord,
+) -> bool {
+    let mut test = piece.initial_pos;
+    for _ in 0..8 {
+        test += delta;
+        if target == test {
+            return true;
+        } else {
+            if inside(test, board_size) {
+                if let Some(_other_index) = index_at(test, indexes) {
+                    // if piece.team == pieces[other_index as usize].team {
+                    //     // blocked by my team
+                    //     return false;
+                    // } else {
+                    //     // blocked by a different piece of the other team
+                    //     return false;
+                    // }
+                    return false;
+                } else {
+                    // continue
+                }
+            } else {
+                // reached outside of the board
+                return false;
+            }
+        }
+    }
+    false
+}
+
 pub fn inside_f(pos: Coord, board_size: ICoord) -> bool {
     pos.column >= 0.0
         && pos.column < board_size.column_f()
@@ -676,6 +720,109 @@ pub fn is_any_attacked(
         }
         false
     }
+}
+
+/// team is the attacked team
+pub fn is_any_attacked_2(
+    targets: &[ICoord],
+    team: Team,
+    pieces: &Vec<Piece>,
+    board_size: ICoord,
+    ever_moved: &EverMoved,
+    indexes: &PieceIndexes,
+) -> bool {
+    const CHESS_SIZE: ICoord = ICoord::new_i(8, 8);
+    if board_size == CHESS_SIZE {
+        for target in targets {
+            for (other_i, _other_piece) in pieces.iter().enumerate() {
+                if team != pieces[other_i].team {
+                    if can_attack(*target, other_i, pieces, board_size, indexes) {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+    } else {
+        let attacked = compute_attacked_matrix(team, pieces, board_size, ever_moved, indexes);
+        for target in targets {
+            if attacked[target.row as usize][target.column as usize] {
+                return true;
+            }
+        }
+        false
+    }
+}
+
+/// assumes the attacker is from the opposite team than the piece at target
+fn can_attack(
+    target: ICoord,
+    attacker: usize,
+    pieces: &Pieces,
+    board_size: ICoord,
+    indexes: &PieceIndexes,
+) -> bool {
+    match pieces[attacker].moveset.single() {
+        Move::Pawn => can_pawn_attack(target, attacker, pieces),
+        Move::Knight => can_knight_attack(target, attacker, pieces),
+        Move::Bishop => can_bishop_attack(target, attacker, pieces, board_size, indexes),
+        Move::Rook => can_rook_attack(target, attacker, pieces, board_size, indexes),
+        Move::Queen => {
+            can_bishop_attack(target, attacker, pieces, board_size, indexes)
+                || can_rook_attack(target, attacker, pieces, board_size, indexes)
+        }
+        Move::King => can_king_attack(target, attacker, pieces),
+    }
+}
+
+fn can_pawn_attack(target: ICoord, attacker: usize, pieces: &Pieces) -> bool {
+    let pos = pieces[attacker].initial_pos;
+    let diff = target - pos;
+    let up = get_direction_sideways(pieces[attacker].team, -1);
+    let down = get_direction_sideways(pieces[attacker].team, 1);
+    diff == up || diff == down
+}
+fn can_knight_attack(target: ICoord, attacker: usize, pieces: &Pieces) -> bool {
+    let pos = pieces[attacker].initial_pos;
+    let diff = target - pos;
+    diff.length_squared() == 5
+}
+fn can_bishop_attack(
+    target: ICoord,
+    attacker: usize,
+    pieces: &Pieces,
+    board_size: ICoord,
+    indexes: &PieceIndexes,
+) -> bool {
+    let pos = pieces[attacker].initial_pos;
+    let diff = target - pos;
+    if diff.row.abs() == diff.column.abs() {
+        let delta = ICoord::new_i(diff.column.signum(), diff.row.signum());
+        is_reachable_direction(target, &pieces[attacker], board_size, indexes, delta)
+    } else {
+        false
+    }
+}
+fn can_rook_attack(
+    target: ICoord,
+    attacker: usize,
+    pieces: &Pieces,
+    board_size: ICoord,
+    indexes: &PieceIndexes,
+) -> bool {
+    let pos = pieces[attacker].initial_pos;
+    let diff = target - pos;
+    if diff.row == 0 || diff.column == 0 {
+        let delta = ICoord::new_i(diff.column.signum(), diff.row.signum());
+        is_reachable_direction(target, &pieces[attacker], board_size, indexes, delta)
+    } else {
+        false
+    }
+}
+fn can_king_attack(target: ICoord, attacker: usize, pieces: &Pieces) -> bool {
+    let pos = pieces[attacker].initial_pos;
+    let diff = target - pos;
+    diff.length_squared() <= 2
 }
 
 /// team is the attacked team

@@ -4,8 +4,8 @@ use crate::world::board::tracking::EverMoved;
 use crate::world::board::{Board, PieceIndex, PieceIndexSmall};
 use crate::world::bot::{Plan, PlanSelect};
 use crate::world::moves::{
-    Move, Moveset, PieceIndexes, board_to_str_indent, checked_index_at, index_at,
-    pieces_to_str, possible_moves, possible_moves_matrix_mut, print_pieces, set_index_at,
+    Move, Moveset, PieceIndexes, board_to_str_indent, checked_index_at, index_at, pieces_to_str,
+    possible_moves, possible_moves_matrix_mut, print_pieces, set_index_at,
     to_piece_index_matrix_small,
 };
 use crate::world::piece::Piece;
@@ -195,9 +195,7 @@ pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
                 );
             }
             moves.clear();
-            possible_moves_matrix_mut(
-                i, &pieces, board_size, indexes, ever_moved, &mut moves,
-            );
+            possible_moves_matrix_mut(i, &pieces, board_size, indexes, ever_moved, &mut moves);
             for movement in &*moves {
                 let mut debug_here = DebugState::new();
                 let movement = *movement;
@@ -460,11 +458,7 @@ fn move_in_caches(
     set_index_at(to, Some(i as PieceIndexSmall), indexes);
 }
 
-fn kill_in_caches(
-    i: usize,
-    pieces: &mut Vec<Piece>,
-    indexes: &mut PieceIndexes,
-) -> ICoord {
+fn kill_in_caches(i: usize, pieces: &mut Vec<Piece>, indexes: &mut PieceIndexes) -> ICoord {
     pieces[i].alive = false;
     let old_killed_pos = pieces[i].initial_pos;
     pieces[i].set_pos_and_initial(Coord::new_i(0, -2));
@@ -919,9 +913,15 @@ mod tests {
                 ]
             )
         } else {
-            assert_eq!(plan.0, Some(Plan::Select(PlanSelect::new_raw(1, ICoord { column: 2, row: 0 }))));
+            assert_eq!(
+                plan.0,
+                Some(Plan::Select(PlanSelect::new_raw(
+                    1,
+                    ICoord { column: 2, row: 0 }
+                )))
+            );
         }
         // latest:
-        // For depth 6 took: 4300 ms
+        // For depth 6 took: 3100 ms
     }
 }
