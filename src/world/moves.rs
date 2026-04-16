@@ -458,8 +458,8 @@ fn add_castle(
             #[rustfmt::skip]
             match allowed_castle {
                 AllowedCastle::Yes => {
-                    let targets = vec![piece.initial_pos, adjacent, jump];
-                    if !is_any_attacked(targets, team, pieces, board_size, &SKIP_CASTLE, indexes) {
+                    let targets = [piece.initial_pos, adjacent, jump];
+                    if !is_any_attacked(&targets, team, pieces, board_size, &SKIP_CASTLE, indexes) {
                         positions.push(jump);
                     }
                 }
@@ -467,8 +467,8 @@ fn add_castle(
                     if inside(rook_far, board_size)
                             && index_at(rook_close, indexes).is_none()
                             && ever_moved.castle_allowed_rook_pos(team, rook_far, pieces) == AllowedCastle::Yes {
-                        let targets = vec![piece.initial_pos, adjacent, jump];
-                        if !is_any_attacked(targets, team, pieces, board_size, &SKIP_CASTLE, indexes) {
+                        let targets = [piece.initial_pos, adjacent, jump];
+                        if !is_any_attacked(&targets, team, pieces, board_size, &SKIP_CASTLE, indexes) {
                             positions.push(jump);
                         }
                     }
@@ -614,7 +614,7 @@ fn is_attacked(
 }
 /// team is the attacked team
 pub fn is_any_attacked(
-    targets: Vec<ICoord>,
+    targets: &[ICoord],
     team: Team,
     pieces: &Vec<Piece>,
     board_size: ICoord,
