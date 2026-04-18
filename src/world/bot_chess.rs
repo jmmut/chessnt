@@ -67,7 +67,7 @@ impl<T, const CAPACITY: usize>  Array<T, CAPACITY> {
         self.size = 0;
     }
 }
-impl<T: Clone, const CAPACITY: usize>  Array<T, CAPACITY> {
+impl<T: Clone, const CAPACITY: usize> Array<T, CAPACITY> {
     pub fn extend(&mut self, other: &Array<T, CAPACITY>) {
         debug_assert!(self.size + other.size <= CAPACITY, "Array::extend: self.size {} + other.size {} should be <= capacity {}", self.size, other.size, CAPACITY);
         for i in 0..other.size {
@@ -135,11 +135,11 @@ impl DebugState {
     //     current.extend(&array);
     // }
     pub fn update(&mut self, best_i: PieceIndex, best_move: ICoord, depth: i32) {
-            let mut tmp = Steps::default();
-            std::mem::swap(&mut tmp, &mut self.current_plan(depth));
-            tmp.push((best_i, best_move));
-            tmp.extend(&*self.best_plan(depth - 1));
-            std::mem::swap(&mut tmp, &mut self.current_plan(depth));
+        // safety: the best and current arrays don't overlap and never get reallocated
+        let best = &raw const *self.best_plan(depth - 1);
+        let current = self.current_plan(depth);
+        current.push((best_i, best_move));
+        current.extend(&unsafe {*best});
     }
 }
 pub fn choose_target(board: &Board, team: Team) -> AnyResult<Option<Plan>> {
