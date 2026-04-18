@@ -36,8 +36,8 @@ pub type Score = f32;
 pub type Steps = Vec<(PieceIndex, ICoord)>;
 
 pub struct DebugState {
-    current_plan: Vec<Steps>,
-    best_plan: Vec<Steps>,
+    plans: [Vec<Steps>; 2],
+    actives: Vec<bool>,
 }
 impl DebugState {
     pub fn new(depth: i32) -> Self {
@@ -48,12 +48,21 @@ impl DebugState {
             best_plan.push(Vec::with_capacity(10));
         }
         Self {
-            current_plan,
-            best_plan,
+            plans: [current_plan, best_plan],
+            actives: vec![false; (depth + 1) as usize]
         }
     }
+    pub fn current_plan(&mut self, depth: i32) -> &mut Steps {
+        &mut self.plans[self.actives[depth as usize] as usize][depth as usize]
+    }
+    pub fn best_plan(&mut self, depth: i32) -> &mut Steps {
+        &mut self.plans[!self.actives[depth as usize] as usize][depth as usize]
+    }
+    pub fn swap(&mut self, depth: i32) {
+        self.actives[depth as usize] = !self.actives[depth as usize];
+    }
     pub fn overall_best_plan(&self) -> &Steps {
-        self.current_plan.last().unwrap()
+        self.plans[*self.actives.last().unwrap() as usize].last().unwrap()
     }
 }
 pub fn choose_target(board: &Board, team: Team) -> AnyResult<Option<Plan>> {
@@ -196,7 +205,7 @@ pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
     }
     let mut moves = std::mem::take(&mut all_moves[depth as usize]);
     let mut best = None;
-    debug.best_plan[(depth -1) as usize].clear();
+    debug.best_plan(depth -1).clear();
     for i in 0..pieces.len() {
         if pieces[i].team == team && pieces[i].alive {
             if DEBUG_PLANNING >= debug_level::CONCISE {
@@ -211,7 +220,7 @@ pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
             moves.clear();
             possible_moves_matrix_mut(i, &pieces, board_size, indexes, ever_moved, &mut moves);
             for movement in &*moves {
-                debug.current_plan[(depth -1) as usize].clear();
+                debug.current_plan(depth -1).clear();
                 let movement = *movement;
                 let is_better = evaluate_movement::<DEBUG_PLANNING>(
                     movement,
@@ -229,7 +238,7 @@ pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
                     debug,
                 )?;
                 if is_better && DEBUG_PLANNING >= debug_level::PLAN {
-                    std::mem::swap(&mut debug.best_plan[(depth -1) as usize], &mut debug.current_plan[(depth -1) as usize]);
+                    debug.swap(depth - 1);
                 }
                 if let (Some((overall_i, _, overall_score)), Some((i, movement, score))) =
                     (overall_best, &best)
@@ -259,11 +268,11 @@ pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
             )
         }
         if DEBUG_PLANNING >= debug_level::PLAN {
-            debug.current_plan[depth as usize].push((best_i, best_move));
             let mut tmp = Vec::new();
-            std::mem::swap(&mut tmp, &mut debug.current_plan[depth as usize]);
-            tmp.extend(&debug.best_plan[(depth -1) as usize]);
-            std::mem::swap(&mut tmp, &mut debug.current_plan[depth as usize]);
+            std::mem::swap(&mut tmp, &mut debug.current_plan(depth));
+            tmp.push((best_i, best_move));
+            tmp.extend(&*debug.best_plan(depth - 1));
+            std::mem::swap(&mut tmp, &mut debug.current_plan(depth));
         }
         Ok((Some((best_i, best_move)), best_score))
     } else {
