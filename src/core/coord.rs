@@ -179,7 +179,7 @@ pub fn fmt_vec2(v: Vec2) -> String {
     format!("[{:7.4}, {:7.4}]", v.x, v.y)
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub struct ICoord {
     pub column: i32,
     pub row: i32,

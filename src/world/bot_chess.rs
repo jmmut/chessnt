@@ -43,6 +43,14 @@ pub struct Array<T, const CAPACITY: usize> {
     size: usize,
     elements: [T; CAPACITY],
 }
+impl<T: Default + Copy, const CAPACITY: usize> Default for Array<T, CAPACITY> {
+    fn default() -> Self {
+        Self {
+            size: Default::default(),
+            elements: [T::default(); CAPACITY],
+        }
+    }
+}
 impl<T, const CAPACITY: usize>  Array<T, CAPACITY> {
     pub fn from_size(size: usize, elements: [T; CAPACITY]) -> Self {
         Self {
@@ -120,11 +128,18 @@ impl DebugState {
     pub fn overall_best_plan(&self) -> &Steps {
         &self.plans[self.actives[self.depth as usize] as usize][self.depth as usize]
     }
+    // pub fn update(&mut self, best_i: PieceIndex, best_move: ICoord, depth: i32) {
+    //     let array = self.plans[!self.actives[(depth - 1) as usize] as usize][(depth - 1) as usize];
+    //     let current = self.current_plan(depth);
+    //     current.push((best_i, best_move));
+    //     current.extend(&array);
+    // }
     pub fn update(&mut self, best_i: PieceIndex, best_move: ICoord, depth: i32) {
-        let array = self.plans[!self.actives[(depth - 1) as usize] as usize][(depth - 1) as usize];
-        let current = self.current_plan(depth);
-        current.push((best_i, best_move));
-        current.extend(&array);
+            let mut tmp = Steps::default();
+            std::mem::swap(&mut tmp, &mut self.current_plan(depth));
+            tmp.push((best_i, best_move));
+            tmp.extend(&*self.best_plan(depth - 1));
+            std::mem::swap(&mut tmp, &mut self.current_plan(depth));
     }
 }
 pub fn choose_target(board: &Board, team: Team) -> AnyResult<Option<Plan>> {
