@@ -1,3 +1,5 @@
+use std::ops::Index;
+use std::slice::SliceIndex;
 use crate::AnyResult;
 use crate::core::coord::{Coord, ICoord};
 use crate::world::board::tracking::EverMoved;
@@ -33,23 +35,77 @@ pub const DEBUG_PLANNING_GLOBAL: i32 = debug_level::CONCISE;
 pub const DEBUG_PLANNING_GLOBAL: i32 = debug_level::PLAN;
 
 pub type Score = f32;
-pub type Steps = Vec<(PieceIndex, ICoord)>;
+const MAX_DEPTH: usize = 10;
+pub type Steps = Array<(PieceIndex, ICoord), MAX_DEPTH>;
 
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct Array<T, const CAPACITY: usize> {
+    size: usize,
+    elements: [T; CAPACITY],
+}
+impl<T, const CAPACITY: usize>  Array<T, CAPACITY> {
+    pub fn from_size(size: usize, elements: [T; CAPACITY]) -> Self {
+        Self {
+            size,
+            elements,
+        }
+    }
+    pub fn push(&mut self, element: T) {
+        debug_assert!(self.size < CAPACITY, "Array::push: size {} should be smaller than capacity {}", self.size, CAPACITY);
+        self.elements[self.size] = element;
+        self.size += 1;
+    }
+    pub fn clear(&mut self) {
+        self.size = 0;
+    }
+}
+impl<T: Clone, const CAPACITY: usize>  Array<T, CAPACITY> {
+    pub fn extend(&mut self, other: &Array<T, CAPACITY>) {
+        debug_assert!(self.size + other.size <= CAPACITY, "Array::extend: self.size {} + other.size {} should be <= capacity {}", self.size, other.size, CAPACITY);
+        for i in 0..other.size {
+            self.elements[self.size + i] = other.elements[i].clone();
+        }
+        self.size += other.size;
+    }
+}
+// impl<'a ,T: Clone, const N: usize> Index<Range<usize>> for Array<T, N> {
+//     type Output = &'a [T];
+//     fn index(&'a self, index: Range<usize>) -> Self::Output {
+//         &self.elements[index]
+//     }
+// }
+impl<'a, T: Clone, I: SliceIndex<[T]>, const CAPACITY: usize> Index<I> for Array<T, CAPACITY> {
+    // type Output = T;
+    type Output = <[T] as Index<I>>::Output;
+
+    #[inline(always)]
+    fn index(&self, index: I) -> &Self::Output {
+        self.elements.index(index)
+    }
+}
+
+impl<T: Clone, const N: usize> From<[T; N]> for Array<T, N> {
+    fn from(value: [T; N]) -> Self {
+        Self {
+            size: 0,
+            elements: value,
+        }
+    }
+}
 pub struct DebugState {
-    plans: [Vec<Steps>; 2],
-    actives: Vec<bool>,
+    plans: [[Steps; MAX_DEPTH]; 2],
+    actives: [bool; MAX_DEPTH],
+    depth: i32,
 }
 impl DebugState {
     pub fn new(depth: i32) -> Self {
-        let mut current_plan = Vec::new();
-        let mut best_plan = Vec::new();
-        for _ in 0..(depth+1) {
-            current_plan.push(Vec::with_capacity(10));
-            best_plan.push(Vec::with_capacity(10));
-        }
+        let steps = [(0, ICoord::new_i(0, 0));10].into();
+        let current_plan = [steps ;10];
+        let best_plan = [steps; 10];
         Self {
             plans: [current_plan, best_plan],
-            actives: vec![false; (depth + 1) as usize]
+            actives: [false; MAX_DEPTH],
+            depth,
         }
     }
     pub fn current_plan(&mut self, depth: i32) -> &mut Steps {
@@ -62,7 +118,13 @@ impl DebugState {
         self.actives[depth as usize] = !self.actives[depth as usize];
     }
     pub fn overall_best_plan(&self) -> &Steps {
-        self.plans[*self.actives.last().unwrap() as usize].last().unwrap()
+        &self.plans[self.actives[self.depth as usize] as usize][self.depth as usize]
+    }
+    pub fn update(&mut self, best_i: PieceIndex, best_move: ICoord, depth: i32) {
+        let array = self.plans[!self.actives[(depth - 1) as usize] as usize][(depth - 1) as usize];
+        let current = self.current_plan(depth);
+        current.push((best_i, best_move));
+        current.extend(&array);
     }
 }
 pub fn choose_target(board: &Board, team: Team) -> AnyResult<Option<Plan>> {
@@ -268,11 +330,7 @@ pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
             )
         }
         if DEBUG_PLANNING >= debug_level::PLAN {
-            let mut tmp = Vec::new();
-            std::mem::swap(&mut tmp, &mut debug.current_plan(depth));
-            tmp.push((best_i, best_move));
-            tmp.extend(&*debug.best_plan(depth - 1));
-            std::mem::swap(&mut tmp, &mut debug.current_plan(depth));
+            debug.update(best_i, best_move, depth);
         }
         Ok((Some((best_i, best_move)), best_score))
     } else {
@@ -929,14 +987,18 @@ mod tests {
         if CHOSEN_DEBUG_LEVEL >= debug_level::PLAN {
             assert_eq!(
                 debug.overall_best_plan(),
-                &vec![
+                &Array::from_size(6, [
                     (1, ICoord { column: 2, row: 0 }),
                     (2, ICoord { column: 6, row: 0 }),
                     (3, ICoord { column: 2, row: 2 }),
                     (2, ICoord { column: 5, row: 0 }),
                     (0, ICoord { column: 1, row: 0 }),
-                    (2, ICoord { column: 2, row: 0 })
-                ]
+                    (2, ICoord { column: 2, row: 0 }),
+                    (0, ICoord { column: 0, row: 0 }),
+                    (0, ICoord { column: 0, row: 0 }),
+                    (0, ICoord { column: 0, row: 0 }),
+                    (0, ICoord { column: 0, row: 0 }),
+                ]),
             )
         } else {
             assert_eq!(
@@ -949,5 +1011,38 @@ mod tests {
         }
         // latest:
         // For depth 6 took: 3100 ms
+    }
+
+    #[test]
+    fn test_array_push() {
+        let mut a: Array<_, _> = [0; 4].into();
+        a.push(1);
+        assert_eq!(a, Array {
+            size: 1,
+            elements: [1, 0, 0, 0],
+        });
+        assert_eq!(a[0..1], [1]);
+        a.push(2);
+        assert_eq!(a, Array {
+            size: 2,
+            elements: [1, 2, 0, 0],
+        });
+        assert_eq!(a[0..2], [1, 2]);
+    }
+    #[test]
+    fn test_array_extend() {
+        let mut a: Array<_, _> = [0; 4].into();
+        a.push(1);
+        a.push(2);
+
+        let mut b: Array<_, _> = [0; 4].into();
+        b.push(3);
+        b.push(4);
+
+        a.extend(&b);
+        assert_eq!(a, Array {
+            size: 4,
+            elements: [1, 2,3, 4],
+        });
     }
 }
