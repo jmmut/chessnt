@@ -33,22 +33,36 @@ pub const DEBUG_PLANNING_GLOBAL: i32 = debug_level::CONCISE;
 pub const DEBUG_PLANNING_GLOBAL: i32 = debug_level::PLAN;
 
 pub type Score = f32;
+pub type Steps = Vec<(PieceIndex, ICoord)>;
 
 pub struct DebugState {
-    plan: Vec<(PieceIndex, ICoord)>,
+    current_plan: Vec<Steps>,
+    best_plan: Vec<Steps>,
 }
 impl DebugState {
-    pub fn new() -> Self {
-        Self { plan: Vec::new() }
+    pub fn new(depth: i32) -> Self {
+        let mut current_plan = Vec::new();
+        let mut best_plan = Vec::new();
+        for _ in 0..(depth+1) {
+            current_plan.push(Vec::with_capacity(10));
+            best_plan.push(Vec::with_capacity(10));
+        }
+        Self {
+            current_plan,
+            best_plan,
+        }
+    }
+    pub fn overall_best_plan(&self) -> &Steps {
+        self.current_plan.last().unwrap()
     }
 }
 pub fn choose_target(board: &Board, team: Team) -> AnyResult<Option<Plan>> {
     let start = get_time();
     let in_check = board.is_in_check(team).is_some();
-    let mut debug = DebugState::new();
     if board.referee.turn != team && !in_check {
         Ok(None)
     } else {
+        let mut debug = DebugState::new(PLANNING_DEPTH);
         let plan_score = choose_target_board_depth::<DEBUG_PLANNING_GLOBAL>(
             board,
             team,
@@ -97,7 +111,7 @@ pub fn choose_target_inner_depth<const DEBUG_PLANNING: i32>(
     turn: Team,
     depth: i32,
 ) -> AnyResult<(Option<Plan>, Option<Score>)> {
-    let mut debug = DebugState::new();
+    let mut debug = DebugState::new(depth);
     choose_target_inner_depth_plan::<DEBUG_PLANNING>(
         team, &pieces, board_size, ever_moved, turn, depth, &mut debug,
     )
@@ -140,7 +154,7 @@ fn choose_target_inner_depth_plan<const DEBUG_PLANNING: i32>(
             println!("score: {:?}", score);
         }
         if DEBUG_PLANNING >= debug_level::PLAN {
-            println!("plan steps: {:?}", debug.plan);
+            println!("plan steps: {:?}", debug.overall_best_plan());
         }
         Ok((Some(PlanSelect::new(i, movement)), Some(score)))
     } else if team == turn {
@@ -182,7 +196,7 @@ pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
     }
     let mut moves = std::mem::take(&mut all_moves[depth as usize]);
     let mut best = None;
-    let mut debug_best_plan = DebugState::new();
+    debug.best_plan[(depth -1) as usize].clear();
     for i in 0..pieces.len() {
         if pieces[i].team == team && pieces[i].alive {
             if DEBUG_PLANNING >= debug_level::CONCISE {
@@ -197,7 +211,7 @@ pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
             moves.clear();
             possible_moves_matrix_mut(i, &pieces, board_size, indexes, ever_moved, &mut moves);
             for movement in &*moves {
-                let mut debug_here = DebugState::new();
+                debug.current_plan[(depth -1) as usize].clear();
                 let movement = *movement;
                 let is_better = evaluate_movement::<DEBUG_PLANNING>(
                     movement,
@@ -212,10 +226,10 @@ pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
                     pieces,
                     indexes,
                     all_moves,
-                    &mut debug_here,
+                    debug,
                 )?;
                 if is_better && DEBUG_PLANNING >= debug_level::PLAN {
-                    debug_best_plan = debug_here;
+                    std::mem::swap(&mut debug.best_plan[(depth -1) as usize], &mut debug.current_plan[(depth -1) as usize]);
                 }
                 if let (Some((overall_i, _, overall_score)), Some((i, movement, score))) =
                     (overall_best, &best)
@@ -245,8 +259,11 @@ pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
             )
         }
         if DEBUG_PLANNING >= debug_level::PLAN {
-            debug.plan.push((best_i, best_move));
-            debug.plan.extend(debug_best_plan.plan);
+            debug.current_plan[depth as usize].push((best_i, best_move));
+            let mut tmp = Vec::new();
+            std::mem::swap(&mut tmp, &mut debug.current_plan[depth as usize]);
+            tmp.extend(&debug.best_plan[(depth -1) as usize]);
+            std::mem::swap(&mut tmp, &mut debug.current_plan[depth as usize]);
         }
         Ok((Some((best_i, best_move)), best_score))
     } else {
@@ -847,14 +864,14 @@ mod tests {
             -- -- -- -- wp wr
             -- bk -- -- -- wb
         ");
-        let mut debug = DebugState::new();
+        let mut debug = DebugState::new(3);
         let (_, score) =
             choose_target_board_depth::<{ debug_level::PLAN }>(&board, Team::White, 3, &mut debug)
                 .unwrap();
         let white_pawn = find_first(Team::White, Move::Pawn, board.pieces()).unwrap();
         let black_pawn = find_first(Team::Black, Move::Pawn, board.pieces()).unwrap();
         assert_eq!(
-            (&debug.plan[0..2], score),
+            (&debug.overall_best_plan()[0..2], score),
             (
                 [
                     (white_pawn, ICoord { column: 2, row: 2 }),
@@ -864,7 +881,7 @@ mod tests {
                 Some(2.0)
             ),
             "full plan: {:?}",
-            debug.plan
+            debug.overall_best_plan(),
         )
     }
 
@@ -883,7 +900,7 @@ mod tests {
             br bp -- -- -- -- -- wr
         ");
         let depth = 6;
-        let mut debug = DebugState::new();
+        let mut debug = DebugState::new(depth);
         let start = Instant::now();
         const CHOSEN_DEBUG_LEVEL: i32 = debug_level::PLAN;
         let plan = choose_target_board_depth::<{ CHOSEN_DEBUG_LEVEL }>(
@@ -902,8 +919,8 @@ mod tests {
 
         if CHOSEN_DEBUG_LEVEL >= debug_level::PLAN {
             assert_eq!(
-                debug.plan,
-                vec![
+                debug.overall_best_plan(),
+                &vec![
                     (1, ICoord { column: 2, row: 0 }),
                     (2, ICoord { column: 6, row: 0 }),
                     (3, ICoord { column: 2, row: 2 }),
