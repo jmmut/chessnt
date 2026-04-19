@@ -735,7 +735,7 @@ pub fn is_any_attacked_2(
     const CHESS_SIZE: ICoord = ICoord::new_i(8, 8);
     if board_size == CHESS_SIZE {
         for target in targets {
-            for (other_i, _other_piece) in pieces.iter().enumerate() {
+            for other_i in 0..pieces.len() {
                 if team != pieces[other_i].team {
                     if can_attack(*target, other_i, pieces, board_size, indexes) {
                         return true;
