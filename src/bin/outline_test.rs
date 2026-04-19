@@ -17,7 +17,7 @@ async fn main() -> AnyResult<()> {
         (&fonts.text, "regular"),
         (&fonts.dev, "dev"),
     ];
-    let font_size = 32.0;
+    let font_size = 48.0;
     let mut use_material = true;
     let mut thickness: f32 = 2.0;
     loop {
@@ -39,8 +39,8 @@ async fn main() -> AnyResult<()> {
             gl_use_material(&outline);
             outline.set_uniform(SCREEN, screen);
             outline.set_uniform(OUTLINE_THICKNESS, thickness);
-            outline.set_uniform(TEXT_COLOR, vec4(1.0, 1.0, 1.0, 1.0));
-            outline.set_uniform(OUTLINE_COLOR, vec4(0.0, 0.0, 0.0, 1.0));
+            outline.set_uniform(TEXT_COLOR, vec4(0.8, 0.8, 0.9, 1.0));
+            outline.set_uniform(OUTLINE_COLOR, vec4(0.3, 0.0, 0.0, 1.0));
         }
         draw_text(
             "Some text with default font",
