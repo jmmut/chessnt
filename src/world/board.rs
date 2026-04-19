@@ -323,7 +323,7 @@ impl Board {
         self.force_deselect(selected_i, Team::Black);
         self.force_deselect(selected_i, Team::White);
         self.pieces[selected_i].alive = false;
-        if self.pieces[selected_i].moveset.contains(&Move::King) {
+        if self.pieces[selected_i].moveset.contains(Move::King) {
             self.winning_team = Some(self.pieces[selected_i].team.opposite());
         }
 

@@ -53,35 +53,36 @@ impl<T: Copy + PartialEq> Matrix<T> {
 
 #[derive(PartialEq, Clone, Debug, PartialOrd)]
 pub struct Moveset {
-    pub moves: Vec<Move>,
+    pub movement: Move,
 }
 impl Moveset {
     pub fn new(movement: Move) -> Self {
         Self {
-            moves: vec![movement],
+            movement,
         }
     }
     pub fn single(&self) -> Move {
-        *self.moves.first().unwrap()
+        self.movement
     }
-    pub fn contains(&self, movement: &Move) -> bool {
-        self.moves.contains(movement)
+    pub fn contains(&self, movement: Move) -> bool {
+        self.movement == movement
     }
-    pub fn iter(&self) -> impl Iterator<Item = &Move> {
-        self.moves.iter()
+    pub fn iter(&self) -> impl Iterator<Item = Move> {
+        [self.movement].into_iter()
     }
 }
 impl IntoIterator for Moveset {
     type Item = Move;
-    type IntoIter = <Vec<Move> as IntoIterator>::IntoIter;
+    type IntoIter = <[Move;1] as IntoIterator>::IntoIter;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.moves.into_iter()
+        [self.movement].into_iter()
     }
 }
 impl From<Vec<Move>> for Moveset {
     fn from(moves: Vec<Move>) -> Self {
-        Self { moves }
+        assert_eq!(moves.len(), 1, "more than 1 movement is unsupported! requested: {:?}", moves);
+        Self { movement: *moves.first().unwrap() }
     }
 }
 
@@ -96,7 +97,7 @@ pub enum Move {
 }
 
 pub fn moves_to_string(moveset: &Moveset) -> String {
-    let moves = moveset.moves.iter().map(|m| move_to_string(*m)).collect();
+    let moves = moveset.iter().map(|m| move_to_string(m)).collect();
     join(moves, " + ")
 }
 
@@ -184,7 +185,7 @@ pub fn possible_moves_matrix_mut(
 
 fn piece_moves_matrix_mut(
     piece_index: usize,
-    movement: &Move,
+    movement: Move,
     pieces: &Vec<Piece>,
     board_size: ICoord,
     indexes: &PieceIndexes,
