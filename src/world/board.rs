@@ -3,7 +3,7 @@ pub mod board_ui;
 pub mod tracking;
 
 use crate::AnyResult;
-use crate::core::coord::{Coord, ICoord};
+use crate::core::coord::{Coord, ICoord, ITile};
 use crate::world::board::tracking::EverMoved;
 use crate::world::moves::{
     Move, Moveset, board_to_str, compute_attackers, inside_f, pieces_to_str, possible_moves,
@@ -65,7 +65,7 @@ impl Board {
         ];
         let mut pieces = Vec::new();
         for (row, movement) in back_column.into_iter().enumerate() {
-            let row = row as i32;
+            let row = row as ITile;
             pieces.push(Piece::new(Coord::new_i(7, row), Team::White, movement));
             pieces.push(Piece::new(Coord::new_i(0, row), Team::Black, movement));
             pieces.push(Piece::new(Coord::new_i(6, row), Team::White, Move::Pawn));

@@ -11,17 +11,17 @@ impl Coord {
     pub const fn new_f(column: f32, row: f32) -> Self {
         Coord { column, row }
     }
-    pub const fn new_i(column: i32, row: i32) -> Self {
+    pub const fn new_i(column: ITile, row: ITile) -> Self {
         Coord {
             column: column as f32,
             row: row as f32,
         }
     }
-    pub fn row(&self) -> i32 {
-        self.row.floor() as i32
+    pub fn row(&self) -> ITile {
+        self.row.floor() as ITile
     }
-    pub fn column(&self) -> i32 {
-        self.column.floor() as i32
+    pub fn column(&self) -> ITile {
+        self.column.floor() as ITile
     }
     pub fn row_f(&self) -> f32 {
         self.row
@@ -69,7 +69,7 @@ impl From<ICoord> for Coord {
 }
 impl From<IVec2> for Coord {
     fn from(value: IVec2) -> Self {
-        Coord::new_i(value.x, value.y)
+        Coord::new_i(value.x as ITile, value.y as ITile)
     }
 }
 impl From<Coord> for IVec2 {
@@ -179,25 +179,26 @@ pub fn fmt_vec2(v: Vec2) -> String {
     format!("[{:7.4}, {:7.4}]", v.x, v.y)
 }
 
+pub type ITile = i16;
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub struct ICoord {
-    pub column: i32,
-    pub row: i32,
+    pub column: ITile,
+    pub row: ITile,
 }
 impl ICoord {
     pub const fn new_f(column: f32, row: f32) -> Self {
         Self {
-            column: column as i32,
-            row: row as i32,
+            column: column as ITile,
+            row: row as ITile,
         }
     }
-    pub const fn new_i(column: i32, row: i32) -> Self {
+    pub const fn new_i(column: ITile, row: ITile) -> Self {
         Self { column, row }
     }
-    pub fn row(&self) -> i32 {
+    pub fn row(&self) -> ITile {
         self.row
     }
-    pub fn column(&self) -> i32 {
+    pub fn column(&self) -> ITile {
         self.column
     }
     pub fn row_f(&self) -> f32 {
@@ -216,7 +217,7 @@ impl ICoord {
         let v: Vec2 = self.into();
         v.normalize().into()
     }
-    pub fn length_squared(self) -> i32 {
+    pub fn length_squared(self) -> ITile {
         self.row * self.row + self.column * self.column
     }
     pub fn to_vec3(&self, y: f32) -> Vec3 {
@@ -234,12 +235,12 @@ impl From<Coord> for ICoord {
 }
 impl From<IVec2> for ICoord {
     fn from(value: IVec2) -> Self {
-        ICoord::new_i(value.x, value.y)
+        ICoord::new_i(value.x as ITile, value.y as ITile)
     }
 }
 impl From<ICoord> for IVec2 {
     fn from(value: ICoord) -> Self {
-        ivec2(value.column, value.row)
+        ivec2(value.column as i32, value.row as i32)
     }
 }
 impl From<Vec2> for ICoord {
@@ -275,15 +276,15 @@ impl AddAssign<ICoord> for ICoord {
         self.row += other.row;
     }
 }
-impl Add<i32> for ICoord {
+impl Add<ITile> for ICoord {
     type Output = ICoord;
-    fn add(mut self, other: i32) -> Self::Output {
+    fn add(mut self, other: ITile) -> Self::Output {
         self += other;
         self
     }
 }
-impl AddAssign<i32> for ICoord {
-    fn add_assign(&mut self, rhs: i32) {
+impl AddAssign<ITile> for ICoord {
+    fn add_assign(&mut self, rhs: ITile) {
         self.column += rhs;
         self.row += rhs;
     }
@@ -317,10 +318,10 @@ impl Mul<ICoord> for ICoord {
         self
     }
 }
-impl Mul<i32> for ICoord {
+impl Mul<ITile> for ICoord {
     type Output = ICoord;
 
-    fn mul(mut self, other: i32) -> Self::Output {
+    fn mul(mut self, other: ITile) -> Self::Output {
         self.column *= other;
         self.row *= other;
         self
@@ -332,8 +333,8 @@ impl MulAssign<ICoord> for ICoord {
         self.row *= other.row;
     }
 }
-impl MulAssign<i32> for ICoord {
-    fn mul_assign(&mut self, other: i32) {
+impl MulAssign<ITile> for ICoord {
+    fn mul_assign(&mut self, other: ITile) {
         self.column *= other;
         self.row *= other;
     }
@@ -346,10 +347,10 @@ impl Div<ICoord> for ICoord {
         self
     }
 }
-impl Div<i32> for ICoord {
+impl Div<ITile> for ICoord {
     type Output = ICoord;
 
-    fn div(mut self, other: i32) -> Self::Output {
+    fn div(mut self, other: ITile) -> Self::Output {
         self.column /= other;
         self.row /= other;
         self
@@ -361,8 +362,8 @@ impl DivAssign<ICoord> for ICoord {
         self.row /= other.row;
     }
 }
-impl DivAssign<i32> for ICoord {
-    fn div_assign(&mut self, other: i32) {
+impl DivAssign<ITile> for ICoord {
+    fn div_assign(&mut self, other: ITile) {
         self.column /= other;
         self.row /= other;
     }

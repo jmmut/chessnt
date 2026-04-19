@@ -1,4 +1,4 @@
-use crate::core::coord::{Coord, ICoord};
+use crate::core::coord::{Coord, ICoord, ITile};
 use crate::world::board::tracking::{AllowedCastle, EverMoved};
 use crate::world::board::{PieceIndex, PieceIndexSmall};
 use crate::world::piece::{Piece, Pieces};
@@ -23,10 +23,10 @@ impl<T: Copy + PartialEq> Matrix<T> {
         (pos.row * self.board_size.column + pos.column) as usize
     }
 
-    pub fn rows(&self) -> i32 {
+    pub fn rows(&self) -> ITile {
         self.board_size.row
     }
-    pub fn columns(&self) -> i32 {
+    pub fn columns(&self) -> ITile {
         self.board_size.column
     }
     pub fn size(&self) -> ICoord {
@@ -321,7 +321,7 @@ fn add_if_enemy_is_at(
     }
 }
 
-pub fn starting_pawn_column(board_size: ICoord, team: Team) -> i32 {
+pub fn starting_pawn_column(board_size: ICoord, team: Team) -> ITile {
     if team.is_white() {
         board_size.column() - 2
     } else {
@@ -372,7 +372,7 @@ fn get_direction(team: Team) -> ICoord {
     let direction = get_direction_sideways(team, 0);
     direction
 }
-fn get_direction_sideways(team: Team, row_diff: i32) -> ICoord {
+fn get_direction_sideways(team: Team, row_diff: ITile) -> ICoord {
     let direction = ICoord::new_i(if team.is_white() { -1 } else { 1 }, row_diff);
     direction
 }
@@ -1017,7 +1017,7 @@ pub mod tests {
             let trimmed = line.trim();
             if trimmed.len() > 0 {
                 let tiles = trimmed.split_ascii_whitespace().collect::<Vec<_>>();
-                store_max(&mut max_columns, tiles.len() as i32);
+                store_max(&mut max_columns, tiles.len() as ITile);
                 for (column, tile) in tiles.iter().enumerate() {
                     let color = tile.as_bytes()[0];
                     let team = if color == b'w' {
@@ -1029,7 +1029,7 @@ pub mod tests {
                     };
                     if let Some(team) = team {
                         let piece = tile.as_bytes()[1];
-                        let coord = Coord::new_i(column as i32, line_count);
+                        let coord = Coord::new_i(column as ITile, line_count);
                         let movement = if piece == LETTER_KING {
                             Move::King
                         } else if piece == LETTER_QUEEN {
@@ -1317,7 +1317,7 @@ pub mod tests {
         for (i_row, row) in attacked.iter_mut().enumerate() {
             for (i_column, b) in row.iter_mut().enumerate() {
                 *b = is_attacked(
-                    ICoord::new_i(i_column as i32, i_row as i32),
+                    ICoord::new_i(i_column as ITile, i_row as ITile),
                     Team::White,
                     &pieces,
                     board_size,
