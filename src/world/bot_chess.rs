@@ -1,5 +1,3 @@
-use std::ops::Index;
-use std::slice::SliceIndex;
 use crate::AnyResult;
 use crate::core::coord::{Coord, ICoord};
 use crate::world::board::tracking::EverMoved;
@@ -14,6 +12,8 @@ use crate::world::piece::Piece;
 use crate::world::team::Team;
 use macroquad::logging::info;
 use macroquad::prelude::get_time;
+use std::ops::Index;
+use std::slice::SliceIndex;
 
 pub const PLANNING_DEPTH: i32 = 4;
 
@@ -51,15 +51,17 @@ impl<T: Default + Copy, const CAPACITY: usize> Default for Array<T, CAPACITY> {
         }
     }
 }
-impl<T, const CAPACITY: usize>  Array<T, CAPACITY> {
+impl<T, const CAPACITY: usize> Array<T, CAPACITY> {
     pub fn from_size(size: usize, elements: [T; CAPACITY]) -> Self {
-        Self {
-            size,
-            elements,
-        }
+        Self { size, elements }
     }
     pub fn push(&mut self, element: T) {
-        debug_assert!(self.size < CAPACITY, "Array::push: size {} should be smaller than capacity {}", self.size, CAPACITY);
+        debug_assert!(
+            self.size < CAPACITY,
+            "Array::push: size {} should be smaller than capacity {}",
+            self.size,
+            CAPACITY
+        );
         self.elements[self.size] = element;
         self.size += 1;
     }
@@ -69,7 +71,13 @@ impl<T, const CAPACITY: usize>  Array<T, CAPACITY> {
 }
 impl<T: Clone, const CAPACITY: usize> Array<T, CAPACITY> {
     pub fn extend(&mut self, other: &Array<T, CAPACITY>) {
-        debug_assert!(self.size + other.size <= CAPACITY, "Array::extend: self.size {} + other.size {} should be <= capacity {}", self.size, other.size, CAPACITY);
+        debug_assert!(
+            self.size + other.size <= CAPACITY,
+            "Array::extend: self.size {} + other.size {} should be <= capacity {}",
+            self.size,
+            other.size,
+            CAPACITY
+        );
         for i in 0..other.size {
             self.elements[self.size + i] = other.elements[i].clone();
         }
@@ -107,8 +115,8 @@ pub struct DebugState {
 }
 impl DebugState {
     pub fn new(depth: i32) -> Self {
-        let steps = [(0, ICoord::new_i(0, 0));10].into();
-        let current_plan = [steps ;10];
+        let steps = [(0, ICoord::new_i(0, 0)); 10].into();
+        let current_plan = [steps; 10];
         let best_plan = [steps; 10];
         Self {
             plans: [current_plan, best_plan],
@@ -139,7 +147,7 @@ impl DebugState {
         let best = &raw const *self.best_plan(depth - 1);
         let current = self.current_plan(depth);
         current.push((best_i, best_move));
-        current.extend(&unsafe {*best});
+        current.extend(&unsafe { *best });
     }
 }
 pub fn choose_target(board: &Board, team: Team) -> AnyResult<Option<Plan>> {
@@ -282,7 +290,7 @@ pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
     }
     let mut moves = std::mem::take(&mut all_moves[depth as usize]);
     let mut best = None;
-    debug.best_plan(depth -1).clear();
+    debug.best_plan(depth - 1).clear();
     for i in 0..pieces.len() {
         if pieces[i].team == team && pieces[i].alive {
             if DEBUG_PLANNING >= debug_level::CONCISE {
@@ -297,7 +305,7 @@ pub fn choose_target_score_mut<const DEBUG_PLANNING: i32>(
             moves.clear();
             possible_moves_matrix_mut(i, &pieces, board_size, indexes, ever_moved, &mut moves);
             for movement in &*moves {
-                debug.current_plan(depth -1).clear();
+                debug.current_plan(depth - 1).clear();
                 let movement = *movement;
                 let is_better = evaluate_movement::<DEBUG_PLANNING>(
                     movement,
@@ -1002,18 +1010,21 @@ mod tests {
         if CHOSEN_DEBUG_LEVEL >= debug_level::PLAN {
             assert_eq!(
                 debug.overall_best_plan(),
-                &Array::from_size(6, [
-                    (1, ICoord { column: 2, row: 0 }),
-                    (2, ICoord { column: 6, row: 0 }),
-                    (3, ICoord { column: 2, row: 2 }),
-                    (2, ICoord { column: 5, row: 0 }),
-                    (0, ICoord { column: 1, row: 0 }),
-                    (2, ICoord { column: 2, row: 0 }),
-                    (0, ICoord { column: 0, row: 0 }),
-                    (0, ICoord { column: 0, row: 0 }),
-                    (0, ICoord { column: 0, row: 0 }),
-                    (0, ICoord { column: 0, row: 0 }),
-                ]),
+                &Array::from_size(
+                    6,
+                    [
+                        (1, ICoord { column: 2, row: 0 }),
+                        (2, ICoord { column: 6, row: 0 }),
+                        (3, ICoord { column: 2, row: 2 }),
+                        (2, ICoord { column: 5, row: 0 }),
+                        (0, ICoord { column: 1, row: 0 }),
+                        (2, ICoord { column: 2, row: 0 }),
+                        (0, ICoord { column: 0, row: 0 }),
+                        (0, ICoord { column: 0, row: 0 }),
+                        (0, ICoord { column: 0, row: 0 }),
+                        (0, ICoord { column: 0, row: 0 }),
+                    ]
+                ),
             )
         } else {
             assert_eq!(
@@ -1032,16 +1043,22 @@ mod tests {
     fn test_array_push() {
         let mut a: Array<_, _> = [0; 4].into();
         a.push(1);
-        assert_eq!(a, Array {
-            size: 1,
-            elements: [1, 0, 0, 0],
-        });
+        assert_eq!(
+            a,
+            Array {
+                size: 1,
+                elements: [1, 0, 0, 0],
+            }
+        );
         assert_eq!(a[0..1], [1]);
         a.push(2);
-        assert_eq!(a, Array {
-            size: 2,
-            elements: [1, 2, 0, 0],
-        });
+        assert_eq!(
+            a,
+            Array {
+                size: 2,
+                elements: [1, 2, 0, 0],
+            }
+        );
         assert_eq!(a[0..2], [1, 2]);
     }
     #[test]
@@ -1055,9 +1072,12 @@ mod tests {
         b.push(4);
 
         a.extend(&b);
-        assert_eq!(a, Array {
-            size: 4,
-            elements: [1, 2,3, 4],
-        });
+        assert_eq!(
+            a,
+            Array {
+                size: 4,
+                elements: [1, 2, 3, 4],
+            }
+        );
     }
 }

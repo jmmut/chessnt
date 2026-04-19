@@ -43,11 +43,11 @@ impl<T: Copy + PartialEq> Matrix<T> {
     }
     pub fn get_any(&self, pos: ICoord) -> Option<T> {
         let i = self.index(pos);
-        unsafe {*self.inner.get_unchecked(i) }
+        unsafe { *self.inner.get_unchecked(i) }
     }
     pub fn set_any(&mut self, pos: ICoord, value: Option<T>) {
         let i = self.index(pos);
-        *unsafe {self.inner.get_unchecked_mut(i) } = value;
+        *unsafe { self.inner.get_unchecked_mut(i) } = value;
     }
 }
 
@@ -57,9 +57,7 @@ pub struct Moveset {
 }
 impl Moveset {
     pub fn new(movement: Move) -> Self {
-        Self {
-            movement,
-        }
+        Self { movement }
     }
     pub fn single(&self) -> Move {
         self.movement
@@ -73,7 +71,7 @@ impl Moveset {
 }
 impl IntoIterator for Moveset {
     type Item = Move;
-    type IntoIter = <[Move;1] as IntoIterator>::IntoIter;
+    type IntoIter = <[Move; 1] as IntoIterator>::IntoIter;
 
     fn into_iter(self) -> Self::IntoIter {
         [self.movement].into_iter()
@@ -81,8 +79,15 @@ impl IntoIterator for Moveset {
 }
 impl From<Vec<Move>> for Moveset {
     fn from(moves: Vec<Move>) -> Self {
-        assert_eq!(moves.len(), 1, "more than 1 movement is unsupported! requested: {:?}", moves);
-        Self { movement: *moves.first().unwrap() }
+        assert_eq!(
+            moves.len(),
+            1,
+            "more than 1 movement is unsupported! requested: {:?}",
+            moves
+        );
+        Self {
+            movement: *moves.first().unwrap(),
+        }
     }
 }
 
@@ -254,7 +259,7 @@ fn get_pawn_positions_mut(
 ) {
     let piece_pos = pieces[piece_index].initial_pos;
     let team = pieces[piece_index].team;
-    let direction = ICoord::new_i(if team.is_white() { -1 } else { 1 }, 0);
+    let direction = get_direction(team);
     let starting_pawn_column = starting_pawn_column(board_size, team);
     let front = direction + piece_pos;
     if inside(front, board_size) {
