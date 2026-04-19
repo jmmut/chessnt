@@ -21,6 +21,9 @@ pub mod names {
     pub const SHADOW_OFFSET: &str = "shadow_offset";
     pub const SCREEN: &str = "screen";
     pub const ANTIALIAS_STRENGTH: &str = "antialias_strength";
+    pub const OUTLINE_THICKNESS: &str = "outline_thickness";
+    pub const TEXT_COLOR: &str = "text_color";
+    pub const OUTLINE_COLOR: &str = "outline_color";
 }
 
 const FLOOR_FRAGMENT_SHADER: &'static str = include_str!("../shaders/floor_fragment.glsl");
@@ -32,10 +35,14 @@ const CHARACTER_VERTEX_SHADER: &'static str = include_str!("../shaders/character
 const ANTIALIAS_FRAGMENT_SHADER: &'static str = include_str!("../shaders/antialias_fragment.glsl");
 const ANTIALIAS_VERTEX_SHADER: &'static str = include_str!("../shaders/antialias_vertex.glsl");
 
+pub const OUTLINE_FRAGMENT_SHADER: &'static str = include_str!("../shaders/outline_fragment.glsl");
+pub const OUTLINE_VERTEX_SHADER: &'static str = include_str!("../shaders/outline_vertex.glsl");
+
 pub struct Materials {
     pub floor: Material,
     pub character: Material,
     pub antialias: Material,
+    pub outline: Material,
     pub sin_city: bool,
     pub shadow_offset: f32,
     pub antialias_enabled: bool,
@@ -53,10 +60,12 @@ pub fn init_shaders() -> AnyResult<Materials> {
     let floor = floor_shader(FLOOR_VERTEX_SHADER, FLOOR_FRAGMENT_SHADER)?;
     let character = character_shader(CHARACTER_VERTEX_SHADER, CHARACTER_FRAGMENT_SHADER)?;
     let antialias = antialias_shader(ANTIALIAS_VERTEX_SHADER, ANTIALIAS_FRAGMENT_SHADER)?;
+    let outline = outline_shader(OUTLINE_VERTEX_SHADER, OUTLINE_FRAGMENT_SHADER)?;
     Ok(Materials {
         floor,
         character,
         antialias,
+        outline,
         sin_city: false,
         shadow_offset: 0.2,
         antialias_enabled: true,
@@ -196,4 +205,32 @@ pub fn antialias_shader(vertex_code: &str, fragment_code: &str) -> AnyResult<Mat
         material_params,
     )?;
     Ok(floor)
+}
+
+pub fn outline_shader(vertex_code: &str, fragment_code: &str) -> AnyResult<Material> {
+    let material_params = MaterialParams {
+        pipeline_params: PipelineParams {
+            color_blend: Some(BlendState::new(
+                Equation::Add,
+                BlendFactor::Value(BlendValue::SourceAlpha),
+                BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
+            )),
+            ..Default::default()
+        },
+        uniforms: vec![
+            UniformDesc::new(SCREEN, UniformType::Float2),
+            UniformDesc::new(OUTLINE_THICKNESS, UniformType::Float1),
+            UniformDesc::new(TEXT_COLOR, UniformType::Float4),
+            UniformDesc::new(OUTLINE_COLOR, UniformType::Float4),
+        ],
+        textures: vec![],
+    };
+    let material = load_material(
+        ShaderSource::Glsl {
+            vertex: vertex_code,
+            fragment: fragment_code,
+        },
+        material_params,
+    )?;
+    Ok(material)
 }
