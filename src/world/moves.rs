@@ -43,11 +43,11 @@ impl<T: Copy + PartialEq> Matrix<T> {
     }
     pub fn get_any(&self, pos: ICoord) -> Option<T> {
         let i = self.index(pos);
-        self.inner[i]
+        unsafe {*self.inner.get_unchecked(i) }
     }
     pub fn set_any(&mut self, pos: ICoord, value: Option<T>) {
         let i = self.index(pos);
-        self.inner[i] = value;
+        *unsafe {self.inner.get_unchecked_mut(i) } = value;
     }
 }
 
