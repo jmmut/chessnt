@@ -7,7 +7,7 @@ use macroquad::prelude::*;
 #[macroquad::main("outline")]
 async fn main() -> AnyResult<()> {
     let outline = outline_shader(OUTLINE_VERTEX_SHADER, OUTLINE_FRAGMENT_SHADER)?;
-    let mut render_target = render_target(screen_width() as u32, screen_height() as u32);
+    let mut render_target = render_target_msaa(screen_width() as u32, screen_height() as u32);
     render_target.texture.set_filter(FilterMode::Nearest);
     let fonts = Fonts {
         titles: load_ttf_font("assets/fonts/LilitaOne-Regular.ttf").await?,

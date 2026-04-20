@@ -29,7 +29,7 @@ use macroquad::math::{Vec2, vec2};
 use macroquad::miniquad::FilterMode;
 use macroquad::prelude::{
     Conf, DrawTextureParams, RenderTarget, Texture2D, clear_background, draw_texture_ex,
-    next_frame, render_target, screen_height, screen_width,
+    next_frame, render_target, render_target_msaa, screen_height, screen_width,
 };
 use macroquad::prelude::{load_ttf_font, mouse_wheel};
 use macroquad::{Error, miniquad};
@@ -69,11 +69,7 @@ async fn fallible_main() -> AnyResult<()> {
     let mut time = Time::new_fps(Some(55.0));
     loop {
         time.tick();
-        let new_screen = vec2(screen_width(), screen_height());
-        if new_screen != screen {
-            screen = new_screen;
-            render_texture = resize(screen);
-        }
+        update_size(&mut screen, &mut render_texture);
 
         let mut messages = handle_inputs_should_exit(&mut board, &mut gamepads, &mut dev_ui)?;
         gamepads.tick();
@@ -116,9 +112,17 @@ async fn fallible_main() -> AnyResult<()> {
     Ok(())
 }
 
+fn update_size(screen: &mut Vec2, render_texture: &mut RenderTarget) {
+    let new_screen = vec2(screen_width(), screen_height());
+    if new_screen != *screen {
+        *screen = new_screen;
+        *render_texture = resize(*screen);
+    }
+}
+
 fn resize(screen: Vec2) -> RenderTarget {
-    let render_texture = render_target(screen.x as u32, screen.y as u32);
-    render_texture.texture.set_filter(FilterMode::Nearest);
+    let render_texture = render_target_msaa(screen.x as u32, screen.y as u32);
+    render_texture.texture.set_filter(FilterMode::Linear);
     render_texture
 }
 
@@ -158,7 +162,7 @@ async fn load_textures() -> AnyResult<Textures> {
 }
 pub async fn load_texture(path: &str) -> Result<Texture2D, Error> {
     let tex = macroquad::prelude::load_texture(path).await?;
-    tex.set_filter(FilterMode::Nearest);
+    tex.set_filter(FilterMode::Linear);
     Ok(tex)
 }
 

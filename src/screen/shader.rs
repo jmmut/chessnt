@@ -68,7 +68,7 @@ pub fn init_shaders() -> AnyResult<Materials> {
         outline,
         sin_city: false,
         shadow_offset: 0.2,
-        antialias_enabled: true,
+        antialias_enabled: false,
         antialias_strength: 0.25,
         refresh_shaders: RefreshShaders {
             character: false,
