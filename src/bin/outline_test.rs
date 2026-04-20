@@ -63,7 +63,7 @@ async fn main() -> AnyResult<()> {
                 render_target: Some(render_target.clone()),
                 ..Default::default()
             });
-            clear_background(Color::new(0.0, 0.0, 0.0, 0.0));
+            clear_background(Color::new(0.5, 0.7, 0.6, 0.0));
             draw_all_text(fonts_list, font_size, &mut thickness, text_color, screen);
 
             set_default_camera();

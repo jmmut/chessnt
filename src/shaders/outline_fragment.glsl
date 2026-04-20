@@ -54,5 +54,11 @@ void main() {
     }
 //    gl_FragColor = color;
 //    gl_FragColor = vec4(sampled.rgb, 1.0);
+    
+//    if (sampled.a > 0.0) {
+        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0) * sampled.a;
+//    } else {
+//        gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+//    }
 }
 
