@@ -122,7 +122,7 @@ fn update_size(screen: &mut Vec2, render_texture: &mut RenderTarget) {
 
 fn resize(screen: Vec2) -> RenderTarget {
     let render_texture = render_target_msaa(screen.x as u32, screen.y as u32);
-    render_texture.texture.set_filter(FilterMode::Linear);
+    render_texture.texture.set_filter(FilterMode::Nearest);
     render_texture
 }
 
@@ -162,7 +162,7 @@ async fn load_textures() -> AnyResult<Textures> {
 }
 pub async fn load_texture(path: &str) -> Result<Texture2D, Error> {
     let tex = macroquad::prelude::load_texture(path).await?;
-    tex.set_filter(FilterMode::Linear);
+    tex.set_filter(FilterMode::Nearest);
     Ok(tex)
 }
 
