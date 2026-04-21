@@ -95,34 +95,40 @@ void main() {
         )
     ) / (antialias_strength * 8.0 + main_coef) * 1.0;
     
-    vec4 average = (0.0
+    
+    vec4 average_5 = (0.0
         + main_coef * sampled
         + antialias_strength * (0.0
             + sampled_left * 1.0
             + sampled_right * 1.0
             + sampled_up * 1.0
             + sampled_down * 1.0
-                + sampled_left_2 * 1.0
-                + sampled_right_2 * 1.0
-                + sampled_up_2 * 1.0
-                + sampled_down_2 * 1.0
-            + sampled_up_left * 1.0
-            + sampled_up_right * 1.0
-            + sampled_down_left * 1.0
-            + sampled_down_right * 1.0
+//                + sampled_left_2 * 1.0
+//                + sampled_right_2 * 1.0
+//                + sampled_up_2 * 1.0
+//                + sampled_down_2 * 1.0
+//            + sampled_up_left * 1.0
+//            + sampled_up_right * 1.0
+//            + sampled_down_left * 1.0
+//            + sampled_down_right * 1.0
         )
-    ) / (antialias_strength * 12.0 + main_coef) *1.05;
+    ) / (antialias_strength * 4.0 + main_coef) *1.0;
     
     float edge_threshold = 0.35;
-    if (distance(sampled, average) < edge_threshold
-//        || lightness(vert_2.rgb) < edge_threshold || lightness(horiz_2.rgb) < edge_threshold
-    ) {
-        // this pixel is part of a uniform border
+//    if (distance(sampled, average) < edge_threshold
+////        || lightness(vert_2.rgb) < edge_threshold || lightness(horiz_2.rgb) < edge_threshold
+//    ) {
+//        // this pixel is part of a uniform border
+//        gl_FragColor = sampled;
+//    } else {
+//        gl_FragColor = average;
+//    }
+
+    if (distance(sampled_up_2, sampled_down_2) < 0.1 || distance(sampled_left_2, sampled_right_2) < 0.1) {
         gl_FragColor = sampled;
     } else {
-        gl_FragColor = average;
+        gl_FragColor = average_5;
     }
-
 
     //    gl_FragColor = (sampled * 6.0 + sampled_left + sampled_right + sampled_up + sampled_down) *0.125;
 //    gl_FragColor = (sampled * 14.0 + sampled_left + sampled_right) /16.0;
