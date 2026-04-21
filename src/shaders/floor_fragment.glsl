@@ -18,7 +18,7 @@ float perp_dot(vec2 a, vec2 b)  {
 }
 
 bool counter_clockwise_triangle(vec2 a, vec2 b, vec2 c)  {
-    return perp_dot((b -a ), (c - a)) >= 0.0;
+    return perp_dot((b - a), (c - a)) >= 0.0;
 }
 
 bool triangle_contains(vec2 triangle[3], vec2 point) {
@@ -45,11 +45,12 @@ void main() {
     int manhattan_distance = tile_i.x + tile_i.y;
     bool is_even = manhattan_distance / 2 * 2 == manhattan_distance;
     bool inside_radar = triangle_contains(radar, tile);
-    if (inside_radar) {
-        float blur = 1.0 - 2.0 * min2(abs(tile - floor(tile + 0.5)));
-        blur = pow(blur, (1.0 - power) * 400.0);
-        blur = blur * 0.5;
+    
+    float blur = 1.0 - 2.0 * min2(abs(tile - floor(tile + 0.5)));
+    blur = pow(blur, (1.0 - power) * 400.0);
+    blur = blur * 0.5;
         
+    if (inside_radar) {
         if (is_even) {
             gl_FragColor = lerp(color_super_black, color_super_white, blur);
         } else {
@@ -57,9 +58,9 @@ void main() {
         }
     } else {
         if (is_even ^^ inside_radar){
-            gl_FragColor = color_black;
+            gl_FragColor = lerp(color_black, color_white, blur);
         } else {
-            gl_FragColor = color_white;
+            gl_FragColor = lerp(color_white, color_black, blur);
         }
     }
 }
