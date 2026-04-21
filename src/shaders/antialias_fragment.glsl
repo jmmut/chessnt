@@ -67,29 +67,52 @@ void main() {
     vec4 vert_2 = abs(sampled_up_2 - sampled_down_2);
     vec4 horiz_2 = abs(sampled_left_2 - sampled_right_2);
     
-    float edge_threshold = 0.1;
-    if (lightness(vert.rgb) < edge_threshold || lightness(horiz.rgb) < edge_threshold
+    float main_coef = 1.0;
+//    vec4 average_8 = (0.0
+//        + main_coef * sampled
+//        + antialias_strength * (0.0
+//            + sampled_left * 1.0
+//            + sampled_right * 1.0
+//            + sampled_up * 1.0
+//            + sampled_down * 1.0
+////                + sampled_left_2 * 1.0
+////                + sampled_right_2 * 1.0
+////                + sampled_up_2 * 1.0
+////                + sampled_down_2 * 1.0
+//            + sampled_up_left * 1.0
+//            + sampled_up_right * 1.0
+//            + sampled_down_left * 1.0
+//            + sampled_down_right * 1.0
+//        )
+//    ) / (antialias_strength * 8.0 + main_coef) * 1.0;
+    
+    vec4 average = (0.0
+        + main_coef * sampled
+        + antialias_strength * (0.0
+            + sampled_left * 1.0
+            + sampled_right * 1.0
+            + sampled_up * 1.0
+            + sampled_down * 1.0
+                + sampled_left_2 * 1.0
+                + sampled_right_2 * 1.0
+                + sampled_up_2 * 1.0
+                + sampled_down_2 * 1.0
+            + sampled_up_left * 1.0
+            + sampled_up_right * 1.0
+            + sampled_down_left * 1.0
+            + sampled_down_right * 1.0
+        )
+    ) / (antialias_strength * 12.0 + main_coef) *1.05;
+    
+    float edge_threshold = 0.34;
+    if (lightness(abs(sampled - average).rgb) < edge_threshold
 //        || lightness(vert_2.rgb) < edge_threshold || lightness(horiz_2.rgb) < edge_threshold
     ) {
         // this pixel is part of a uniform border
         gl_FragColor = sampled;
     } else {
         float main_coef = 1.0;
-        gl_FragColor = (
-            sampled * main_coef
-            + sampled_left * 1.0 * antialias_strength
-            + sampled_right * 1.0 * antialias_strength
-            + sampled_up * 1.0 * antialias_strength
-            + sampled_down * 1.0 * antialias_strength
-//            + sampled_left_2 * 1.0 * antialias_strength
-//            + sampled_right_2 * 1.0 * antialias_strength
-//            + sampled_up_2 * 1.0 * antialias_strength
-//            + sampled_down_2 * 1.0 * antialias_strength
-//            + sampled_up_left * 1.0 * antialias_strength
-//            + sampled_up_right * 1.0 * antialias_strength
-//            + sampled_down_left * 1.0 * antialias_strength
-//            + sampled_down_right * 1.0 * antialias_strength
-        ) / (antialias_strength * 4.0 + main_coef);
+        gl_FragColor = average;
     }
 
 
