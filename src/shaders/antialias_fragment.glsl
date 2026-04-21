@@ -13,6 +13,15 @@ float lightness(vec3 color) {
     return (color.r + color.g + color.b) / 3.0;
 }
 
+float max3(vec3 a) {
+    return max(a.r, max(a.g, a.b));
+}
+float distance(vec4 a, vec4 b) {
+    vec3 diffs = abs(a - b).rgb;
+    float m = max3(diffs);
+    return m;
+}
+
 void main() {
     float delta = 0.01;
     vec4 sampled = texture2D(Texture, uv);
@@ -68,23 +77,23 @@ void main() {
     vec4 horiz_2 = abs(sampled_left_2 - sampled_right_2);
     
     float main_coef = 1.0;
-//    vec4 average_8 = (0.0
-//        + main_coef * sampled
-//        + antialias_strength * (0.0
-//            + sampled_left * 1.0
-//            + sampled_right * 1.0
-//            + sampled_up * 1.0
-//            + sampled_down * 1.0
-////                + sampled_left_2 * 1.0
-////                + sampled_right_2 * 1.0
-////                + sampled_up_2 * 1.0
-////                + sampled_down_2 * 1.0
-//            + sampled_up_left * 1.0
-//            + sampled_up_right * 1.0
-//            + sampled_down_left * 1.0
-//            + sampled_down_right * 1.0
-//        )
-//    ) / (antialias_strength * 8.0 + main_coef) * 1.0;
+    vec4 average_8 = (0.0
+        + main_coef * sampled
+        + antialias_strength * (0.0
+            + sampled_left * 1.0
+            + sampled_right * 1.0
+            + sampled_up * 1.0
+            + sampled_down * 1.0
+//                + sampled_left_2 * 1.0
+//                + sampled_right_2 * 1.0
+//                + sampled_up_2 * 1.0
+//                + sampled_down_2 * 1.0
+            + sampled_up_left * 1.0
+            + sampled_up_right * 1.0
+            + sampled_down_left * 1.0
+            + sampled_down_right * 1.0
+        )
+    ) / (antialias_strength * 8.0 + main_coef) * 1.0;
     
     vec4 average = (0.0
         + main_coef * sampled
@@ -104,14 +113,13 @@ void main() {
         )
     ) / (antialias_strength * 12.0 + main_coef) *1.05;
     
-    float edge_threshold = 0.34;
-    if (lightness(abs(sampled - average).rgb) < edge_threshold
+    float edge_threshold = 0.35;
+    if (distance(sampled, average) < edge_threshold
 //        || lightness(vert_2.rgb) < edge_threshold || lightness(horiz_2.rgb) < edge_threshold
     ) {
         // this pixel is part of a uniform border
         gl_FragColor = sampled;
     } else {
-        float main_coef = 1.0;
         gl_FragColor = average;
     }
 
@@ -119,4 +127,5 @@ void main() {
     //    gl_FragColor = (sampled * 6.0 + sampled_left + sampled_right + sampled_up + sampled_down) *0.125;
 //    gl_FragColor = (sampled * 14.0 + sampled_left + sampled_right) /16.0;
 //    gl_FragColor = sampled;
+//    gl_FragColor = average;
 }
