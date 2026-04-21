@@ -13,6 +13,7 @@ pub mod names {
     pub const TILES: &str = "tiles";
     pub const COLOR_WHITE: &str = "color_white";
     pub const COLOR_BLACK: &str = "color_black";
+    pub const POWER: &str = "power";
     pub const REFEREE_SAW: &str = "referee_saw";
     pub const TEAM: &str = "team";
     pub const SIN_CITY: &str = "sin_city";
@@ -47,6 +48,7 @@ pub struct Materials {
     pub shadow_offset: f32,
     pub antialias_enabled: bool,
     pub antialias_strength: f32,
+    pub floor_antialias_strength: f32,
     pub refresh_shaders: RefreshShaders,
 }
 pub struct RefreshShaders {
@@ -68,8 +70,9 @@ pub fn init_shaders() -> AnyResult<Materials> {
         outline,
         sin_city: false,
         shadow_offset: 0.2,
-        antialias_enabled: true,
+        antialias_enabled: false,
         antialias_strength: 1.0,
+        floor_antialias_strength: 0.80,
         refresh_shaders: RefreshShaders {
             character: false,
             antialias: false,
@@ -111,6 +114,11 @@ pub fn floor_shader(vertex_code: &str, fragment_code: &str) -> AnyResult<Materia
             UniformDesc {
                 name: COLOR_BLACK.to_string(),
                 uniform_type: UniformType::Float4,
+                array_count: 1,
+            },
+            UniformDesc {
+                name: POWER.to_string(),
+                uniform_type: UniformType::Float1,
                 array_count: 1,
             },
         ],

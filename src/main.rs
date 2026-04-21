@@ -29,7 +29,7 @@ use macroquad::math::{Vec2, vec2};
 use macroquad::miniquad::FilterMode;
 use macroquad::prelude::{
     Conf, DrawTextureParams, RenderTarget, Texture2D, clear_background, draw_texture_ex,
-    next_frame, render_target, render_target_msaa, screen_height, screen_width,
+    next_frame, render_target_msaa, screen_height, screen_width,
 };
 use macroquad::prelude::{load_ttf_font, mouse_wheel};
 use macroquad::{Error, miniquad};
@@ -337,6 +337,9 @@ async fn handle_ui_actions(
             }
             Message::AntialiasStrength(new_value) => {
                 theme.materials.antialias_strength = new_value;
+            }
+            Message::FloorAAStrength(new_value) => {
+                theme.materials.floor_antialias_strength = new_value;
             }
         }
     }

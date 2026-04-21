@@ -5,8 +5,8 @@ use crate::screen::render::{
     mesh_progress_bar, mesh_quad, mesh_texture_quad, mesh_triangle, mesh_vertical_texture, quad,
 };
 use crate::screen::shader::names::{
-    COLOR_BLACK, COLOR_WHITE, CURSOR_COLOR, CURSOR_ON_TOP, POSITION_X_NAME, POSITION_Y_NAME, RADAR,
-    REFEREE_SAW, SHADOW_OFFSET, SIN_CITY, TEAM, TILES,
+    COLOR_BLACK, COLOR_WHITE, CURSOR_COLOR, CURSOR_ON_TOP, POSITION_X_NAME, POSITION_Y_NAME, POWER,
+    RADAR, REFEREE_SAW, SHADOW_OFFSET, SIN_CITY, TEAM, TILES,
 };
 use crate::screen::theme::Theme;
 use crate::world::board::{Board, other_pieces_at};
@@ -209,33 +209,20 @@ impl Board {
     }
 
     fn draw_floor(&self, theme: &Theme) {
-        gl_use_material(&theme.materials.floor);
+        let floor = &theme.materials.floor;
+        gl_use_material(&floor);
         let position_in_pixels_tuple = mouse_position();
         let position_in_pixels = Vec2::new(position_in_pixels_tuple.0, position_in_pixels_tuple.1);
         let position_minus_1_to_1 =
             position_in_pixels / Vec2::new(screen_width(), screen_height()) * 2.0 - 1.0;
-        theme
-            .materials
-            .floor
-            .set_uniform(POSITION_X_NAME, position_minus_1_to_1.x);
-        theme
-            .materials
-            .floor
-            .set_uniform(POSITION_Y_NAME, position_minus_1_to_1.y);
-        theme
-            .materials
-            .floor
-            .set_uniform(TILES, self.size.into::<Vec2>());
-        theme
-            .materials
-            .floor
-            .set_uniform(COLOR_BLACK, theme.palette.tiles_black);
-        theme
-            .materials
-            .floor
-            .set_uniform(COLOR_WHITE, theme.palette.tiles_white);
+        floor.set_uniform(POSITION_X_NAME, position_minus_1_to_1.x);
+        floor.set_uniform(POSITION_Y_NAME, position_minus_1_to_1.y);
+        floor.set_uniform(TILES, self.size.into::<Vec2>());
+        floor.set_uniform(COLOR_BLACK, theme.palette.tiles_black);
+        floor.set_uniform(COLOR_WHITE, theme.palette.tiles_white);
+        floor.set_uniform(POWER, theme.materials.floor_antialias_strength);
         let radar = self.referee.radar_v2_offset();
-        theme.materials.floor.set_uniform_array(RADAR, &radar);
+        floor.set_uniform_array(RADAR, &radar);
 
         let corners = horizontal_quad(
             Coord::new_i(0, 0).to_vec3(0.0),

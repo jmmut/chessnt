@@ -227,6 +227,11 @@ impl DevUi {
         let value = theme.materials.antialias_strength;
         slider.render(value, theme, rect, &mut messages);
 
+        let text = "Floor antialias strength";
+        let slider = SliderConfig::new(text, Message::FloorAAStrength, 0.0, 1.0);
+        let value = theme.materials.floor_antialias_strength;
+        slider.render(value, theme, rect, &mut messages);
+
         let value = &mut board.piece_size.x;
         render_slider("Texture size X", theme, 0.1, 2.0, value, rect);
 

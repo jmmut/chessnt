@@ -29,6 +29,7 @@ pub enum Message {
     RotateCamera(Vec2),
     ShadowOffset(f32),
     AntialiasStrength(f32),
+    FloorAAStrength(f32),
 }
 
 impl Board {
