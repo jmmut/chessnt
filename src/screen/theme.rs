@@ -84,7 +84,7 @@ impl Theme {
                 }
             }
         }
-        // let reloaded = floor_shader(
+        // let reloaded = crate::screen::shader::floor_shader(
         //     &read_to_string("src/shaders/floor_vertex.glsl")?,
         //     &read_to_string("src/shaders/floor_fragment.glsl")?,
         // );
