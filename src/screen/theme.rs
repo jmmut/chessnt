@@ -84,6 +84,18 @@ impl Theme {
                 }
             }
         }
+        // let reloaded = floor_shader(
+        //     &read_to_string("src/shaders/floor_vertex.glsl")?,
+        //     &read_to_string("src/shaders/floor_fragment.glsl")?,
+        // );
+        // match reloaded {
+        //     Ok(ok) => {
+        //         self.materials.floor = ok;
+        //     }
+        //     Err(e) => {
+        //         println!("{}", e);
+        //     }
+        // }
         Ok(())
     }
     pub fn screen_rect(&self) -> Rect {

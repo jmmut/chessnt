@@ -17,6 +17,10 @@ float perp_dot(vec2 a, vec2 b)  {
     return (a.x * b.y) - (a.y * b.x);
 }
 
+float dot_product(vec2 a, vec2 b) {
+    return a.x * b.x + a.y * b.y;
+}
+
 bool counter_clockwise_triangle(vec2 a, vec2 b, vec2 c)  {
     return perp_dot((b - a), (c - a)) >= 0.0;
 }
@@ -36,6 +40,22 @@ float min2(vec2 a) {
 vec4 lerp(vec4 a, vec4 b, float coef) {
     return a * (1.0 - coef) + b * coef;
 }
+vec4 splat(float value) {
+    return vec4(value, value, value, 1.0);
+}
+vec4 splat2(vec2 value) {
+    return splat(value.x + value.y);
+}
+
+float distance_to_segment(vec2 a, vec2 b, vec2 point) {
+    vec2 segment_0 = b -a;
+    vec2 segment_0_unit = segment_0 / length(segment_0);
+    float dist_to_closest = dot_product(point - a, segment_0_unit);
+    vec2 closest = a + segment_0_unit * dist_to_closest;
+    float dist_to_segment =  1.0 - length(closest - point);
+    dist_to_segment = pow(dist_to_segment, 50.0);
+    return clamp(dist_to_segment, 0.0, 1.0);
+}
 
 void main() {
     vec4 color_super_black = vec4(0.0, 0.0, 0.0, 1.0);
@@ -49,18 +69,42 @@ void main() {
     float blur = 1.0 - 2.0 * min2(abs(tile - floor(tile + 0.5)));
     blur = pow(blur, (1.0 - power) * 400.0);
     blur = blur * 0.5;
-        
-    if (inside_radar) {
-        if (is_even) {
-            gl_FragColor = lerp(color_super_black, color_super_white, blur);
-        } else {
-            gl_FragColor = lerp(color_super_white, color_super_black, blur);
-        }
+    
+    vec4 color_inside;
+    vec4 color_outside;
+    if (is_even) {
+        color_inside = lerp(color_super_black, color_super_white, blur);
     } else {
-        if (is_even ^^ inside_radar){
-            gl_FragColor = lerp(color_black, color_white, blur);
-        } else {
-            gl_FragColor = lerp(color_white, color_black, blur);
-        }
+        color_inside = lerp(color_super_white, color_super_black, blur);
     }
+    if (is_even){
+        color_outside = lerp(color_black, color_white, blur);
+    } else {
+        color_outside = lerp(color_white, color_black, blur);
+    }
+    vec2 distance_sum = ((tile - radar[0]) + (tile - radar[1]) + (tile - radar[2]));
+    float dist_0 = length(tile - radar[0]);
+    float dist_1 = length(tile - radar[1]);
+    float dist_center = length(tile - (radar[0] + radar[1] + radar[2]) /3.0);
+    
+    float blur_radar = 0.0;
+    blur_radar += distance_to_segment(radar[1], radar[0], tile);
+    blur_radar += distance_to_segment(radar[2], radar[0], tile);
+    blur_radar += distance_to_segment(radar[2], radar[1], tile);
+//    blur_radar = clamp(blur_radar, 0.0, 0.5);
+    vec4 color_blur_radar = splat(blur_radar);
+    
+    if (inside_radar) {
+        gl_FragColor = color_inside + color_blur_radar;
+    } else {
+        gl_FragColor = color_outside + color_blur_radar;
+    }
+//    gl_FragColor = splat2(distance_sum);
+//    gl_FragColor = splat(dist_0);
+//    gl_FragColor = splat(dist_1);
+//    gl_FragColor = splat(dist_center);
+//    gl_FragColor = splat(blur_radar);
+//    gl_FragColor = splat(dist_to_closest * 1.0);
+//    gl_FragColor = splat(debug_dist);
+//    gl_FragColor = splat2(tile / tiles);
 }
