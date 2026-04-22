@@ -110,6 +110,7 @@ async fn fallible_main() -> AnyResult<()> {
         }
 
         time.tick_end();
+        macroquad_profiler::profiler(Default::default());
         next_frame().await
     }
     Ok(())
