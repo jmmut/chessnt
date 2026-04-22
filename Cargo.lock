@@ -101,6 +101,7 @@ dependencies = [
  "gamepads",
  "juquad",
  "macroquad",
+ "macroquad-profiler",
 ]
 
 [[package]]
@@ -357,6 +358,15 @@ dependencies = [
  "macroquad_macro",
  "miniquad",
  "quad-rand",
+]
+
+[[package]]
+name = "macroquad-profiler"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a0f3792c62d2a730a25ca837bbbdfadc7df4a54033533b9a12489f809f325e5"
+dependencies = [
+ "macroquad",
 ]
 
 [[package]]
