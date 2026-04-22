@@ -16,7 +16,7 @@ float lightness(vec3 color) {
 float max3(vec3 a) {
     return max(a.r, max(a.g, a.b));
 }
-float distance(vec4 a, vec4 b) {
+float distance_color(vec4 a, vec4 b) {
     vec3 diffs = abs(a - b).rgb;
     float m = max3(diffs);
     return m;
@@ -115,7 +115,7 @@ void main() {
     ) / (antialias_strength * 4.0 + main_coef) *1.0;
     
     float edge_threshold = 0.35;
-//    if (distance(sampled, average) < edge_threshold
+//    if (distance_color(sampled, average) < edge_threshold
 ////        || lightness(vert_2.rgb) < edge_threshold || lightness(horiz_2.rgb) < edge_threshold
 //    ) {
 //        // this pixel is part of a uniform border
@@ -124,7 +124,7 @@ void main() {
 //        gl_FragColor = average;
 //    }
 
-    if (distance(sampled_up_2, sampled_down_2) < 0.1 || distance(sampled_left_2, sampled_right_2) < 0.1) {
+    if (distance_color(sampled_up_2, sampled_down_2) < 0.1 || distance_color(sampled_left_2, sampled_right_2) < 0.1) {
         gl_FragColor = sampled;
     } else {
         gl_FragColor = average_5;
