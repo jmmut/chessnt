@@ -43,7 +43,7 @@ void main() {
     if (sampled.a == 0.0) {
         if (alpha_surrounding > 0.0) {
             float outline_alpha = alpha_surrounding / 8.0;
-            gl_FragColor = vec4(outline_color.rgb * outline_alpha, outline_alpha); 
+            gl_FragColor = vec4(outline_color.rgb, outline_alpha); 
         } else {
             gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
         }
@@ -56,7 +56,7 @@ void main() {
 //    gl_FragColor = vec4(sampled.rgb, 1.0);
     
 //    if (sampled.a > 0.0) {
-        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0) * sampled.a;
+//        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0) * sampled.a;
 //    } else {
 //        gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
 //    }
