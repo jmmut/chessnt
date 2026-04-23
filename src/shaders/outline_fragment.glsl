@@ -35,22 +35,28 @@ void main() {
         + sampled_right.a 
         + sampled_up.a 
         + sampled_down.a 
+        + sampled_left_2.a
+        + sampled_right_2.a 
+        + sampled_up_2.a 
+        + sampled_down_2.a 
         + sampled_up_left.a 
         + sampled_up_right.a
         + sampled_down_left.a 
         + sampled_down_right.a;
+    float neighbours = 12.0;
     
     if (sampled.a == 0.0) {
-        if (alpha_surrounding > 0.0) {
-            float outline_alpha = alpha_surrounding / 8.0;
-            gl_FragColor = vec4(outline_color.rgb, outline_alpha); 
-        } else {
+//        if (alpha_surrounding > 0.0) {
+//            float outline_alpha = alpha_surrounding / neighbours;
+//            gl_FragColor = vec4(outline_color.rgb, outline_alpha); 
+//        } else {
             gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
-        }
+//        }
     } else if (sampled.a == 1.0) {
         gl_FragColor = vec4(text_color.rgb, sampled.a);
     } else {
-        gl_FragColor = vec4(text_color.rgb * sampled.a + outline_color.rgb * (1.0 - sampled.a), 1.0);
+//        gl_FragColor = vec4(sampled.rgb * sampled.a + outline_color.rgb * (1.0 - sampled.a), 1.0);
+        gl_FragColor = vec4(sampled.rgb, 1.0); // bump the opacity
     }
 //    gl_FragColor = color;
 //    gl_FragColor = vec4(sampled.rgb, 1.0);
