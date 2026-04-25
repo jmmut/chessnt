@@ -46,12 +46,12 @@ void main() {
     float neighbours = 12.0;
     
     if (sampled.a == 0.0) {
-//        if (alpha_surrounding > 0.0) {
-//            float outline_alpha = alpha_surrounding / neighbours;
-//            gl_FragColor = vec4(outline_color.rgb, outline_alpha); 
-//        } else {
+        if (alpha_surrounding > 0.0) {
+            float outline_alpha = alpha_surrounding / neighbours;
+            gl_FragColor = vec4(outline_color.rgb, outline_alpha); 
+        } else {
             gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
-//        }
+        }
     } else if (sampled.a == 1.0) {
         gl_FragColor = vec4(text_color.rgb, sampled.a);
     } else {
