@@ -226,10 +226,11 @@ fn handle_inputs_should_exit(
         messages.push(Message::Zoom(false));
     }
     let control = is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl);
-    if control && is_dragging(MouseButton::Left) {
+    let meta = is_key_down(KeyCode::LeftSuper) || is_key_down(KeyCode::RightSuper);
+    if (control || meta) && is_dragging(MouseButton::Left) {
         messages.push(Message::MoveCamera(Vec2::from(mouse_delta_position())));
     }
-    if control && is_dragging(MouseButton::Right) {
+    if (control || meta) && is_dragging(MouseButton::Right) {
         messages.push(Message::RotateCamera(Vec2::from(mouse_delta_position())));
     }
     Ok(messages)
@@ -241,12 +242,10 @@ fn is_dragging(button: MouseButton) -> bool {
 
 fn draw_board_antialias(screen: Vec2, render_texture: &RenderTarget, theme: &Theme) {
     if theme.materials.antialias_enabled {
-        gl_use_material(&theme.materials.antialias);
-        theme.materials.antialias.set_uniform(SCREEN, screen);
-        theme
-            .materials
-            .antialias
-            .set_uniform(ANTIALIAS_STRENGTH, theme.materials.antialias_strength);
+        let material = &theme.materials.antialias;
+        gl_use_material(material);
+        material.set_uniform(SCREEN, screen);
+        material.set_uniform(ANTIALIAS_STRENGTH, theme.materials.antialias_strength);
     }
     draw_texture_ex(
         &render_texture.texture,

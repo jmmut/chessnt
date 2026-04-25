@@ -133,24 +133,11 @@ impl Board {
             } else {
                 (self.cursor(team).round().into::<ICoord>() == self.pieces[i].initial_pos) as i32
             };
-            theme
-                .materials
-                .character
-                .set_uniform(REFEREE_SAW, saw as i32);
-            theme
-                .materials
-                .character
-                .set_uniform(TEAM, !team.is_white() as i32);
-
-            theme
-                .materials
-                .character
-                .set_uniform(CURSOR_ON_TOP, cursor_on_top);
-
-            theme
-                .materials
-                .character
-                .set_uniform(CURSOR_COLOR, cursor_color(self.pieces[i].team, theme));
+            let material = &theme.materials.character;
+            material.set_uniform(REFEREE_SAW, saw as i32);
+            material.set_uniform(TEAM, !team.is_white() as i32);
+            material.set_uniform(CURSOR_ON_TOP, cursor_on_top);
+            material.set_uniform(CURSOR_COLOR, cursor_color(self.pieces[i].team, theme));
 
             draw_mesh(&character);
         }
