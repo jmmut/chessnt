@@ -503,6 +503,9 @@ pub fn hide_or_show(enabled: bool) -> &'static str {
 pub fn enable_or_disable(enabled: bool) -> &'static str {
     if enabled { "Disable" } else { "Enable" }
 }
+pub fn on_or_off(enabled: bool) -> &'static str {
+    if enabled { "on" } else { "off" }
+}
 pub fn do_or_not(enabled: bool, what: &str, verb: fn(bool) -> &'static str) -> String {
     format!("{} {}", what, verb(enabled))
 }

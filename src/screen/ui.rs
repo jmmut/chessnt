@@ -6,7 +6,7 @@ use juquad::lazy::{Interactable, Renderable, Style, WidgetTrait};
 use juquad::widgets::anchor::{Anchor, Horizontal, Vertical};
 use juquad::widgets::button::Button;
 use juquad::widgets::text::TextRect;
-use juquad::widgets::{Interaction, StateStyle, Widget};
+use juquad::widgets::{Coloring, Interaction, StateStyle, Widget};
 use macroquad::math::Rect;
 use macroquad::prelude::{Font, TextParams};
 
@@ -132,6 +132,26 @@ pub fn render_button_font(
     let interaction = t.interact();
     t.render_default(&theme.button_coloring());
     (t.rect(), interaction)
+}
+pub fn render_button_no_font(
+    text: &str,
+    coloring: &Coloring,
+    font_size: f32,
+    anchor: fn(Rect) -> Anchor,
+    rect: &mut Rect,
+) -> Interaction {
+    let mut t = Button::new_generic(
+        text,
+        anchor(*rect),
+        font_size,
+        None,
+        macroquad::prelude::measure_text,
+        Box::new(InputMacroquad),
+    );
+    let interaction = t.interact();
+    t.render_default(&coloring);
+    *rect = t.rect();
+    interaction
 }
 pub fn render_button_font_mut(
     text: &str,
