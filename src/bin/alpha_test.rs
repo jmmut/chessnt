@@ -8,7 +8,7 @@ use macroquad::prelude::*;
 async fn main() -> AnyResult<()> {
     let path = "assets/images/pieces/icon-w-peon.png";
     let pawn = macroquad::prelude::load_texture(path).await?;
-    pawn.set_filter(FilterMode::Linear);
+    pawn.set_filter(FilterMode::Nearest);
 
     loop {
         if is_key_pressed(KeyCode::Escape) {
