@@ -115,15 +115,10 @@ impl Board {
             draw_mesh(&mesh); // can't render cursor and figures online because of intersecting quads with transparencies
         }
 
-        gl_use_material(&theme.materials.character);
-        theme
-            .materials
-            .character
-            .set_uniform(SIN_CITY, theme.materials.sin_city as i32);
-        theme
-            .materials
-            .character
-            .set_uniform(SHADOW_OFFSET, theme.materials.shadow_offset);
+        let material = &theme.materials.character;
+        gl_use_material(material);
+        material.set_uniform(SIN_CITY, theme.materials.sin_city as i32);
+        material.set_uniform(SHADOW_OFFSET, theme.materials.shadow_offset);
         character_meshes.sort_by(|a, b| depth(&a.1).total_cmp(&depth(&b.1)));
         for (i, character) in character_meshes {
             let saw = self.referee.saw_any_piece(self.pieces(), vec![i]);
