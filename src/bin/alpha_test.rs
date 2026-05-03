@@ -18,12 +18,13 @@ async fn main() -> AnyResult<()> {
     let render_texture = render_target_msaa(screen.x as u32, screen.y as u32);
     render_texture.texture.set_filter(FilterMode::Nearest);
     let font_size = 16.0;
-    let coloring = Coloring::default();
 
-    let mut filter_texture = FilterMode::Nearest;
+    let mut filter_texture = FilterMode::Linear;
     let mut filter_target = FilterMode::Nearest;
 
-    let mut use_render_target = false;
+    let mut clear_default_camera = WHITE;
+
+    let mut use_render_target = true;
     loop {
         pawn.set_filter(filter_texture);
         render_texture.texture.set_filter(filter_target);
@@ -63,7 +64,7 @@ async fn main() -> AnyResult<()> {
         );
         if use_render_target {
             set_default_camera();
-            clear_background(WHITE);
+            clear_background(clear_default_camera);
             draw_texture_ex(
                 &render_texture.texture,
                 0.,
@@ -89,6 +90,11 @@ async fn main() -> AnyResult<()> {
             filter_target = opposite_filter(filter_target);
         }
 
+        let text = format!("clear default camera: {:?}", clear_default_camera);
+        if render_button(&text, font_size, &mut rect).is_clicked() {
+            clear_default_camera = opposite_color(clear_default_camera);
+        }
+
         next_frame().await
     }
 
@@ -104,5 +110,13 @@ fn opposite_filter(filter: FilterMode) -> FilterMode {
     match filter {
         FilterMode::Nearest => FilterMode::Linear,
         FilterMode::Linear => FilterMode::Nearest,
+    }
+}
+
+fn opposite_color(color: Color) -> Color {
+    if color.r < 0.5 {
+        Color::new(1.0, 1.0, 1.0, 0.0)
+    } else {
+        Color::new(0.0, 0.0, 0.0, 0.0)
     }
 }
