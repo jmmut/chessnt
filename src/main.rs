@@ -93,13 +93,14 @@ async fn fallible_main() -> AnyResult<()> {
             &mut bots,
             &mut gamepads,
         )?);
+        
         if handle_ui_actions(
             messages,
-            &mut board,
-            &mut bots,
             &mut time,
-            &mut camera,
             &mut theme,
+            &mut board,
+            &mut camera,
+            &mut bots,
         )
         .await?
         {
@@ -265,11 +266,11 @@ fn draw_board_antialias(screen: Vec2, render_texture: &RenderTarget, theme: &The
 
 async fn handle_ui_actions(
     messages: Vec<Message>,
-    board: &mut Board,
-    bots: &mut Bots,
     time: &mut Time,
-    camera: &mut CameraPos,
     theme: &mut Theme,
+    board: &mut Board,
+    camera: &mut CameraPos,
+    bots: &mut Bots,
 ) -> AnyResult<bool> {
     let _delta_s = time.delta_s();
     let mut should_exit = false;
