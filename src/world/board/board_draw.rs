@@ -5,8 +5,8 @@ use crate::screen::render::{
     mesh_progress_bar, mesh_quad, mesh_texture_quad, mesh_triangle, mesh_vertical_texture, quad,
 };
 use crate::screen::shader::names::{
-    COLOR_BLACK, COLOR_WHITE, CURSOR_COLOR, CURSOR_ON_TOP, POSITION_X_NAME, POSITION_Y_NAME, POWER,
-    RADAR, REFEREE_SAW, SHADOW_OFFSET, SIN_CITY, TEAM, TILES,
+    CODE_TOLERANCE, COLOR_BLACK, COLOR_WHITE, CURSOR_COLOR, CURSOR_ON_TOP, POSITION_X_NAME,
+    POSITION_Y_NAME, POWER, RADAR, REFEREE_SAW, SHADOW_OFFSET, SIN_CITY, TEAM, TILES,
 };
 use crate::screen::theme::Theme;
 use crate::world::board::{Board, other_pieces_at};
@@ -119,6 +119,7 @@ impl Board {
         gl_use_material(material);
         material.set_uniform(SIN_CITY, theme.materials.sin_city as i32);
         material.set_uniform(SHADOW_OFFSET, theme.materials.shadow_offset);
+        material.set_uniform(CODE_TOLERANCE, theme.materials.code_tolerance);
         character_meshes.sort_by(|a, b| depth(&a.1).total_cmp(&depth(&b.1)));
         for (i, character) in character_meshes {
             let saw = self.referee.saw_any_piece(self.pieces(), vec![i]);

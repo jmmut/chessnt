@@ -301,7 +301,7 @@ pub fn render_slider_msg(
         &mut value_copy,
         rect,
     );
-    if (value_copy - value).abs() > ((config.max - config.min) * 0.01).abs() {
+    if (value_copy - value).abs() > ((config.max - config.min) * 0.005).abs() {
         messages.push((config.message)(value_copy));
     }
 }

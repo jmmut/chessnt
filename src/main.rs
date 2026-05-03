@@ -18,7 +18,7 @@ use chessnt::{
 };
 use juquad::widgets::anchor::Anchor;
 use macroquad::camera::set_default_camera;
-use macroquad::color::WHITE;
+use macroquad::color::{Color, WHITE};
 use macroquad::input::{
     KeyCode, MouseButton, is_key_down, is_key_pressed, is_mouse_button_down,
     is_mouse_button_pressed, mouse_delta_position,
@@ -34,6 +34,8 @@ use macroquad::prelude::{
 use macroquad::prelude::{load_ttf_font, mouse_wheel};
 use macroquad::{Error, miniquad};
 use std::collections::HashMap;
+
+const TRANSPARENT_BLACK: Color = Color::new(0.0, 0.0, 0.0, 0.0);
 
 #[macroquad::main(window_conf)]
 async fn main() {
@@ -82,7 +84,7 @@ async fn fallible_main() -> AnyResult<()> {
         board.draw_world(&theme);
 
         set_default_camera();
-        clear_background(WHITE);
+        clear_background(TRANSPARENT_BLACK);
         draw_board_antialias(screen, &render_texture, &theme);
         messages.extend(board.draw_ui(&theme));
         messages.extend(dev_ui.draw(
@@ -93,7 +95,7 @@ async fn fallible_main() -> AnyResult<()> {
             &mut bots,
             &mut gamepads,
         )?);
-        
+
         if handle_ui_actions(
             messages,
             &mut time,
@@ -123,7 +125,7 @@ fn update_size(screen: &mut Vec2, render_texture: &mut RenderTarget) {
 
 fn resize(screen: Vec2) -> RenderTarget {
     let render_texture = render_target_msaa(screen.x as u32, screen.y as u32);
-    render_texture.texture.set_filter(FilterMode::Nearest);
+    render_texture.texture.set_filter(FilterMode::Linear);
     render_texture
 }
 
@@ -163,7 +165,7 @@ async fn load_textures() -> AnyResult<Textures> {
 }
 pub async fn load_texture(path: &str) -> Result<Texture2D, Error> {
     let tex = macroquad::prelude::load_texture(path).await?;
-    tex.set_filter(FilterMode::Nearest);
+    tex.set_filter(FilterMode::Linear);
     Ok(tex)
 }
 
@@ -334,6 +336,9 @@ async fn handle_ui_actions(
             }
             Message::ShadowOffset(new_value) => {
                 theme.materials.shadow_offset = new_value;
+            }
+            Message::CodeTolerance(new_value) => {
+                theme.materials.code_tolerance = new_value;
             }
             Message::AntialiasStrength(new_value) => {
                 theme.materials.antialias_strength = new_value;

@@ -20,6 +20,7 @@ pub mod names {
     pub const CURSOR_COLOR: &str = "cursor_color";
     pub const CURSOR_ON_TOP: &str = "cursor_on_top";
     pub const SHADOW_OFFSET: &str = "shadow_offset";
+    pub const CODE_TOLERANCE: &str = "code_tolerance";
     pub const SCREEN: &str = "screen";
     pub const ANTIALIAS_STRENGTH: &str = "antialias_strength";
     pub const OUTLINE_THICKNESS: &str = "outline_thickness";
@@ -46,6 +47,7 @@ pub struct Materials {
     pub outline: Material,
     pub sin_city: bool,
     pub shadow_offset: f32,
+    pub code_tolerance: f32,
     pub antialias_enabled: bool,
     pub antialias_strength: f32,
     pub floor_antialias_strength: f32,
@@ -70,6 +72,7 @@ pub fn init_shaders() -> AnyResult<Materials> {
         outline,
         sin_city: false,
         shadow_offset: 0.2,
+        code_tolerance: 0.4,
         antialias_enabled: false,
         antialias_strength: 1.0,
         floor_antialias_strength: 0.85,
@@ -175,6 +178,7 @@ pub fn character_shader(vertex_code: &str, fragment_code: &str) -> AnyResult<Mat
                 uniform_type: UniformType::Float1,
                 array_count: 1,
             },
+            UniformDesc::new(CODE_TOLERANCE, UniformType::Float1),
         ],
         textures: vec![],
     };

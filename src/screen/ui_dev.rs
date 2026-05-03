@@ -209,6 +209,11 @@ impl DevUi {
             render_text_dev(e, theme, rightwards(*rect));
         }
 
+        let text = "Code color tolerance";
+        let slider = SliderConfig::new(text, Message::CodeTolerance, 0.0, 1.0);
+        let value = theme.materials.code_tolerance;
+        slider.render(value, theme, rect, &mut messages);
+
         let verb = enable_or_disable(theme.materials.antialias_enabled);
         let text = format!("{} shader antialias", verb);
         if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
