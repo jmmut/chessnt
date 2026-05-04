@@ -43,7 +43,7 @@ impl Time {
         }
     }
     pub fn tick_end(&mut self) {
-        #[cfg(not(target_family = "wasm"))]
+        #[cfg(all(not(target_family = "wasm"), not(target_family = "windows")))]
         {
             if let Some(fps) = self.target_fps {
                 let last = self.last_end_s;
