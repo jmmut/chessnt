@@ -19,6 +19,7 @@ use macroquad::material::{gl_use_default_material, gl_use_material};
 use macroquad::math::{Vec2, Vec3, vec2, vec3};
 use macroquad::models::{Mesh, draw_mesh};
 use macroquad::prelude::{screen_height, screen_width};
+use macroquad::telemetry::{begin_zone, end_zone};
 
 const CURSOR_HEIGHT: f32 = 0.1;
 const SELECTION_HEIGHT: f32 = CURSOR_HEIGHT * 0.5;
@@ -28,13 +29,18 @@ const FLOOR_PIECE_HEIGHT: f32 = -RADAR_HEIGHT * 0.2;
 impl Board {
     /// assumes 3d camera is enabled
     pub fn draw_world(&self, theme: &Theme) {
+        begin_zone("chessnt referee");
         let mut meshes = Vec::new();
         meshes.extend(self.referee_meshes(theme));
         for mesh in &meshes {
             draw_mesh(mesh); // can't render cursor and figures online because of intersecting quads with transparencies
         }
         meshes.clear();
+        end_zone();
+        begin_zone("floor");
         self.draw_floor(theme);
+        end_zone();
+        begin_zone("selections");
 
         meshes.extend(self.selection_meshes(Team::White, theme));
         meshes.extend(self.selection_meshes(Team::Black, theme));
@@ -46,13 +52,18 @@ impl Board {
             draw_mesh(&mesh); // can't render cursor and figures online because of intersecting quads with transparencies
         }
         meshes.clear();
+        end_zone();
+        begin_zone("draw pieces");
         self.draw_piece_meshes(theme);
 
+        end_zone();
+        begin_zone("lights");
         meshes.extend(self.turn_light_meshes(theme));
 
         for mesh in meshes {
             draw_mesh(&mesh); // can't render cursor and figures online because of intersecting quads with transparencies
         }
+        end_zone();
     }
 
     fn selection_meshes(&self, team: Team, theme: &Theme) -> Vec<Mesh> {

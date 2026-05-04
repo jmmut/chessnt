@@ -71,7 +71,8 @@ pub fn set_3d_camera(camera: &CameraPos, texture_target: RenderTarget) {
         up: camera.up(),
         target: camera.target() + board_displacement,
         fovy: camera.fovy,
-        render_target: Some(texture_target),
+        // render_target: Some(texture_target),
+        render_target: None, //Some(texture_target),
         ..Default::default()
     });
 }

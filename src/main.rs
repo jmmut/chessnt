@@ -27,13 +27,11 @@ use macroquad::logging::info;
 use macroquad::material::{gl_use_default_material, gl_use_material};
 use macroquad::math::{Vec2, vec2};
 use macroquad::miniquad::FilterMode;
-use macroquad::prelude::{
-    Conf, DrawTextureParams, RenderTarget, Texture2D, clear_background, draw_texture_ex,
-    next_frame, render_target_msaa, screen_height, screen_width,
-};
+use macroquad::prelude::{Conf, DrawTextureParams, RenderTarget, Texture2D, clear_background, draw_texture_ex, next_frame, render_target_msaa, screen_height, screen_width, render_target};
 use macroquad::prelude::{load_ttf_font, mouse_wheel};
 use macroquad::{Error, miniquad};
 use std::collections::HashMap;
+use macroquad::telemetry::{begin_zone, end_zone};
 
 const TRANSPARENT_BLACK: Color = Color::new(0.0, 0.0, 0.0, 0.0);
 
@@ -70,6 +68,7 @@ async fn fallible_main() -> AnyResult<()> {
     let mut dev_ui = DevUi::new()?;
     let mut time = Time::new_fps(Some(55.0));
     loop {
+        begin_zone("chessnt updates");
         time.tick();
         update_size(&mut screen, &mut render_texture);
 
@@ -78,14 +77,25 @@ async fn fallible_main() -> AnyResult<()> {
         board.tick(time.delta_s());
         bots.tick(time.delta_s(), &mut board)?;
         theme.tick(time.delta_s(), screen)?;
-
+        end_zone();
+        begin_zone("chessnt draw 3d");
+        begin_zone("set camera 3d");
         set_3d_camera(&camera, render_texture.clone());
+        end_zone();
+        begin_zone("clear background");
         clear_background(theme.palette.background);
+        end_zone();
         board.draw_world(&theme);
 
+        end_zone();
+        begin_zone("chessnt draw 2d");
         set_default_camera();
-        clear_background(TRANSPARENT_BLACK);
-        draw_board_antialias(screen, &render_texture, &theme);
+        begin_zone("clear background screen");
+        // clear_background(TRANSPARENT_BLACK);
+        // clear_background(theme.palette.background);
+        // clear_background(theme.palette.background);
+        end_zone();
+        // draw_board_antialias(screen, &render_texture, &theme);
         messages.extend(board.draw_ui(&theme));
         messages.extend(dev_ui.draw(
             &time,
@@ -95,7 +105,8 @@ async fn fallible_main() -> AnyResult<()> {
             &mut bots,
             &mut gamepads,
         )?);
-
+        end_zone();
+        begin_zone("chessnt draw ui");
         if handle_ui_actions(
             messages,
             &mut time,
@@ -110,6 +121,7 @@ async fn fallible_main() -> AnyResult<()> {
         }
 
         time.tick_end();
+        end_zone();
         macroquad_profiler::profiler(Default::default());
         next_frame().await
     }
@@ -125,7 +137,7 @@ fn update_size(screen: &mut Vec2, render_texture: &mut RenderTarget) {
 }
 
 fn resize(screen: Vec2) -> RenderTarget {
-    let render_texture = render_target_msaa(screen.x as u32, screen.y as u32);
+    let render_texture = render_target(screen.x as u32, screen.y as u32);
     render_texture.texture.set_filter(FilterMode::Linear);
     render_texture
 }
