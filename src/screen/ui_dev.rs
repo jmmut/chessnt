@@ -24,8 +24,9 @@ use juquad::widgets::Interaction;
 use juquad::widgets::anchor::Anchor;
 use macroquad::color::Color;
 use macroquad::math::{Rect, Vec2};
-use macroquad::prelude::info;
+use macroquad::prelude::{draw_fps, get_fps, info};
 use std::io::Write;
+use macroquad::input::{is_key_down, KeyCode};
 use ui::below_left;
 
 #[derive(Eq, PartialEq)]
@@ -77,7 +78,12 @@ impl DevUi {
         gamepads: &mut Gamepads,
     ) -> AnyResult<Vec<Message>> {
         match self.menu {
-            DevUiMenu::Hidden => {}
+            DevUiMenu::Hidden => {
+                if is_key_down(KeyCode::F) {
+                    println!("FPS: {}", get_fps());
+                    draw_fps();
+                }
+            }
             DevUiMenu::Main => self.draw_main(theme),
             DevUiMenu::Screen => return Ok(self.draw_screen(time, theme, camera)),
             DevUiMenu::Board => return Ok(self.draw_characters(theme, board)),

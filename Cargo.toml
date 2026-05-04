@@ -12,7 +12,7 @@ juquad = { git = "https://github.com/jmmut/juquad.git", tag = "0.16.0" }
 #juquad = { path = "../juquad/" }
 gamepads = { version = "=0.1.7", default-features = false }
 #web-sys = { version = "=0.3.91", features = ["Clipboard"] }
-macroquad-profiler = "=0.2.0"
+#macroquad-profiler = "=0.2.0"
 
 #[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 #clipboard-rs = "=0.3.3"
