@@ -36,6 +36,7 @@ use macroquad::{Error, miniquad};
 use std::collections::HashMap;
 
 const TRANSPARENT_BLACK: Color = Color::new(0.0, 0.0, 0.0, 0.0);
+const TRANSPARENT_GREY: Color = Color::new(0.5, 0.5, 0.5, 0.0);
 
 #[macroquad::main(window_conf)]
 async fn main() {
@@ -84,7 +85,7 @@ async fn fallible_main() -> AnyResult<()> {
         board.draw_world(&theme);
 
         set_default_camera();
-        clear_background(TRANSPARENT_BLACK);
+        clear_background(TRANSPARENT_GREY);
         draw_board_antialias(screen, &render_texture, &theme);
         messages.extend(board.draw_ui(&theme));
         messages.extend(dev_ui.draw(

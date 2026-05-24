@@ -6,11 +6,15 @@ use juquad::lazy::add_contour;
 use juquad::widgets::{Coloring, Interaction};
 use macroquad::prelude::*;
 
-#[macroquad::main("outline")]
+#[macroquad::main("alpha test")]
 async fn main() -> AnyResult<()> {
     let path = "assets/images/pieces/icon-w-peon.png";
-    let pawn = macroquad::prelude::load_texture(path).await?;
-    pawn.set_filter(FilterMode::Nearest);
+    let pawn_white = macroquad::prelude::load_texture(path).await?;
+    pawn_white.set_filter(FilterMode::Nearest);
+
+    let path = "assets/images/pieces/icon-b-peon.png";
+    let pawn_black = macroquad::prelude::load_texture(path).await?;
+    pawn_black.set_filter(FilterMode::Nearest);
 
     let screen = vec2(screen_width(), screen_height());
     let render_texture = render_target_msaa(screen.x as u32, screen.y as u32);
@@ -25,7 +29,8 @@ async fn main() -> AnyResult<()> {
 
     let mut use_render_target = true;
     loop {
-        pawn.set_filter(filter_texture);
+        pawn_white.set_filter(filter_texture);
+        pawn_black.set_filter(filter_texture);
         render_texture.texture.set_filter(filter_target);
 
         if is_key_pressed(KeyCode::Escape) {
@@ -48,19 +53,25 @@ async fn main() -> AnyResult<()> {
         draw_rect(rect, WHITE);
         let rect = Rect::new(screen.x * 0.5, rect.y, rect.w * 0.5, rect.h);
         draw_rect(rect, BLACK);
-        let pawn_size = pawn.size() * 1.4;
+        let pawn_size = pawn_white.size() * 1.4;
         draw_texture_ex(
-            &pawn,
+            &pawn_white,
             screen.x * 0.5 - pawn_size.x * 0.5,
             screen.y * 0.0,
             WHITE,
             DrawTextureParams {
                 dest_size: Some(pawn_size),
-                source: None,
-                rotation: 0.0,
-                flip_x: false,
-                flip_y: false,
-                pivot: None,
+                ..Default::default()
+            },
+        );
+        draw_texture_ex(
+            &pawn_black,
+            screen.x * 0.5 - pawn_size.x * 0.5,
+            screen.y * 0.0 - pawn_size.y * 0.5,
+            WHITE,
+            DrawTextureParams {
+                dest_size: Some(pawn_size),
+                ..Default::default()
             },
         );
         if use_render_target {
@@ -122,16 +133,12 @@ fn opposite_color(color: Color) -> Color {
     let black = color.r < 0.5;
     let transparent = color.a < 0.5;
     if transparent {
-        if black {
-            WHITE
-        } else {
-            Color::new(0.0, 0.0, 0.0, 0.0)
-        }
+        if black { WHITE } else { BLACK }
     } else {
         if black {
-            Color::new(1.0, 1.0, 1.0, 0.0)
+            Color::new(0.0, 0.0, 0.0, 0.0)
         } else {
-            BLACK
+            Color::new(1.0, 1.0, 1.0, 0.0)
         }
     }
 }
