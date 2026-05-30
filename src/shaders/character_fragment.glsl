@@ -18,7 +18,7 @@ void main() {
     vec4 sampled = texture2D(Texture, uv);
     vec3 diff = abs(code - sampled.rgb);
     float dist = length(diff);
-    bool is_code_color = dist <= (code_tolerance * sqrt(3));
+    bool is_code_color = dist <= (code_tolerance * sqrt(3.0));
     vec3 cursor_white = vec3(0.48,0.78, 0.24);
     vec3 cursor_black = vec3(0.18, 0.59, 0.45);
 
