@@ -14,7 +14,7 @@ use chessnt::world::moves::Move;
 use chessnt::world::team::Team;
 use chessnt::{
     AnyResult, DEFAULT_FONT_SIZE, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_TITLE,
-    DEFAULT_WINDOW_WIDTH, set_3d_camera,
+    DEFAULT_WINDOW_WIDTH, PROFILER_ENABLED, Profiler, set_3d_camera,
 };
 use juquad::widgets::anchor::Anchor;
 use macroquad::camera::set_default_camera;
@@ -28,8 +28,8 @@ use macroquad::material::{gl_use_default_material, gl_use_material};
 use macroquad::math::{Vec2, vec2};
 use macroquad::miniquad::FilterMode;
 use macroquad::prelude::{
-    Conf, DrawTextureParams, RenderTarget, Texture2D, clear_background, draw_texture_ex,
-    next_frame, render_target_msaa, screen_height, screen_width,
+    Conf, DrawTextureParams, RenderTarget, RenderTargetParams, Texture2D, clear_background,
+    draw_texture_ex, next_frame, render_target_ex, render_target_msaa, screen_height, screen_width,
 };
 use macroquad::prelude::{load_ttf_font, mouse_wheel};
 use macroquad::{Error, miniquad};
@@ -46,6 +46,7 @@ async fn main() {
 }
 
 async fn fallible_main() -> AnyResult<()> {
+    let mut profiler = Profiler::new(PROFILER_ENABLED);
     let mut screen = vec2(screen_width(), screen_height());
     render_text_no_font(
         "Loading...",
@@ -69,8 +70,11 @@ async fn fallible_main() -> AnyResult<()> {
     let mut bots = Bots::new();
     let mut gamepads = Gamepads::new();
     let mut dev_ui = DevUi::new()?;
-    let mut time = Time::new_fps(Some(55.0));
+    // let mut time = Time::new_fps(Some(55.0));
+    let mut time = Time::new_fps(None);
+    profiler.end_section("Setup");
     loop {
+        let mut frame_profiler = Profiler::new(PROFILER_ENABLED);
         time.tick();
         update_size(&mut screen, &mut render_texture);
 
@@ -80,9 +84,13 @@ async fn fallible_main() -> AnyResult<()> {
         bots.tick(time.delta_s(), &mut board)?;
         theme.tick(time.delta_s(), screen)?;
 
+        frame_profiler.end_section("updates");
+
         set_3d_camera(&camera, render_texture.clone());
         clear_background(theme.palette.background);
         board.draw_world(&theme);
+
+        frame_profiler.end_section("3D graphics");
 
         set_default_camera();
         clear_background(TRANSPARENT_GREY);
@@ -96,6 +104,8 @@ async fn fallible_main() -> AnyResult<()> {
             &mut bots,
             &mut gamepads,
         )?);
+
+        frame_profiler.end_section("2D graphics");
 
         if handle_ui_actions(
             messages,
@@ -111,7 +121,9 @@ async fn fallible_main() -> AnyResult<()> {
         }
 
         time.tick_end();
-        next_frame().await
+        profiler.end_section("user frame");
+        next_frame().await;
+        profiler.end_section("macroquad frame");
     }
     Ok(())
 }
@@ -125,7 +137,16 @@ fn update_size(screen: &mut Vec2, render_texture: &mut RenderTarget) {
 }
 
 fn resize(screen: Vec2) -> RenderTarget {
-    let render_texture = render_target_msaa(screen.x as u32, screen.y as u32);
+    let render_texture = render_target_ex(
+        screen.x as u32,
+        screen.y as u32,
+        RenderTargetParams {
+            // sample_count: 13,
+            sample_count: 4,
+            // sample_count: 1,
+            depth: false,
+        },
+    );
     render_texture.texture.set_filter(FilterMode::Linear);
     render_texture
 }
@@ -431,6 +452,7 @@ fn window_conf() -> Conf {
         window_width: DEFAULT_WINDOW_WIDTH,
         window_height: DEFAULT_WINDOW_HEIGHT,
         high_dpi: true,
+        // sample_count: 13,
         platform: miniquad::conf::Platform {
             webgl_version: miniquad::conf::WebGLVersion::WebGL2,
             ..Default::default()

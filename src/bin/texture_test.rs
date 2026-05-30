@@ -1,11 +1,10 @@
-use chessnt::{AnyResult, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_TITLE, DEFAULT_WINDOW_WIDTH};
 use chessnt::screen::ui::{render_button_dev, render_button_no_font};
+use chessnt::{AnyResult, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_TITLE, DEFAULT_WINDOW_WIDTH};
 use juquad::widgets::Coloring;
 use juquad::widgets::anchor::Anchor;
 use macroquad::prelude::*;
 
 const FONT_SIZE: f32 = 16.0;
-
 
 fn window_conf() -> Conf {
     Conf {
