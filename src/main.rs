@@ -125,7 +125,7 @@ async fn fallible_main() -> AnyResult<()> {
         time.tick_end();
         frame_profiler.end_section("  handle ui actions");
         profiler.end_section("user frame");
-        macroquad_profiler::profiler(Default::default());
+        // macroquad_profiler::profiler(Default::default());
         next_frame().await;
         profiler.end_section("macroquad frame");
         profiler.separator();
@@ -158,9 +158,9 @@ fn resize(screen: Vec2) -> RenderTarget {
         screen.x as u32,
         screen.y as u32,
         RenderTargetParams {
-            sample_count: 13,
+            // sample_count: 13,
             // sample_count: 4,
-            // sample_count: 1,
+            sample_count: 1,
             depth: false,
         },
     );
