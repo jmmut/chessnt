@@ -1,6 +1,7 @@
 use macroquad::camera::{Camera3D, set_camera};
 use macroquad::color::Color;
 use macroquad::math::vec3;
+use macroquad::miniquad::date::now;
 use macroquad::prelude::RenderTarget;
 use screen::camera::CameraPos;
 use screen::ui_dev::DevUiMenu;
@@ -48,6 +49,8 @@ pub const DEFAULT_WINDOW_WIDTH: i32 = 992;
 pub const DEFAULT_WINDOW_HEIGHT: i32 = width_to_height_default(DEFAULT_WINDOW_WIDTH as f32) as i32;
 pub const DEFAULT_WINDOW_TITLE: &str = "Chessn't!";
 
+pub const PROFILER_ENABLED: bool = true;
+
 pub type AnyError = Box<dyn std::error::Error>;
 pub type AnyResult<T> = Result<T, AnyError>;
 
@@ -74,4 +77,36 @@ pub fn set_3d_camera(camera: &CameraPos, texture_target: RenderTarget) {
         render_target: Some(texture_target),
         ..Default::default()
     });
+}
+
+pub struct Profiler {
+    start: f64,
+    enabled: bool,
+}
+
+impl Profiler {
+    pub fn new(enabled: bool) -> Self {
+        if enabled {
+            Self {
+                start: now(),
+                enabled,
+            }
+        } else {
+            Self {
+                start: 0.0,
+                enabled,
+            }
+        }
+    }
+    pub fn end_section(&mut self, section_name: &str) {
+        if self.enabled {
+            let new_time = now();
+            eprintln!(
+                "section '{}' took {:.1} ms",
+                section_name,
+                (new_time - self.start) * 1000.0
+            );
+            self.start = new_time;
+        }
+    }
 }

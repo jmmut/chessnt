@@ -222,6 +222,11 @@ pub struct AllColoring {
     pub text_coloring: StateStyle,
     pub button_coloring: Coloring,
 }
+impl Default for AllColoring {
+    fn default() -> Self {
+        new_coloring()
+    }
+}
 
 const COLORING_COUNT: usize = size_of::<AllColoring>() / size_of::<StateStyle>();
 const COLORING_NAMES: [&str; COLORING_COUNT] = ["text", "at_rest", "hovered", "pressed"];

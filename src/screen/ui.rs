@@ -1,4 +1,4 @@
-use crate::screen::theme::Theme;
+use crate::screen::theme::{AllColoring, Theme};
 use crate::world::board::board_ui::Message;
 use juquad::draw::draw_rect;
 use juquad::input::input_macroquad::InputMacroquad;
@@ -6,7 +6,7 @@ use juquad::lazy::{Interactable, Renderable, Style, WidgetTrait};
 use juquad::widgets::anchor::{Anchor, Horizontal, Vertical};
 use juquad::widgets::button::Button;
 use juquad::widgets::text::TextRect;
-use juquad::widgets::{Interaction, StateStyle, Widget};
+use juquad::widgets::{Coloring, Interaction, StateStyle, Widget};
 use macroquad::math::Rect;
 use macroquad::prelude::{Font, TextParams};
 
@@ -61,6 +61,16 @@ pub fn render_text_font_size(
     font_size: f32,
     anchor: Anchor,
 ) -> Rect {
+    render_text_font_size_coloring(text, font, font_size, anchor, &theme.coloring())
+}
+
+fn render_text_font_size_coloring(
+    text: &str,
+    font: &Font,
+    font_size: f32,
+    anchor: Anchor,
+    coloring: &AllColoring,
+) -> Rect {
     let t = TextRect::new_generic(
         text,
         anchor,
@@ -68,8 +78,8 @@ pub fn render_text_font_size(
         Some(font),
         macroquad::prelude::measure_text,
     );
-    draw_rect(t.rect(), theme.coloring().text_coloring.bg_color);
-    t.render_default(&theme.coloring().text_coloring);
+    draw_rect(t.rect(), coloring.text_coloring.bg_color);
+    t.render_default(&coloring.text_coloring);
     t.rect()
 }
 
@@ -122,6 +132,26 @@ pub fn render_button_font(
     let interaction = t.interact();
     t.render_default(&theme.button_coloring());
     (t.rect(), interaction)
+}
+pub fn render_button_no_font(
+    text: &str,
+    coloring: &Coloring,
+    font_size: f32,
+    anchor: fn(Rect) -> Anchor,
+    rect: &mut Rect,
+) -> Interaction {
+    let mut t = Button::new_generic(
+        text,
+        anchor(*rect),
+        font_size,
+        None,
+        macroquad::prelude::measure_text,
+        Box::new(InputMacroquad),
+    );
+    let interaction = t.interact();
+    t.render_default(&coloring);
+    *rect = t.rect();
+    interaction
 }
 pub fn render_button_font_mut(
     text: &str,
@@ -271,7 +301,7 @@ pub fn render_slider_msg(
         &mut value_copy,
         rect,
     );
-    if (value_copy - value).abs() > ((config.max - config.min) * 0.01).abs() {
+    if (value_copy - value).abs() > ((config.max - config.min) * 0.005).abs() {
         messages.push((config.message)(value_copy));
     }
 }
@@ -283,8 +313,12 @@ pub fn render_slider(
     value: &mut f32,
     rect: &mut Rect,
 ) -> f32 {
-    let text = &format!("{}: {:>5.2}", text, value);
+    let text = &format_slider_text(text, *value);
     render_slider_fmt(text, theme, min, max, value, below_left, rect)
+}
+
+pub fn format_slider_text(text: &str, value: f32) -> String {
+    format!("{}: {:>5.2}", text, value)
 }
 
 pub fn render_slider_fmt(
@@ -296,9 +330,34 @@ pub fn render_slider_fmt(
     anchor: fn(Rect) -> Anchor,
     rect: &mut Rect,
 ) -> f32 {
-    let text_rect = render_text_dev(formatted_text, theme, anchor(*rect));
+    render_slider_raw(
+        formatted_text,
+        min,
+        max,
+        value,
+        &theme.coloring(),
+        theme.font_dev(),
+        theme.font_size_dev(),
+        anchor,
+        rect,
+    )
+}
+
+pub fn render_slider_raw(
+    formatted_text: &str,
+    min: f32,
+    max: f32,
+    value: &mut f32,
+    coloring: &AllColoring,
+    font: &Font,
+    font_size: f32,
+    anchor: fn(Rect) -> Anchor,
+    rect: &mut Rect,
+) -> f32 {
+    let text_rect =
+        render_text_font_size_coloring(formatted_text, font, font_size, anchor(*rect), &coloring);
     let mut style = Style::default();
-    style.coloring = theme.button_coloring();
+    style.coloring = coloring.button_coloring;
     let mut slider = juquad::lazy::slider::Slider::new(style, min, max, *value);
     slider.set_pos(rightwards(text_rect).get_top_left_pixel(slider.size()));
     *value = *(slider

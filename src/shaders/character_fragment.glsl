@@ -11,13 +11,14 @@ uniform int sin_city;
 uniform vec4 cursor_color;
 uniform int cursor_on_top;
 uniform float shadow_offset;
+uniform float code_tolerance;
 
 void main() {
     vec3 code = vec3(0.0, 1.0, 1.0); // cyan
     vec4 sampled = texture2D(Texture, uv);
     vec3 diff = abs(code - sampled.rgb);
     float dist = length(diff);
-    bool is_code_color = dist < 0.01;
+    bool is_code_color = dist <= (code_tolerance * sqrt(3));
     vec3 cursor_white = vec3(0.48,0.78, 0.24);
     vec3 cursor_black = vec3(0.18, 0.59, 0.45);
 

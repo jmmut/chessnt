@@ -14,11 +14,11 @@ use chessnt::world::moves::Move;
 use chessnt::world::team::Team;
 use chessnt::{
     AnyResult, DEFAULT_FONT_SIZE, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_TITLE,
-    DEFAULT_WINDOW_WIDTH, set_3d_camera,
+    DEFAULT_WINDOW_WIDTH, PROFILER_ENABLED, Profiler, set_3d_camera,
 };
 use juquad::widgets::anchor::Anchor;
 use macroquad::camera::set_default_camera;
-use macroquad::color::WHITE;
+use macroquad::color::{Color, WHITE};
 use macroquad::input::{
     KeyCode, MouseButton, is_key_down, is_key_pressed, is_mouse_button_down,
     is_mouse_button_pressed, mouse_delta_position,
@@ -28,12 +28,15 @@ use macroquad::material::{gl_use_default_material, gl_use_material};
 use macroquad::math::{Vec2, vec2};
 use macroquad::miniquad::FilterMode;
 use macroquad::prelude::{
-    Conf, DrawTextureParams, RenderTarget, Texture2D, clear_background, draw_texture_ex,
-    next_frame, render_target_msaa, screen_height, screen_width,
+    Conf, DrawTextureParams, RenderTarget, RenderTargetParams, Texture2D, clear_background,
+    draw_texture_ex, next_frame, render_target_ex, render_target_msaa, screen_height, screen_width,
 };
 use macroquad::prelude::{load_ttf_font, mouse_wheel};
 use macroquad::{Error, miniquad};
 use std::collections::HashMap;
+
+const TRANSPARENT_BLACK: Color = Color::new(0.0, 0.0, 0.0, 0.0);
+const TRANSPARENT_GREY: Color = Color::new(0.5, 0.5, 0.5, 0.0);
 
 #[macroquad::main(window_conf)]
 async fn main() {
@@ -43,6 +46,7 @@ async fn main() {
 }
 
 async fn fallible_main() -> AnyResult<()> {
+    let mut profiler = Profiler::new(PROFILER_ENABLED);
     let mut screen = vec2(screen_width(), screen_height());
     render_text_no_font(
         "Loading...",
@@ -66,8 +70,11 @@ async fn fallible_main() -> AnyResult<()> {
     let mut bots = Bots::new();
     let mut gamepads = Gamepads::new();
     let mut dev_ui = DevUi::new()?;
-    let mut time = Time::new_fps(Some(55.0));
+    // let mut time = Time::new_fps(Some(55.0));
+    let mut time = Time::new_fps(None);
+    profiler.end_section("Setup");
     loop {
+        let mut frame_profiler = Profiler::new(PROFILER_ENABLED);
         time.tick();
         update_size(&mut screen, &mut render_texture);
 
@@ -77,12 +84,16 @@ async fn fallible_main() -> AnyResult<()> {
         bots.tick(time.delta_s(), &mut board)?;
         theme.tick(time.delta_s(), screen)?;
 
+        frame_profiler.end_section("updates");
+
         set_3d_camera(&camera, render_texture.clone());
         clear_background(theme.palette.background);
         board.draw_world(&theme);
 
+        frame_profiler.end_section("3D graphics");
+
         set_default_camera();
-        clear_background(WHITE);
+        clear_background(TRANSPARENT_GREY);
         draw_board_antialias(screen, &render_texture, &theme);
         messages.extend(board.draw_ui(&theme));
         messages.extend(dev_ui.draw(
@@ -93,13 +104,16 @@ async fn fallible_main() -> AnyResult<()> {
             &mut bots,
             &mut gamepads,
         )?);
+
+        frame_profiler.end_section("2D graphics");
+
         if handle_ui_actions(
             messages,
-            &mut board,
-            &mut bots,
             &mut time,
-            &mut camera,
             &mut theme,
+            &mut board,
+            &mut camera,
+            &mut bots,
         )
         .await?
         {
@@ -107,8 +121,10 @@ async fn fallible_main() -> AnyResult<()> {
         }
 
         time.tick_end();
+        profiler.end_section("user frame");
         macroquad_profiler::profiler(Default::default());
-        next_frame().await
+        next_frame().await;
+        profiler.end_section("macroquad frame");
     }
     Ok(())
 }
@@ -122,8 +138,17 @@ fn update_size(screen: &mut Vec2, render_texture: &mut RenderTarget) {
 }
 
 fn resize(screen: Vec2) -> RenderTarget {
-    let render_texture = render_target_msaa(screen.x as u32, screen.y as u32);
-    render_texture.texture.set_filter(FilterMode::Nearest);
+    let render_texture = render_target_ex(
+        screen.x as u32,
+        screen.y as u32,
+        RenderTargetParams {
+            // sample_count: 13,
+            sample_count: 4,
+            // sample_count: 1,
+            depth: false,
+        },
+    );
+    render_texture.texture.set_filter(FilterMode::Linear);
     render_texture
 }
 
@@ -163,7 +188,7 @@ async fn load_textures() -> AnyResult<Textures> {
 }
 pub async fn load_texture(path: &str) -> Result<Texture2D, Error> {
     let tex = macroquad::prelude::load_texture(path).await?;
-    tex.set_filter(FilterMode::Nearest);
+    tex.set_filter(FilterMode::Linear);
     Ok(tex)
 }
 
@@ -227,10 +252,11 @@ fn handle_inputs_should_exit(
         messages.push(Message::Zoom(false));
     }
     let control = is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl);
-    if control && is_dragging(MouseButton::Left) {
+    let meta = is_key_down(KeyCode::LeftSuper) || is_key_down(KeyCode::RightSuper);
+    if (control || meta) && is_dragging(MouseButton::Left) {
         messages.push(Message::MoveCamera(Vec2::from(mouse_delta_position())));
     }
-    if control && is_dragging(MouseButton::Right) {
+    if (control || meta) && is_dragging(MouseButton::Right) {
         messages.push(Message::RotateCamera(Vec2::from(mouse_delta_position())));
     }
     Ok(messages)
@@ -242,12 +268,10 @@ fn is_dragging(button: MouseButton) -> bool {
 
 fn draw_board_antialias(screen: Vec2, render_texture: &RenderTarget, theme: &Theme) {
     if theme.materials.antialias_enabled {
-        gl_use_material(&theme.materials.antialias);
-        theme.materials.antialias.set_uniform(SCREEN, screen);
-        theme
-            .materials
-            .antialias
-            .set_uniform(ANTIALIAS_STRENGTH, theme.materials.antialias_strength);
+        let material = &theme.materials.antialias;
+        gl_use_material(material);
+        material.set_uniform(SCREEN, screen);
+        material.set_uniform(ANTIALIAS_STRENGTH, theme.materials.antialias_strength);
     }
     draw_texture_ex(
         &render_texture.texture,
@@ -267,11 +291,11 @@ fn draw_board_antialias(screen: Vec2, render_texture: &RenderTarget, theme: &The
 
 async fn handle_ui_actions(
     messages: Vec<Message>,
-    board: &mut Board,
-    bots: &mut Bots,
     time: &mut Time,
-    camera: &mut CameraPos,
     theme: &mut Theme,
+    board: &mut Board,
+    camera: &mut CameraPos,
+    bots: &mut Bots,
 ) -> AnyResult<bool> {
     let _delta_s = time.delta_s();
     let mut should_exit = false;
@@ -335,6 +359,9 @@ async fn handle_ui_actions(
             }
             Message::ShadowOffset(new_value) => {
                 theme.materials.shadow_offset = new_value;
+            }
+            Message::CodeTolerance(new_value) => {
+                theme.materials.code_tolerance = new_value;
             }
             Message::AntialiasStrength(new_value) => {
                 theme.materials.antialias_strength = new_value;
@@ -426,6 +453,7 @@ fn window_conf() -> Conf {
         window_width: DEFAULT_WINDOW_WIDTH,
         window_height: DEFAULT_WINDOW_HEIGHT,
         high_dpi: true,
+        // sample_count: 13,
         platform: miniquad::conf::Platform {
             webgl_version: miniquad::conf::WebGLVersion::WebGL2,
             ..Default::default()
