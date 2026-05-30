@@ -2,7 +2,7 @@ use chessnt::AnyResult;
 use chessnt::screen::shader::names::{OUTLINE_COLOR, OUTLINE_THICKNESS, SCREEN, TEXT_COLOR};
 use chessnt::screen::shader::{OUTLINE_FRAGMENT_SHADER, OUTLINE_VERTEX_SHADER, outline_shader};
 use chessnt::screen::theme::{AllColoring, Fonts};
-use chessnt::screen::ui::{below_left, format_slider_text, render_slider, render_slider_raw};
+use chessnt::screen::ui::{below_left, format_slider_text, render_slider_raw};
 use macroquad::prelude::*;
 
 #[macroquad::main("outline")]
@@ -151,7 +151,7 @@ fn draw_all_text(
         font_size,
         text_color,
     );
-    for (i, (font, name)) in fonts_list.iter().enumerate() {
+    for (i, (font, _name)) in fonts_list.iter().enumerate() {
         draw_text_ex(
             &text,
             screen.x * 0.05,

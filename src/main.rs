@@ -18,7 +18,7 @@ use chessnt::{
 };
 use juquad::widgets::anchor::Anchor;
 use macroquad::camera::set_default_camera;
-use macroquad::color::{BLACK, Color, GRAY, WHITE};
+use macroquad::color::{BLACK, Color, WHITE};
 use macroquad::input::{
     KeyCode, MouseButton, is_key_down, is_key_pressed, is_mouse_button_down,
     is_mouse_button_pressed, mouse_delta_position,
@@ -29,13 +29,13 @@ use macroquad::math::{Vec2, vec2};
 use macroquad::miniquad::FilterMode;
 use macroquad::prelude::{
     Conf, DrawTextureParams, RenderTarget, RenderTargetParams, Texture2D, clear_background,
-    draw_texture_ex, next_frame, render_target_ex, render_target_msaa, screen_height, screen_width,
+    draw_texture_ex, next_frame, render_target_ex, screen_height, screen_width,
 };
 use macroquad::prelude::{load_ttf_font, mouse_wheel};
 use macroquad::{Error, miniquad};
 use std::collections::HashMap;
 
-const TRANSPARENT_BLACK: Color = Color::new(0.0, 0.0, 0.0, 0.0);
+// const TRANSPARENT_BLACK: Color = Color::new(0.0, 0.0, 0.0, 0.0);
 const TRANSPARENT_GREY: Color = Color::new(0.5, 0.5, 0.5, 0.0);
 
 #[macroquad::main(window_conf)]
