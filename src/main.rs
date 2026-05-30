@@ -18,7 +18,7 @@ use chessnt::{
 };
 use juquad::widgets::anchor::Anchor;
 use macroquad::camera::set_default_camera;
-use macroquad::color::{Color, WHITE};
+use macroquad::color::{BLACK, Color, GRAY, WHITE};
 use macroquad::input::{
     KeyCode, MouseButton, is_key_down, is_key_pressed, is_mouse_button_down,
     is_mouse_button_pressed, mouse_delta_position,
@@ -48,12 +48,7 @@ async fn main() {
 async fn fallible_main() -> AnyResult<()> {
     let mut profiler = Profiler::new(PROFILER_ENABLED);
     let mut screen = vec2(screen_width(), screen_height());
-    render_text_no_font(
-        "Loading...",
-        DEFAULT_FONT_SIZE * 2.0,
-        new_text_coloring(),
-        Anchor::center_v(screen * 0.5),
-    );
+    render_loading().await;
     next_frame().await;
 
     let mut render_texture = resize(screen);
@@ -128,6 +123,18 @@ async fn fallible_main() -> AnyResult<()> {
     Ok(())
 }
 
+async fn render_loading() {
+    let screen = vec2(screen_width(), screen_height());
+    clear_background(BLACK);
+    render_text_no_font(
+        "Loading...",
+        DEFAULT_FONT_SIZE * 2.0,
+        new_text_coloring(),
+        Anchor::center_v(screen * 0.5),
+    );
+    next_frame().await;
+}
+
 fn update_size(screen: &mut Vec2, render_texture: &mut RenderTarget) {
     let new_screen = vec2(screen_width(), screen_height());
     if new_screen != *screen {
@@ -141,8 +148,8 @@ fn resize(screen: Vec2) -> RenderTarget {
         screen.x as u32,
         screen.y as u32,
         RenderTargetParams {
-            // sample_count: 13,
-            sample_count: 4,
+            sample_count: 13,
+            // sample_count: 4,
             // sample_count: 1,
             depth: false,
         },
@@ -154,33 +161,33 @@ fn resize(screen: Vec2) -> RenderTarget {
 async fn load_textures() -> AnyResult<Textures> {
     #[rustfmt::skip]
     let textures = Textures {
-        placeholder: load_texture("assets/images/ph_chara.png").await?,
-        referee: load_texture("assets/images/ph_chara.png").await?,
+        placeholder: load_texture_r("assets/images/ph_chara.png").await?,
+        referee: load_texture_r("assets/images/ph_chara.png").await?,
         characters: HashMap::from([
-            (Move::Pawn, load_texture("assets/images/characters/peon.png").await?),
-            (Move::Rook, load_texture("assets/images/characters/torre.png").await?),
-            (Move::Knight, load_texture("assets/images/characters/torre.png").await?), // TODO: replace with correct textures when they exist
-            (Move::Bishop, load_texture("assets/images/characters/torre.png").await?), // TODO: replace with correct textures when they exist
-            (Move::King, load_texture("assets/images/characters/torre.png").await?), // TODO: replace with correct textures when they exist
-            (Move::Queen, load_texture("assets/images/characters/torre.png").await?), // TODO: replace with correct textures when they exist
-            // (Move::Knight, load_texture("assets/images/characters/caballo.png").await?),
-            // (Move::Bishop, load_texture("assets/images/characters/alfil.png").await?),
-            // (Move::King, load_texture("assets/images/characters/rey.png").await?),
-            // (Move::Queen, load_texture("assets/images/characters/reina.png").await?),
+            (Move::Pawn, load_texture_r("assets/images/characters/peon.png").await?),
+            (Move::Rook, load_texture_r("assets/images/characters/torre.png").await?),
+            (Move::Knight, load_texture_r("assets/images/characters/torre.png").await?), // TODO: replace with correct textures when they exist
+            (Move::Bishop, load_texture_r("assets/images/characters/torre.png").await?), // TODO: replace with correct textures when they exist
+            (Move::King, load_texture_r("assets/images/characters/torre.png").await?), // TODO: replace with correct textures when they exist
+            (Move::Queen, load_texture_r("assets/images/characters/torre.png").await?), // TODO: replace with correct textures when they exist
+            // (Move::Knight, load_texture_r("assets/images/characters/caballo.png").await?),
+            // (Move::Bishop, load_texture_r("assets/images/characters/alfil.png").await?),
+            // (Move::King, load_texture_r("assets/images/characters/rey.png").await?),
+            // (Move::Queen, load_texture_r("assets/images/characters/reina.png").await?),
         ]),
         pieces: HashMap::from([
-            ((Team::White, Move::Pawn), load_texture("assets/images/pieces/icon-w-peon.png").await?),
-            ((Team::White, Move::Rook), load_texture("assets/images/pieces/icon-w-torre.png").await?),
-            ((Team::White, Move::Knight), load_texture("assets/images/pieces/icon-w-caballo.png").await?),
-            ((Team::White, Move::Bishop), load_texture("assets/images/pieces/icon-w-alfil.png").await?),
-            ((Team::White, Move::Queen), load_texture("assets/images/pieces/icon-w-reina.png").await?),
-            ((Team::White, Move::King), load_texture("assets/images/pieces/icon-w-rey.png").await?),
-            ((Team::Black, Move::Pawn), load_texture("assets/images/pieces/icon-b-peon.png").await?),
-            ((Team::Black, Move::Rook), load_texture("assets/images/pieces/icon-b-torre.png").await?),
-            ((Team::Black, Move::Knight), load_texture("assets/images/pieces/icon-b-caballo.png").await?),
-            ((Team::Black, Move::Bishop), load_texture("assets/images/pieces/icon-b-alfil.png").await?),
-            ((Team::Black, Move::Queen), load_texture("assets/images/pieces/icon-b-reina.png").await?),
-            ((Team::Black, Move::King), load_texture("assets/images/pieces/icon-b-rey.png").await?),
+            ((Team::White, Move::Pawn), load_texture_r("assets/images/pieces/icon-w-peon.png").await?),
+            ((Team::White, Move::Rook), load_texture_r("assets/images/pieces/icon-w-torre.png").await?),
+            ((Team::White, Move::Knight), load_texture_r("assets/images/pieces/icon-w-caballo.png").await?),
+            ((Team::White, Move::Bishop), load_texture_r("assets/images/pieces/icon-w-alfil.png").await?),
+            ((Team::White, Move::Queen), load_texture_r("assets/images/pieces/icon-w-reina.png").await?),
+            ((Team::White, Move::King), load_texture_r("assets/images/pieces/icon-w-rey.png").await?),
+            ((Team::Black, Move::Pawn), load_texture_r("assets/images/pieces/icon-b-peon.png").await?),
+            ((Team::Black, Move::Rook), load_texture_r("assets/images/pieces/icon-b-torre.png").await?),
+            ((Team::Black, Move::Knight), load_texture_r("assets/images/pieces/icon-b-caballo.png").await?),
+            ((Team::Black, Move::Bishop), load_texture_r("assets/images/pieces/icon-b-alfil.png").await?),
+            ((Team::Black, Move::Queen), load_texture_r("assets/images/pieces/icon-b-reina.png").await?),
+            ((Team::Black, Move::King), load_texture_r("assets/images/pieces/icon-b-rey.png").await?),
         ]),
     };
     Ok(textures)
@@ -189,6 +196,10 @@ pub async fn load_texture(path: &str) -> Result<Texture2D, Error> {
     let tex = macroquad::prelude::load_texture(path).await?;
     tex.set_filter(FilterMode::Linear);
     Ok(tex)
+}
+pub async fn load_texture_r(path: &str) -> Result<Texture2D, Error> {
+    render_loading().await;
+    load_texture(path).await
 }
 
 fn handle_inputs_should_exit(
