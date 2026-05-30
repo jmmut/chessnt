@@ -85,6 +85,7 @@ pub struct Profiler {
 }
 
 impl Profiler {
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn new(enabled: bool) -> Self {
         if enabled {
             Self {
@@ -98,6 +99,15 @@ impl Profiler {
             }
         }
     }
+    #[cfg(target_arch = "wasm32")]
+    pub fn new(_enabled: bool) -> Self {
+        Self {
+            start: 0.0,
+            enabled: false,
+        }
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn end_section(&mut self, section_name: &str) {
         if self.enabled {
             let new_time = now();
@@ -109,6 +119,9 @@ impl Profiler {
             self.start = new_time;
         }
     }
+    #[cfg(target_arch = "wasm32")]
+    pub fn end_section(&mut self, section_name: &str) {}
+
     pub fn separator(&self) {
         if self.enabled {
             eprintln!();
