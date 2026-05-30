@@ -79,18 +79,24 @@ async fn fallible_main() -> AnyResult<()> {
         bots.tick(time.delta_s(), &mut board)?;
         theme.tick(time.delta_s(), screen)?;
 
-        frame_profiler.end_section("updates");
+        frame_profiler.end_section("  updates");
 
         set_3d_camera(&camera, render_texture.clone());
+        frame_profiler.end_section("  set camera for 3D");
+
         clear_background(theme.palette.background);
         board.draw_world(&theme);
+        frame_profiler.end_section("  draw 3D world");
 
-        frame_profiler.end_section("3D graphics");
-
+        // let mut profiler_2d = Profiler::new(PROFILER_ENABLED);
         set_default_camera();
+        frame_profiler.end_section("  camera for 2D");
+        // profiler_2d.end_section("2D graphics: set camera");
         clear_background(TRANSPARENT_GREY);
         draw_board_antialias(screen, &render_texture, &theme);
+        // profiler_2d.end_section("2D graphics: draw_board");
         messages.extend(board.draw_ui(&theme));
+        // profiler_2d.end_section("2D graphics: draw_ui");
         messages.extend(dev_ui.draw(
             &time,
             &mut theme,
@@ -99,8 +105,9 @@ async fn fallible_main() -> AnyResult<()> {
             &mut bots,
             &mut gamepads,
         )?);
+        // profiler_2d.end_section("2D graphics: dev_ui");
 
-        frame_profiler.end_section("2D graphics");
+        frame_profiler.end_section("  2D graphics");
 
         if handle_ui_actions(
             messages,
@@ -116,10 +123,12 @@ async fn fallible_main() -> AnyResult<()> {
         }
 
         time.tick_end();
+        frame_profiler.end_section("  handle ui actions");
         profiler.end_section("user frame");
         macroquad_profiler::profiler(Default::default());
         next_frame().await;
         profiler.end_section("macroquad frame");
+        profiler.separator();
     }
     Ok(())
 }

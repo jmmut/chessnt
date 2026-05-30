@@ -102,11 +102,16 @@ impl Profiler {
         if self.enabled {
             let new_time = now();
             eprintln!(
-                "section '{}' took {:.1} ms",
+                "section '{}' took {:.2} ms",
                 section_name,
                 (new_time - self.start) * 1000.0
             );
             self.start = new_time;
+        }
+    }
+    pub fn separator(&self) {
+        if self.enabled {
+            eprintln!();
         }
     }
 }
