@@ -5,7 +5,7 @@ use juquad::widgets::anchor::Anchor;
 use macroquad::prelude::*;
 
 const FONT_SIZE: f32 = 16.0;
-const MSAA: i32 = 13;
+const MSAA: i32 = 4;
 
 fn window_conf() -> Conf {
     Conf {

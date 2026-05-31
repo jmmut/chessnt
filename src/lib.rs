@@ -43,7 +43,7 @@ pub const TRANSPARENT: Color = Color::new(1.0, 1.0, 1.0, 0.0);
 
 pub const FPS_AVERAGE_FRAMES: i32 = 6;
 pub const DEFAULT_FONT_SIZE: f32 = 16.0;
-pub const MSAA: i32 = 13;
+pub const MSAA: i32 = 4;
 
 pub const DEFAULT_ASPECT_RATIO: f32 = 16.0 / 9.0;
 pub const DEFAULT_WINDOW_WIDTH: i32 = 992;
