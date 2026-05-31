@@ -14,7 +14,7 @@ use chessnt::world::moves::Move;
 use chessnt::world::team::Team;
 use chessnt::{
     AnyResult, DEFAULT_FONT_SIZE, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_TITLE,
-    DEFAULT_WINDOW_WIDTH, PROFILER_ENABLED, Profiler, set_3d_camera,
+    DEFAULT_WINDOW_WIDTH, MSAA, PROFILER_ENABLED, Profiler, set_3d_camera,
 };
 use juquad::widgets::anchor::Anchor;
 use macroquad::camera::set_default_camera;
@@ -158,9 +158,7 @@ fn resize(screen: Vec2) -> RenderTarget {
         screen.x as u32,
         screen.y as u32,
         RenderTargetParams {
-            // sample_count: 13,
-            // sample_count: 4,
-            sample_count: 1,
+            sample_count: MSAA,
             depth: false,
         },
     );

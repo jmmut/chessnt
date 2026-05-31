@@ -38,56 +38,14 @@ async fn main() -> AnyResult<()> {
         } else {
             profiler_enabled = false;
         }
+
         let screen = Rect::new(0.0, 0.0, screen_width(), screen_height());
         let mut rect = Rect::new(screen.w, screen.h, 1.0, 1.0);
+
         clear_background(Color::new(0.6, 0.5, 0.7, 1.0));
-        let mut pos = 0.0;
-        for scale in [1.0, 0.5, 0.25, 0.2, 0.15, 0.125] {
-            draw_texture_ex(
-                &pawn,
-                pos,
-                0.0,
-                WHITE,
-                DrawTextureParams {
-                    dest_size: Some(pawn.size() * scale),
-                    ..Default::default()
-                },
-            );
-            pos += scale * pawn.size().x;
-        }
-        let toggle_filter = render_button_no_font(
-            &format!(
-                "currently {:?}, make {:?}",
-                filter_texture,
-                opposite(filter_texture)
-            ),
-            &coloring,
-            FONT_SIZE,
-            up_left,
-            &mut rect,
-        );
-        render_text_no_font_m(
-            &format!("MSAA: {}", MSAA),
-            FONT_SIZE,
-            coloring.at_rest,
-            up_left,
-            &mut rect,
-        );
-        if toggle_filter.is_clicked() {
-            filter_texture = opposite(filter_texture);
-            pawn.set_filter(filter_texture);
-        }
-        render_text_no_font_m(
-            &format!("FPS: {}", get_fps()),
-            FONT_SIZE * 2.0,
-            coloring.at_rest,
-            up_left,
-            &mut rect,
-        );
-        if toggle_filter.is_clicked() {
-            filter_texture = opposite(filter_texture);
-            pawn.set_filter(filter_texture);
-        }
+        draw_textures(&pawn);
+        draw_ui(&pawn, &coloring, &mut filter_texture, &mut rect);
+
         detail_profiler.end_section("  user drawing");
         next_frame().await;
         detail_profiler.end_section("  macroquad drawing");
@@ -95,6 +53,60 @@ async fn main() -> AnyResult<()> {
         frame_profiler.separator();
     }
     Ok(())
+}
+
+fn draw_textures(pawn: &Texture2D) {
+    let mut pos = 0.0;
+    for scale in [1.0, 0.5, 0.25, 0.2, 0.15, 0.125] {
+        draw_texture_ex(
+            &pawn,
+            pos,
+            0.0,
+            WHITE,
+            DrawTextureParams {
+                dest_size: Some(pawn.size() * scale),
+                ..Default::default()
+            },
+        );
+        pos += scale * pawn.size().x;
+    }
+}
+
+fn draw_ui(
+    pawn: &Texture2D,
+    coloring: &Coloring,
+    filter_texture: &mut FilterMode,
+    rect: &mut Rect,
+) {
+    let toggle_filter = render_button_no_font(
+        &format!(
+            "currently {:?}, make {:?}",
+            filter_texture,
+            opposite(*filter_texture)
+        ),
+        &coloring,
+        FONT_SIZE,
+        up_left,
+        rect,
+    );
+    if toggle_filter.is_clicked() {
+        *filter_texture = opposite(*filter_texture);
+        pawn.set_filter(*filter_texture);
+    }
+    render_text_no_font_m(
+        &format!("MSAA: {}", MSAA),
+        FONT_SIZE,
+        coloring.at_rest,
+        up_left,
+        rect,
+    );
+    render_text_no_font_m(
+        &format!("FPS: {}", get_fps()),
+        FONT_SIZE * 2.0,
+        coloring.at_rest,
+        up_left,
+        rect,
+    );
 }
 
 fn up_left(rect: Rect) -> Anchor {
