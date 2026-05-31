@@ -43,13 +43,14 @@ pub const TRANSPARENT: Color = Color::new(1.0, 1.0, 1.0, 0.0);
 
 pub const FPS_AVERAGE_FRAMES: i32 = 6;
 pub const DEFAULT_FONT_SIZE: f32 = 16.0;
+pub const MSAA: i32 = 4;
 
 pub const DEFAULT_ASPECT_RATIO: f32 = 16.0 / 9.0;
 pub const DEFAULT_WINDOW_WIDTH: i32 = 992;
 pub const DEFAULT_WINDOW_HEIGHT: i32 = width_to_height_default(DEFAULT_WINDOW_WIDTH as f32) as i32;
 pub const DEFAULT_WINDOW_TITLE: &str = "Chessn't!";
 
-pub const PROFILER_ENABLED: bool = true;
+pub const PROFILER_ENABLED: bool = false;
 
 pub type AnyError = Box<dyn std::error::Error>;
 pub type AnyResult<T> = Result<T, AnyError>;
@@ -85,6 +86,7 @@ pub struct Profiler {
 }
 
 impl Profiler {
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn new(enabled: bool) -> Self {
         if enabled {
             Self {
@@ -98,15 +100,32 @@ impl Profiler {
             }
         }
     }
+    #[cfg(target_arch = "wasm32")]
+    pub fn new(_enabled: bool) -> Self {
+        Self {
+            start: 0.0,
+            enabled: false,
+        }
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn end_section(&mut self, section_name: &str) {
         if self.enabled {
             let new_time = now();
             eprintln!(
-                "section '{}' took {:.1} ms",
+                "section '{}' took {:.2} ms",
                 section_name,
                 (new_time - self.start) * 1000.0
             );
             self.start = new_time;
+        }
+    }
+    #[cfg(target_arch = "wasm32")]
+    pub fn end_section(&mut self, section_name: &str) {}
+
+    pub fn separator(&self) {
+        if self.enabled {
+            eprintln!();
         }
     }
 }

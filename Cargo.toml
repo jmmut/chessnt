@@ -7,17 +7,26 @@ default-run = "chessnt"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-macroquad = "=0.4.14"
-juquad = { git = "https://github.com/jmmut/juquad.git", tag = "0.16.0" }
+#macroquad = "^0.4.14"
+#macroquad = { path = "../macroquad" }
+macroquad = { git = "https://github.com/jmmut/macroquad.git", rev = "dce417adfb7e537be80e9c505bb9000d3a71a711" }
+juquad = { git = "https://github.com/jmmut/juquad.git", tag = "0.20.0" }
 #juquad = { path = "../juquad/" }
 gamepads = { version = "=0.1.7", default-features = false }
 #web-sys = { version = "=0.3.91", features = ["Clipboard"] }
+#macroquad-profiler = "=0.2.0"
+
+[patch.crates-io]
+# for juquad to pick up my mq fork
+macroquad = { git = "https://github.com/jmmut/macroquad.git", rev = "dce417adfb7e537be80e9c505bb9000d3a71a711" }
+#macroquad = { path = "../macroquad" }
 
 #[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 #clipboard-rs = "=0.3.3"
 #
 #[target.'cfg(target_arch = "wasm32")'.dependencies]
 #web-sys = { version = "=0.3.91", features = ["Clipboard"] }
+
 
 [profile.dev]
 opt-level = 1

@@ -14,11 +14,11 @@ use chessnt::world::moves::Move;
 use chessnt::world::team::Team;
 use chessnt::{
     AnyResult, DEFAULT_FONT_SIZE, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_TITLE,
-    DEFAULT_WINDOW_WIDTH, PROFILER_ENABLED, Profiler, set_3d_camera,
+    DEFAULT_WINDOW_WIDTH, MSAA, PROFILER_ENABLED, Profiler, set_3d_camera,
 };
 use juquad::widgets::anchor::Anchor;
 use macroquad::camera::set_default_camera;
-use macroquad::color::{BLACK, Color, GRAY, WHITE};
+use macroquad::color::{BLACK, Color, WHITE};
 use macroquad::input::{
     KeyCode, MouseButton, is_key_down, is_key_pressed, is_mouse_button_down,
     is_mouse_button_pressed, mouse_delta_position,
@@ -29,13 +29,13 @@ use macroquad::math::{Vec2, vec2};
 use macroquad::miniquad::FilterMode;
 use macroquad::prelude::{
     Conf, DrawTextureParams, RenderTarget, RenderTargetParams, Texture2D, clear_background,
-    draw_texture_ex, next_frame, render_target_ex, render_target_msaa, screen_height, screen_width,
+    draw_texture_ex, next_frame, render_target_ex, screen_height, screen_width,
 };
 use macroquad::prelude::{load_ttf_font, mouse_wheel};
 use macroquad::{Error, miniquad};
 use std::collections::HashMap;
 
-const TRANSPARENT_BLACK: Color = Color::new(0.0, 0.0, 0.0, 0.0);
+// const TRANSPARENT_BLACK: Color = Color::new(0.0, 0.0, 0.0, 0.0);
 const TRANSPARENT_GREY: Color = Color::new(0.5, 0.5, 0.5, 0.0);
 
 #[macroquad::main(window_conf)]
@@ -79,18 +79,24 @@ async fn fallible_main() -> AnyResult<()> {
         bots.tick(time.delta_s(), &mut board)?;
         theme.tick(time.delta_s(), screen)?;
 
-        frame_profiler.end_section("updates");
+        frame_profiler.end_section("  updates");
 
         set_3d_camera(&camera, render_texture.clone());
+        frame_profiler.end_section("  set camera for 3D");
+
         clear_background(theme.palette.background);
         board.draw_world(&theme);
+        frame_profiler.end_section("  draw 3D world");
 
-        frame_profiler.end_section("3D graphics");
-
+        // let mut profiler_2d = Profiler::new(PROFILER_ENABLED);
         set_default_camera();
+        frame_profiler.end_section("  camera for 2D");
+        // profiler_2d.end_section("2D graphics: set camera");
         clear_background(TRANSPARENT_GREY);
         draw_board_antialias(screen, &render_texture, &theme);
+        // profiler_2d.end_section("2D graphics: draw_board");
         messages.extend(board.draw_ui(&theme));
+        // profiler_2d.end_section("2D graphics: draw_ui");
         messages.extend(dev_ui.draw(
             &time,
             &mut theme,
@@ -99,8 +105,9 @@ async fn fallible_main() -> AnyResult<()> {
             &mut bots,
             &mut gamepads,
         )?);
+        // profiler_2d.end_section("2D graphics: dev_ui");
 
-        frame_profiler.end_section("2D graphics");
+        frame_profiler.end_section("  2D graphics");
 
         if handle_ui_actions(
             messages,
@@ -116,9 +123,12 @@ async fn fallible_main() -> AnyResult<()> {
         }
 
         time.tick_end();
+        frame_profiler.end_section("  handle ui actions");
         profiler.end_section("user frame");
+        // macroquad_profiler::profiler(Default::default());
         next_frame().await;
         profiler.end_section("macroquad frame");
+        profiler.separator();
     }
     Ok(())
 }
@@ -148,9 +158,7 @@ fn resize(screen: Vec2) -> RenderTarget {
         screen.x as u32,
         screen.y as u32,
         RenderTargetParams {
-            sample_count: 13,
-            // sample_count: 4,
-            // sample_count: 1,
+            sample_count: MSAA,
             depth: false,
         },
     );

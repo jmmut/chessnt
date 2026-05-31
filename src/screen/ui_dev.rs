@@ -18,7 +18,7 @@ use crate::world::board::{Board, DEFAULT_PIECE_SIZE};
 use crate::world::bot::Bots;
 use crate::world::bot_chess::evaluate_pieces;
 use crate::world::team::{OneForEachTeam, Team};
-use crate::{AnyResult, INITIAL_DEV_UI};
+use crate::{AnyResult, INITIAL_DEV_UI, MSAA};
 use juquad::draw::draw_rect;
 use juquad::widgets::Interaction;
 use juquad::widgets::anchor::Anchor;
@@ -142,6 +142,8 @@ impl DevUi {
         // let rect = render_text(text, below_left(rect), theme);
         // let rect = render_text("Toggle dev UI with '/'", below_left(rect), theme);
         let text = format!("FPS: {:.1}", time.fps());
+        render_text_dev_mut(&text, theme, below_left, rect);
+        let text = format!("MSAA: {}", MSAA);
         render_text_dev_mut(&text, theme, below_left, rect);
         // let text = format!("scale: {}", unsafe { SCALE });
         // let _rect = render_text(&text, below_left(_rect), theme);

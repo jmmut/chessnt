@@ -2,6 +2,7 @@ use crate::screen::theme::{AllColoring, Theme};
 use crate::world::board::board_ui::Message;
 use juquad::draw::draw_rect;
 use juquad::input::input_macroquad::InputMacroquad;
+use juquad::lazy::text::mq_measure_text;
 use juquad::lazy::{Interactable, Renderable, Style, WidgetTrait};
 use juquad::widgets::anchor::{Anchor, Horizontal, Vertical};
 use juquad::widgets::button::Button;
@@ -43,13 +44,20 @@ pub fn render_text_no_font(
     coloring: StateStyle,
     anchor: Anchor,
 ) -> Rect {
-    let t = TextRect::new_generic(
-        text,
-        anchor,
-        font_size,
-        None,
-        macroquad::prelude::measure_text,
-    );
+    let t = TextRect::new_generic(text, anchor, font_size, None, mq_measure_text);
+    draw_rect(t.rect(), coloring.bg_color);
+    t.render_default(&coloring);
+    t.rect()
+}
+pub fn render_text_no_font_m(
+    text: &str,
+    font_size: f32,
+    coloring: StateStyle,
+    anchor: fn(Rect) -> Anchor,
+    rect: &mut Rect,
+) -> Rect {
+    let t = TextRect::new_generic(text, anchor(*rect), font_size, None, mq_measure_text);
+    *rect = t.rect;
     draw_rect(t.rect(), coloring.bg_color);
     t.render_default(&coloring);
     t.rect()
@@ -71,13 +79,7 @@ fn render_text_font_size_coloring(
     anchor: Anchor,
     coloring: &AllColoring,
 ) -> Rect {
-    let t = TextRect::new_generic(
-        text,
-        anchor,
-        font_size,
-        Some(font),
-        macroquad::prelude::measure_text,
-    );
+    let t = TextRect::new_generic(text, anchor, font_size, Some(font), mq_measure_text);
     draw_rect(t.rect(), coloring.text_coloring.bg_color);
     t.render_default(&coloring.text_coloring);
     t.rect()
@@ -89,7 +91,7 @@ pub fn measure_title(text: &str, theme: &Theme, anchor: Anchor) -> TextRect {
         anchor,
         theme.font_size_title(),
         Some(theme.font_title()),
-        macroquad::prelude::measure_text,
+        mq_measure_text,
     )
 }
 
@@ -126,7 +128,7 @@ pub fn render_button_font(
         anchor,
         font_size,
         Some(font),
-        macroquad::prelude::measure_text,
+        mq_measure_text,
         Box::new(InputMacroquad),
     );
     let interaction = t.interact();
@@ -145,7 +147,7 @@ pub fn render_button_no_font(
         anchor(*rect),
         font_size,
         None,
-        macroquad::prelude::measure_text,
+        mq_measure_text,
         Box::new(InputMacroquad),
     );
     let interaction = t.interact();
@@ -166,7 +168,7 @@ pub fn render_button_font_mut(
         anchor(*rect),
         font_size,
         Some(font),
-        macroquad::prelude::measure_text,
+        mq_measure_text,
         Box::new(InputMacroquad),
     );
     let interaction = t.interact();
@@ -181,7 +183,7 @@ pub fn measure_button(text: &str, theme: &Theme, anchor: Anchor) -> Button {
         anchor,
         theme.font_size(),
         Some(theme.font()),
-        macroquad::prelude::measure_text,
+        mq_measure_text,
         Box::new(InputMacroquad),
     )
 }
