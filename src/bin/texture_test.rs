@@ -1,16 +1,17 @@
-use chessnt::AnyResult;
-use chessnt::screen::ui::render_button_no_font;
+use chessnt::screen::ui::{render_button_no_font, render_text_no_font_m};
+use chessnt::{AnyResult, Profiler};
 use juquad::widgets::Coloring;
 use juquad::widgets::anchor::Anchor;
 use macroquad::prelude::*;
 
 const FONT_SIZE: f32 = 16.0;
+const MSAA: i32 = 13;
 
 fn window_conf() -> Conf {
     Conf {
         window_title: "texture test".to_string(),
         high_dpi: true,
-        sample_count: 13,
+        sample_count: MSAA,
         platform: miniquad::conf::Platform {
             webgl_version: miniquad::conf::WebGLVersion::WebGL2,
             ..Default::default()
@@ -25,9 +26,17 @@ async fn main() -> AnyResult<()> {
     let mut filter_texture = FilterMode::Linear;
     pawn.set_filter(filter_texture);
     let coloring = Coloring::new();
+    let mut profiler_enabled = false;
     loop {
+        let mut frame_profiler = Profiler::new(profiler_enabled);
+        let mut detail_profiler = Profiler::new(profiler_enabled);
         if is_key_pressed(KeyCode::Escape) {
             break;
+        }
+        if is_key_down(KeyCode::Space) {
+            profiler_enabled = true;
+        } else {
+            profiler_enabled = false;
         }
         let screen = Rect::new(0.0, 0.0, screen_width(), screen_height());
         let mut rect = Rect::new(screen.w, screen.h, 1.0, 1.0);
@@ -57,11 +66,33 @@ async fn main() -> AnyResult<()> {
             up_left,
             &mut rect,
         );
+        render_text_no_font_m(
+            &format!("MSAA: {}", MSAA),
+            FONT_SIZE,
+            coloring.at_rest,
+            up_left,
+            &mut rect,
+        );
         if toggle_filter.is_clicked() {
             filter_texture = opposite(filter_texture);
             pawn.set_filter(filter_texture);
         }
-        next_frame().await
+        render_text_no_font_m(
+            &format!("FPS: {}", get_fps()),
+            FONT_SIZE * 2.0,
+            coloring.at_rest,
+            up_left,
+            &mut rect,
+        );
+        if toggle_filter.is_clicked() {
+            filter_texture = opposite(filter_texture);
+            pawn.set_filter(filter_texture);
+        }
+        detail_profiler.end_section("  user drawing");
+        next_frame().await;
+        detail_profiler.end_section("  macroquad drawing");
+        frame_profiler.end_section("full frame");
+        frame_profiler.separator();
     }
     Ok(())
 }
@@ -69,6 +100,9 @@ async fn main() -> AnyResult<()> {
 fn up_left(rect: Rect) -> Anchor {
     Anchor::bottom_right(rect.x, rect.bottom())
 }
+// fn left(rect: Rect) -> Anchor {
+//     Anchor::top_right(rect.x, rect.y)
+// }
 
 fn opposite(filter: FilterMode) -> FilterMode {
     match filter {

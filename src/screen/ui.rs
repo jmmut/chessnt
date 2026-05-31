@@ -49,6 +49,19 @@ pub fn render_text_no_font(
     t.render_default(&coloring);
     t.rect()
 }
+pub fn render_text_no_font_m(
+    text: &str,
+    font_size: f32,
+    coloring: StateStyle,
+    anchor: fn(Rect) -> Anchor,
+    rect: &mut Rect,
+) -> Rect {
+    let t = TextRect::new_generic(text, anchor(*rect), font_size, None, mq_measure_text);
+    *rect = t.rect;
+    draw_rect(t.rect(), coloring.bg_color);
+    t.render_default(&coloring);
+    t.rect()
+}
 pub fn render_text_font_size(
     text: &str,
     theme: &Theme,
