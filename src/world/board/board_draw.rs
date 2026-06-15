@@ -212,7 +212,13 @@ impl Board {
             self.size.column_f(),
             self.size.row_f(),
         );
-        draw_mesh(&mesh_texture_quad(corners, WHITE, Some(theme.textures.floor.clone()), false, true));
+        draw_mesh(&mesh_texture_quad(
+            corners,
+            WHITE,
+            Some(theme.textures.floor.clone()),
+            false,
+            true,
+        ));
         gl_use_default_material();
     }
 
