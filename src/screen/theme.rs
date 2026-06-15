@@ -182,6 +182,7 @@ pub struct Textures {
     pub referee: Texture2D,
     pub characters: HashMap<Move, Texture2D>,
     pub pieces: HashMap<(Team, Move), Texture2D>,
+    pub floor: Texture2D,
 }
 
 pub fn new_text_coloring() -> StateStyle {

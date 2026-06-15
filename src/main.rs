@@ -197,6 +197,7 @@ async fn load_textures() -> AnyResult<Textures> {
             ((Team::Black, Move::Queen), load_texture_r("assets/images/pieces/icon-b-reina.png").await?),
             ((Team::Black, Move::King), load_texture_r("assets/images/pieces/icon-b-rey.png").await?),
         ]),
+        floor: load_texture_r("assets/images/floor.png").await?,
     };
     Ok(textures)
 }

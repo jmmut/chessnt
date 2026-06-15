@@ -100,11 +100,13 @@ void main() {
     blur_radar = clamp(blur_radar, 0.0, 1.0);
     blur_radar = blur_radar * 0.5;
     
+    vec4 shader_color;
     if (inside_radar) {
-        gl_FragColor = lerp(color_inside, color_outside, blur_radar);
+        shader_color = lerp(color_inside, color_outside, blur_radar);
     } else {
 //        gl_FragColor = color_outside;
-        gl_FragColor = lerp(color_outside, color_inside, blur_radar);
+        shader_color = lerp(color_outside, color_inside, blur_radar);
     }
+    gl_FragColor = shader_color * 0.5 + texture2D(Texture, uv) * 0.5;
 //    gl_FragColor = splat(blur_radar);
 }
