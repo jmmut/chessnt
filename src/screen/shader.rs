@@ -1,5 +1,6 @@
 use crate::AnyResult;
 use crate::screen::shader::names::*;
+use macroquad::Error;
 use macroquad::material::{Material, MaterialParams, load_material};
 use macroquad::miniquad::{
     BlendFactor, BlendState, BlendValue, Equation, ShaderSource, UniformDesc, UniformType,
@@ -85,56 +86,45 @@ pub fn init_shaders() -> AnyResult<Materials> {
     })
 }
 
-pub fn floor_shader(vertex_code: &str, fragment_code: &str) -> AnyResult<Material> {
-    let material_params = MaterialParams {
-        pipeline_params: Default::default(),
-        uniforms: vec![
-            UniformDesc {
-                name: POSITION_X_NAME.to_string(),
-                uniform_type: UniformType::Float1,
-                array_count: 1,
-            },
-            UniformDesc {
-                name: POSITION_Y_NAME.to_string(),
-                uniform_type: UniformType::Float1,
-                array_count: 1,
-            },
-            UniformDesc {
-                name: TILES.to_string(),
-                uniform_type: UniformType::Float2,
-                array_count: 1,
-            },
-            UniformDesc {
-                name: RADAR.to_string(),
-                uniform_type: UniformType::Float2,
-                array_count: 3,
-            },
-            UniformDesc {
-                name: COLOR_WHITE.to_string(),
-                uniform_type: UniformType::Float4,
-                array_count: 1,
-            },
-            UniformDesc {
-                name: COLOR_BLACK.to_string(),
-                uniform_type: UniformType::Float4,
-                array_count: 1,
-            },
-            UniformDesc {
-                name: POWER.to_string(),
-                uniform_type: UniformType::Float1,
-                array_count: 1,
-            },
-        ],
-        textures: vec![],
-    };
-    let floor = load_material(
+fn load_shader(
+    name: &str,
+    vertex_code: &str,
+    fragment_code: &str,
+    material_params: MaterialParams,
+) -> AnyResult<Material> {
+    let loaded = load_material(
         ShaderSource::Glsl {
             vertex: vertex_code,
             fragment: fragment_code,
         },
         material_params,
-    )?;
-    Ok(floor)
+    )
+    .map_err(|e| {
+        let mq_message = match e {
+            // Shader Error has a good specific formatting that is lost on Error::to_string.
+            Error::ShaderError(shader_error) => shader_error.to_string(),
+            _ => e.to_string(),
+        };
+        format!("Failed to compile shader '{}': {}", name, mq_message).into()
+    });
+    loaded
+}
+
+pub fn floor_shader(vertex_code: &str, fragment_code: &str) -> AnyResult<Material> {
+    let material_params = MaterialParams {
+        pipeline_params: Default::default(),
+        uniforms: vec![
+            UniformDesc::new(POSITION_X_NAME, UniformType::Float1),
+            UniformDesc::new(POSITION_Y_NAME, UniformType::Float1),
+            UniformDesc::new(TILES, UniformType::Float2),
+            UniformDesc::new(RADAR, UniformType::Float2).array(3),
+            UniformDesc::new(COLOR_WHITE, UniformType::Float4),
+            UniformDesc::new(COLOR_BLACK, UniformType::Float4),
+            UniformDesc::new(POWER, UniformType::Float1),
+        ],
+        textures: vec![],
+    };
+    load_shader("floor", vertex_code, fragment_code, material_params)
 }
 
 pub fn character_shader(vertex_code: &str, fragment_code: &str) -> AnyResult<Material> {
@@ -148,75 +138,29 @@ pub fn character_shader(vertex_code: &str, fragment_code: &str) -> AnyResult<Mat
             ..Default::default()
         },
         uniforms: vec![
-            UniformDesc {
-                name: REFEREE_SAW.to_string(),
-                uniform_type: UniformType::Int1,
-                array_count: 1,
-            },
-            UniformDesc {
-                name: TEAM.to_string(),
-                uniform_type: UniformType::Int1,
-                array_count: 1,
-            },
-            UniformDesc {
-                name: SIN_CITY.to_string(),
-                uniform_type: UniformType::Int1,
-                array_count: 1,
-            },
-            UniformDesc {
-                name: CURSOR_ON_TOP.to_string(),
-                uniform_type: UniformType::Int1,
-                array_count: 1,
-            },
-            UniformDesc {
-                name: CURSOR_COLOR.to_string(),
-                uniform_type: UniformType::Float4,
-                array_count: 1,
-            },
-            UniformDesc {
-                name: SHADOW_OFFSET.to_string(),
-                uniform_type: UniformType::Float1,
-                array_count: 1,
-            },
+            UniformDesc::new(REFEREE_SAW, UniformType::Int1),
+            UniformDesc::new(TEAM, UniformType::Int1),
+            UniformDesc::new(SIN_CITY, UniformType::Int1),
+            UniformDesc::new(CURSOR_ON_TOP, UniformType::Int1),
+            UniformDesc::new(CURSOR_COLOR, UniformType::Float4),
+            UniformDesc::new(SHADOW_OFFSET, UniformType::Float1),
             UniformDesc::new(CODE_TOLERANCE, UniformType::Float1),
         ],
         textures: vec![],
     };
-    let character = load_material(
-        ShaderSource::Glsl {
-            vertex: vertex_code,
-            fragment: fragment_code,
-        },
-        material_params,
-    )?;
-    Ok(character)
+    load_shader("character", vertex_code, fragment_code, material_params)
 }
 
 pub fn antialias_shader(vertex_code: &str, fragment_code: &str) -> AnyResult<Material> {
     let material_params = MaterialParams {
         pipeline_params: Default::default(),
         uniforms: vec![
-            UniformDesc {
-                name: SCREEN.to_string(),
-                uniform_type: UniformType::Float2,
-                array_count: 1,
-            },
-            UniformDesc {
-                name: ANTIALIAS_STRENGTH.to_string(),
-                uniform_type: UniformType::Float1,
-                array_count: 1,
-            },
+            UniformDesc::new(SCREEN, UniformType::Float2),
+            UniformDesc::new(ANTIALIAS_STRENGTH, UniformType::Float1),
         ],
         textures: vec![],
     };
-    let floor = load_material(
-        ShaderSource::Glsl {
-            vertex: vertex_code,
-            fragment: fragment_code,
-        },
-        material_params,
-    )?;
-    Ok(floor)
+    load_shader("antialias", vertex_code, fragment_code, material_params)
 }
 
 pub fn outline_shader(vertex_code: &str, fragment_code: &str) -> AnyResult<Material> {
@@ -237,12 +181,5 @@ pub fn outline_shader(vertex_code: &str, fragment_code: &str) -> AnyResult<Mater
         ],
         textures: vec![],
     };
-    let material = load_material(
-        ShaderSource::Glsl {
-            vertex: vertex_code,
-            fragment: fragment_code,
-        },
-        material_params,
-    )?;
-    Ok(material)
+    load_shader("outline", vertex_code, fragment_code, material_params)
 }
