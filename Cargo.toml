@@ -9,7 +9,7 @@ default-run = "chessnt"
 [dependencies]
 #macroquad = "^0.4.14"
 #macroquad = { path = "../macroquad" }
-macroquad = { git = "https://github.com/jmmut/macroquad.git", rev = "dce417adfb7e537be80e9c505bb9000d3a71a711" }
+macroquad = { git = "https://github.com/jmmut/macroquad.git", rev = "92279a746405949138616714918fc0f120171352" }
 juquad = { git = "https://github.com/jmmut/juquad.git", tag = "0.20.0" }
 #juquad = { path = "../juquad/" }
 gamepads = { version = "=0.1.7", default-features = false }
@@ -18,7 +18,7 @@ gamepads = { version = "=0.1.7", default-features = false }
 
 [patch.crates-io]
 # for juquad to pick up my mq fork
-macroquad = { git = "https://github.com/jmmut/macroquad.git", rev = "dce417adfb7e537be80e9c505bb9000d3a71a711" }
+macroquad = { git = "https://github.com/jmmut/macroquad.git", rev = "92279a746405949138616714918fc0f120171352" }
 #macroquad = { path = "../macroquad" }
 
 #[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
