@@ -472,7 +472,7 @@ fn window_conf() -> Conf {
         window_width: DEFAULT_WINDOW_WIDTH,
         window_height: DEFAULT_WINDOW_HEIGHT,
         high_dpi: true,
-        // sample_count: 13,
+        // sample_count: MSAA, // might not be needed if the render target has a >1 sample count?
         platform: miniquad::conf::Platform {
             webgl_version: miniquad::conf::WebGLVersion::WebGL2,
             ..Default::default()
