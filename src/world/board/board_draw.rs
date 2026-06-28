@@ -41,12 +41,15 @@ impl Board {
         meshes.extend(self.possible_moves_meshes(Team::White, theme));
         meshes.extend(self.possible_moves_meshes(Team::Black, theme));
         meshes.extend(self.checks_meshes(theme));
+        let (piece_meshes, character_meshes) = self.draw_piece_meshes(theme);
+        meshes.extend(piece_meshes);
         meshes.sort_by(|a, b| depth(a).total_cmp(&depth(b)));
         for mesh in &meshes {
             draw_mesh(&mesh); // can't render cursor and figures online because of intersecting quads with transparencies
         }
         meshes.clear();
-        self.draw_piece_meshes(theme);
+
+        self.draw_in_character_shader(&theme, character_meshes);
 
         meshes.extend(self.turn_light_meshes(theme));
 
@@ -64,7 +67,7 @@ impl Board {
         }
     }
 
-    fn draw_piece_meshes(&self, theme: &Theme) {
+    fn draw_piece_meshes(&self, theme: &Theme) -> (Vec<Mesh>, Vec<(usize, Mesh)>) {
         let mut meshes = Vec::new();
         let mut character_meshes = Vec::new();
         for (i, piece) in self.pieces.iter().enumerate() {
@@ -109,12 +112,10 @@ impl Board {
             //     theme,
             // ));
         }
+        (meshes, character_meshes)
+    }
 
-        meshes.sort_by(|a, b| depth(a).total_cmp(&depth(b)));
-        for mesh in meshes {
-            draw_mesh(&mesh); // can't render cursor and figures online because of intersecting quads with transparencies
-        }
-
+    fn draw_in_character_shader(&self, theme: &Theme, mut character_meshes: Vec<(usize, Mesh)>) {
         let material = &theme.materials.character;
         gl_use_material(material);
         material.set_uniform(SIN_CITY, theme.materials.sin_city as i32);
