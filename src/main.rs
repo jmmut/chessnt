@@ -172,12 +172,12 @@ async fn load_textures() -> AnyResult<Textures> {
         placeholder: load_texture_r("assets/images/ph_chara.png").await?,
         referee: load_texture_r("assets/images/ph_chara.png").await?,
         characters: HashMap::from([
-            (Move::Pawn, load_texture_r("assets/images/characters/peon.png").await?),
+            (Move::Pawn, load_texture_r("assets/images/characters/idle inactive.png").await?),
             (Move::Rook, load_texture_r("assets/images/characters/torre.png").await?),
             (Move::Knight, load_texture_r("assets/images/characters/torre.png").await?), // TODO: replace with correct textures when they exist
             (Move::Bishop, load_texture_r("assets/images/characters/torre.png").await?), // TODO: replace with correct textures when they exist
             (Move::King, load_texture_r("assets/images/characters/torre.png").await?), // TODO: replace with correct textures when they exist
-            (Move::Queen, load_texture_r("assets/images/characters/torre.png").await?), // TODO: replace with correct textures when they exist
+            (Move::Queen, load_texture_r("assets/images/characters/peon.png").await?), // TODO: replace with correct textures when they exist
             // (Move::Knight, load_texture_r("assets/images/characters/caballo.png").await?),
             // (Move::Bishop, load_texture_r("assets/images/characters/alfil.png").await?),
             // (Move::King, load_texture_r("assets/images/characters/rey.png").await?),

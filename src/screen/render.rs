@@ -94,7 +94,7 @@ pub fn mesh_figure_texture(
         corners,
         color,
         Some(texture),
-        piece.team.is_white(),
+        !piece.team.is_white(),
         false,
         extra,
     );

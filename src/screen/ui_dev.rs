@@ -202,8 +202,8 @@ impl DevUi {
             messages.push(Message::ToggleSinCity);
         }
 
-        let verb = enable_or_disable(theme.materials.refresh_shaders.character);
-        let text = format!("{} shader refresh character", verb);
+        let enabled = theme.materials.refresh_shaders.character;
+        let text = do_or_not(enabled, "shader refresh character", enable_or_disable);
         if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
             messages.push(Message::ToggleRefreshShaderCharacter);
         }
@@ -216,13 +216,13 @@ impl DevUi {
         let value = theme.materials.code_tolerance;
         slider.render(value, theme, rect, &mut messages);
 
-        let verb = enable_or_disable(theme.materials.antialias_enabled);
-        let text = format!("{} shader antialias", verb);
+        let enabled = theme.materials.antialias_enabled;
+        let text = do_or_not(enabled, "shader antialias", enable_or_disable);
         if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
             messages.push(Message::ToggleShaderAntialias);
         }
-        let verb = enable_or_disable(theme.materials.refresh_shaders.antialias);
-        let text = format!("{} shader refresh antialias", verb);
+        let enabled = theme.materials.refresh_shaders.antialias;
+        let text = do_or_not(enabled, "shader refresh antialias", enable_or_disable);
         let mut refresh_rect = *rect;
         if render_button_dev_mut(&text, theme, rightwards, &mut refresh_rect).is_clicked() {
             messages.push(Message::ToggleRefreshShaderAntialias);
@@ -239,14 +239,14 @@ impl DevUi {
         let value = theme.materials.floor_antialias_strength;
         slider.render(value, theme, rect, &mut messages);
 
-        let value = &mut board.piece_size.x;
+        let value = &mut board.piece_size_coef.x;
         render_slider("Texture size X", theme, 0.1, 2.0, value, rect);
 
-        let value = &mut board.piece_size.y;
+        let value = &mut board.piece_size_coef.y;
         render_slider("Texture size Y", theme, 0.1, 2.0, value, rect);
 
         if render_button_dev_mut("Reset texture size", theme, below_left, rect).is_clicked() {
-            board.piece_size = DEFAULT_PIECE_SIZE;
+            board.piece_size_coef = DEFAULT_PIECE_SIZE;
         }
         if render_button_dev_mut("Reload textures (T)", theme, below_left, rect).is_clicked() {
             messages.push(Message::ReloadTextures);
@@ -274,7 +274,7 @@ impl DevUi {
         if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
             messages.push(Message::ToggleRadar)
         }
-        let action = pause_or_resume(board.referee.referee_paused);
+        let action = pause_or_resume(!board.referee.referee_paused);
         let text = format!("{} referee's movement (P)", action);
         if render_button_dev_mut(&text, theme, below_left, rect).is_clicked() {
             messages.push(Message::ToggleReferee)
@@ -505,7 +505,7 @@ pub fn pause_or_resume(enabled: bool) -> &'static str {
     if enabled { "Pause" } else { "Resume" }
 }
 pub fn hide_or_show(enabled: bool) -> &'static str {
-    if enabled { "Pause" } else { "Resume" }
+    if enabled { "Hide" } else { "Show" }
 }
 pub fn enable_or_disable(enabled: bool) -> &'static str {
     if enabled { "Disable" } else { "Enable" }
@@ -514,7 +514,7 @@ pub fn on_or_off(enabled: bool) -> &'static str {
     if enabled { "on" } else { "off" }
 }
 pub fn do_or_not(enabled: bool, what: &str, verb: fn(bool) -> &'static str) -> String {
-    format!("{} {}", what, verb(enabled))
+    format!("{} {}", verb(enabled), what)
 }
 pub fn as_hex(color: Color) -> String {
     let [r, g, b, a]: [u8; 4] = color.into();

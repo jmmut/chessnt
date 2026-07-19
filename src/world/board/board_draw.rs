@@ -9,7 +9,7 @@ use crate::screen::shader::names::{
     POSITION_Y_NAME, POWER, RADAR, REFEREE_SAW, SHADOW_OFFSET, SIN_CITY, TEAM, TILES,
 };
 use crate::screen::theme::Theme;
-use crate::world::board::{Board, other_pieces_at};
+use crate::world::board::{Board, FIXED_PIECE_SIZE_COEF, other_pieces_at};
 use crate::world::moves::possible_moves;
 use crate::world::piece::Piece;
 use crate::world::team::Team;
@@ -70,6 +70,8 @@ impl Board {
         let mut meshes = Vec::new();
         let mut character_meshes = Vec::new();
         for (i, piece) in self.pieces.iter().enumerate() {
+            let texture = &theme.textures.characters[&piece.moveset.single()];
+            let piece_size = texture.size() * self.piece_size_coef / FIXED_PIECE_SIZE_COEF;
             character_meshes.push((
                 i,
                 mesh_figure_texture(
@@ -79,8 +81,8 @@ impl Board {
                     } else {
                         theme.palette.mask_black
                     },
-                    theme.textures.characters[&piece.moveset.single()].clone(),
-                    self.piece_size,
+                    texture.clone(),
+                    piece_size,
                     vec2(theme.materials.shadow_offset.abs(), 0.0),
                 ),
             ));
@@ -91,7 +93,7 @@ impl Board {
 
             meshes.extend(mesh_progress_bar(
                 piece.pos_f(),
-                self.piece_size,
+                piece_size,
                 piece.cooldown_progress(),
                 theme,
             ));
@@ -141,20 +143,22 @@ impl Board {
     }
 
     fn referee_meshes(&self, theme: &Theme) -> Vec<Mesh> {
-        let coord_00 = self.referee.pos_v3(self.piece_size.x, 0.0);
+        let referee_size =
+            theme.textures.referee.size() * self.piece_size_coef / FIXED_PIECE_SIZE_COEF;
+        let coord_00 = self.referee.pos_v3(referee_size.x, 0.0);
         let looking_leftwards = self.referee.looking_leftwards();
         let mesh = mesh_vertical_texture(
             coord_00,
             WHITE,
             Some(theme.textures.referee.clone()),
             looking_leftwards,
-            self.piece_size,
+            referee_size,
         );
         let mut meshes = vec![mesh];
 
         let bar = mesh_progress_bar(
             self.referee.pos_c(),
-            self.piece_size,
+            referee_size,
             self.referee.focus_progress(),
             theme,
         );

@@ -26,12 +26,13 @@ pub struct Board {
     size: ICoord,
     pieces: Vec<Piece>,
     pub referee: Referee,
-    pub piece_size: Vec2,
+    pub piece_size_coef: Vec2,
     pub winning_team: Option<Team>,
     ever_moved: EverMoved,
 }
 
-pub const DEFAULT_PIECE_SIZE: Vec2 = vec2(0.3, 1.0);
+pub const DEFAULT_PIECE_SIZE: Vec2 = vec2(1.0, 1.2);
+pub const FIXED_PIECE_SIZE_COEF: Vec2 = vec2(1000.0, 1000.0);
 
 impl Board {
     pub fn new(
@@ -46,7 +47,7 @@ impl Board {
             selected: OneForEachTeam::new(None, None),
             size,
             pieces,
-            piece_size: DEFAULT_PIECE_SIZE,
+            piece_size_coef: DEFAULT_PIECE_SIZE,
             referee: Referee::new(),
             winning_team: None,
             ever_moved,
