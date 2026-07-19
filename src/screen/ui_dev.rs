@@ -254,6 +254,9 @@ impl DevUi {
         let slider = SliderConfig::new("Shadow offset", Message::ShadowOffset, -1.0, 1.0);
         slider.render(theme.materials.shadow_offset, theme, rect, &mut messages);
 
+        let slider = SliderConfig::new("Animation FPS", Message::AnimationFPS, 0.1, 24.0);
+        slider.render(board.animation_fps, theme, rect, &mut messages);
+
         self.navigation(theme, "Back", DevUiMenu::Main, rect);
         messages
     }

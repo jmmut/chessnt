@@ -363,6 +363,9 @@ async fn handle_ui_actions(
             Message::ToggleReferee => {
                 board.referee.referee_paused = !board.referee.referee_paused;
             }
+            Message::AnimationFPS(animation_fps) => {
+                board.animation_fps = animation_fps;
+            }
             Message::TargetFPS(fps) => {
                 time.set_target_fps(fps);
             }

@@ -30,10 +30,12 @@ pub struct Board {
     pub winning_team: Option<Team>,
     ever_moved: EverMoved,
     time: f64,
+    pub animation_fps: f32,
 }
 
 pub const DEFAULT_PIECE_SIZE: Vec2 = vec2(1.0, 1.2);
 pub const FIXED_PIECE_SIZE_COEF: Vec2 = vec2(1000.0, 1000.0);
+const DEFAULT_ANIMATION_FPS: f32 = 2.0;
 
 impl Board {
     pub fn new(
@@ -53,6 +55,7 @@ impl Board {
             winning_team: None,
             ever_moved,
             time: 0.0,
+            animation_fps: DEFAULT_ANIMATION_FPS,
         }
     }
     pub fn new_chess(cursor_white: Coord, cursor_black: Coord) -> Self {
@@ -98,8 +101,7 @@ impl Board {
         }
     }
     pub fn animation_tick(&self) -> usize {
-        const ANIMATION_FPS: f64 = 2.0;
-        (self.time * ANIMATION_FPS).round() as usize
+        (self.time * self.animation_fps as f64).round() as usize
     }
     pub fn size(&self) -> ICoord {
         self.size

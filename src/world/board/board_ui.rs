@@ -19,6 +19,7 @@ pub enum Message {
     ToggleBot(Team),
     ToggleRadar,
     ToggleReferee,
+    AnimationFPS(f32),
     TargetFPS(Option<f64>),
     ToggleRefreshShaderCharacter,
     ToggleRefreshShaderAntialias,
