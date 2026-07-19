@@ -7,8 +7,9 @@ default-run = "chessnt"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-macroquad = "=0.4.14"
+macroquad = "=0.4.15"
 #macroquad = { path = "../macroquad" }
+#macroquad = { git = "https://github.com/not-fl3/macroquad.git", rev = "92279a7" }
 #macroquad = { git = "https://github.com/jmmut/macroquad.git", rev = "92279a746405949138616714918fc0f120171352" }
 juquad = { git = "https://github.com/jmmut/juquad.git", tag = "0.20.0" }
 #juquad = { path = "../juquad/" }
