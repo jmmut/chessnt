@@ -29,6 +29,7 @@ pub struct Board {
     pub piece_size_coef: Vec2,
     pub winning_team: Option<Team>,
     ever_moved: EverMoved,
+    time: f64,
 }
 
 pub const DEFAULT_PIECE_SIZE: Vec2 = vec2(1.0, 1.2);
@@ -51,6 +52,7 @@ impl Board {
             referee: Referee::new(),
             winning_team: None,
             ever_moved,
+            time: 0.0,
         }
     }
     pub fn new_chess(cursor_white: Coord, cursor_black: Coord) -> Self {
@@ -90,6 +92,14 @@ impl Board {
         for piece in &mut self.pieces {
             piece.tick(delta_s);
         }
+        self.time += delta_s;
+        if self.time > 3600.0 {
+            self.time -= 3600.0; // avoid losing precision due to floats getting too far away from 1
+        }
+    }
+    pub fn animation_tick(&self) -> usize {
+        const ANIMATION_FPS: f64 = 2.0;
+        (self.time * ANIMATION_FPS).round() as usize
     }
     pub fn size(&self) -> ICoord {
         self.size

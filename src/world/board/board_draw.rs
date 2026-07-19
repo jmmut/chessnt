@@ -70,7 +70,8 @@ impl Board {
         let mut meshes = Vec::new();
         let mut character_meshes = Vec::new();
         for (i, piece) in self.pieces.iter().enumerate() {
-            let texture = &theme.textures.characters[&piece.moveset.single()];
+            let animation = &theme.textures.characters_active[&piece.moveset.single()];
+            let texture = &animation[self.animation_tick() % animation.len()];
             let piece_size = texture.size() * self.piece_size_coef / FIXED_PIECE_SIZE_COEF;
             character_meshes.push((
                 i,

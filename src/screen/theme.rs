@@ -180,7 +180,8 @@ impl Theme {
 pub struct Textures {
     pub placeholder: Texture2D,
     pub referee: Texture2D,
-    pub characters: HashMap<Move, Texture2D>,
+    pub characters_idle: HashMap<Move, Vec<Texture2D>>,
+    pub characters_active: HashMap<Move, Vec<Texture2D>>,
     pub pieces: HashMap<(Team, Move), Texture2D>,
     pub floor: Texture2D,
 }

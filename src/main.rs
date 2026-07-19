@@ -171,13 +171,25 @@ async fn load_textures() -> AnyResult<Textures> {
     let textures = Textures {
         placeholder: load_texture_r("assets/images/ph_chara.png").await?,
         referee: load_texture_r("assets/images/ph_chara.png").await?,
-        characters: HashMap::from([
-            (Move::Pawn, load_texture_r("assets/images/characters/idle inactive.png").await?),
-            (Move::Rook, load_texture_r("assets/images/characters/torre.png").await?),
-            (Move::Knight, load_texture_r("assets/images/characters/torre.png").await?), // TODO: replace with correct textures when they exist
-            (Move::Bishop, load_texture_r("assets/images/characters/torre.png").await?), // TODO: replace with correct textures when they exist
-            (Move::King, load_texture_r("assets/images/characters/torre.png").await?), // TODO: replace with correct textures when they exist
-            (Move::Queen, load_texture_r("assets/images/characters/peon.png").await?), // TODO: replace with correct textures when they exist
+        characters_idle: HashMap::from([
+            (Move::Pawn, vec![load_texture_r("assets/images/characters/idle inactive.png").await?]),
+            (Move::Rook, vec![load_texture_r("assets/images/characters/torre.png").await?]),
+            (Move::Knight, vec![load_texture_r("assets/images/characters/torre.png").await?]), // TODO: replace with correct textures when they exist
+            (Move::Bishop, vec![load_texture_r("assets/images/characters/torre.png").await?]), // TODO: replace with correct textures when they exist
+            (Move::King, vec![load_texture_r("assets/images/characters/torre.png").await?]), // TODO: replace with correct textures when they exist
+            (Move::Queen, vec![load_texture_r("assets/images/characters/peon.png").await?]), // TODO: replace with correct textures when they exist
+            // (Move::Knight, load_texture_r("assets/images/characters/caballo.png").await?),
+            // (Move::Bishop, load_texture_r("assets/images/characters/alfil.png").await?),
+            // (Move::King, load_texture_r("assets/images/characters/rey.png").await?),
+            // (Move::Queen, load_texture_r("assets/images/characters/reina.png").await?),
+        ]),
+    characters_active:  HashMap::from([
+            (Move::Pawn, load_textures_r("assets/images/characters/idle active", 2).await?),
+            (Move::Rook, vec![load_texture_r("assets/images/characters/torre.png").await?]),
+            (Move::Knight, vec![load_texture_r("assets/images/characters/torre.png").await?]), // TODO: replace with correct textures when they exist
+            (Move::Bishop, vec![load_texture_r("assets/images/characters/torre.png").await?]), // TODO: replace with correct textures when they exist
+            (Move::King, vec![load_texture_r("assets/images/characters/torre.png").await?]), // TODO: replace with correct textures when they exist
+            (Move::Queen, vec![load_texture_r("assets/images/characters/peon.png").await?]), // TODO: replace with correct textures when they exist
             // (Move::Knight, load_texture_r("assets/images/characters/caballo.png").await?),
             // (Move::Bishop, load_texture_r("assets/images/characters/alfil.png").await?),
             // (Move::King, load_texture_r("assets/images/characters/rey.png").await?),
@@ -209,6 +221,14 @@ pub async fn load_texture(path: &str) -> Result<Texture2D, Error> {
 pub async fn load_texture_r(path: &str) -> Result<Texture2D, Error> {
     render_loading().await;
     load_texture(path).await
+}
+pub async fn load_textures_r(path: &str, count: usize) -> Result<Vec<Texture2D>, Error> {
+    let mut textures = Vec::new();
+    for i in 1..=count {
+        render_loading().await;
+        textures.push(load_texture(&format!("{}{}.png", path, i)).await?);
+    }
+    Ok(textures)
 }
 
 fn handle_inputs_should_exit(
