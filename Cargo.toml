@@ -13,7 +13,9 @@ macroquad = { git = "https://github.com/not-fl3/macroquad.git", rev = "92279a746
 #macroquad = { git = "https://github.com/jmmut/macroquad.git", rev = "92279a746405949138616714918fc0f120171352" }
 juquad = { git = "https://github.com/jmmut/juquad.git", tag = "0.20.0" }
 #juquad = { path = "../juquad/" }
-gamepads = { version = "=0.1.7", default-features = false }
+#gamepads = { version = "=0.1.7", default-features = false }
+gamepads = { git = "https://github.com/jmmut/gamepads", default-features = false, rev = "58379d289e5944111b38ff056801bf7876f5605d" }
+#gamepads = { path = "../gamepads", default-features = false }
 #web-sys = { version = "=0.3.91", features = ["Clipboard"] }
 #macroquad-profiler = "=0.2.0"
 

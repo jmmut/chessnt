@@ -212,8 +212,7 @@ dependencies = [
 [[package]]
 name = "gamepads"
 version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8c912fc0a5052c6e8fefe36bd3965be5aec4edcedff198461c697c916f50556"
+source = "git+https://github.com/jmmut/gamepads?rev=58379d289e5944111b38ff056801bf7876f5605d#58379d289e5944111b38ff056801bf7876f5605d"
 dependencies = [
  "android_logger",
  "gilrs",
