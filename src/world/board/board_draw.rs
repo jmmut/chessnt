@@ -28,14 +28,13 @@ const FLOOR_PIECE_HEIGHT: f32 = -RADAR_HEIGHT * 0.2;
 impl Board {
     /// assumes 3d camera is enabled
     pub fn draw_world(&self, theme: &Theme) {
+        self.draw_floor(theme);
         let mut meshes = Vec::new();
         meshes.extend(self.referee_meshes(theme));
-        for mesh in &meshes {
-            draw_mesh(mesh); // can't render cursor and figures online because of intersecting quads with transparencies
-        }
-        meshes.clear();
-        self.draw_floor(theme);
-
+        // for mesh in &meshes {
+        //     draw_mesh(mesh); // can't render cursor and figures online because of intersecting quads with transparencies
+        // }
+        // meshes.clear();
         meshes.extend(self.selection_meshes(Team::White, theme));
         meshes.extend(self.selection_meshes(Team::Black, theme));
         meshes.extend(self.possible_moves_meshes(Team::White, theme));

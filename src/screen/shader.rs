@@ -5,7 +5,7 @@ use macroquad::material::{Material, MaterialParams, load_material};
 use macroquad::miniquad::{
     BlendFactor, BlendState, BlendValue, Equation, ShaderSource, UniformDesc, UniformType,
 };
-use macroquad::prelude::PipelineParams;
+use macroquad::prelude::{Comparison, PipelineParams};
 
 pub mod names {
     pub const POSITION_X_NAME: &str = "position_x";
@@ -135,6 +135,8 @@ pub fn character_shader(vertex_code: &str, fragment_code: &str) -> AnyResult<Mat
                 BlendFactor::Value(BlendValue::SourceAlpha),
                 BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
             )),
+            depth_test: Comparison::LessOrEqual,
+            depth_write: true,
             ..Default::default()
         },
         uniforms: vec![
