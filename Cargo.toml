@@ -7,9 +7,9 @@ default-run = "chessnt"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-macroquad = "=0.4.15"
+#macroquad = "=0.4.15"
 #macroquad = { path = "../macroquad" }
-#macroquad = { git = "https://github.com/not-fl3/macroquad.git", rev = "92279a7" }
+macroquad = { git = "https://github.com/not-fl3/macroquad.git", rev = "92279a746405949138616714918fc0f120171352" } # workaround until this is released: https://github.com/not-fl3/miniquad/commit/9ad1866049d59e89c79dd3442973adf1bfbce548
 #macroquad = { git = "https://github.com/jmmut/macroquad.git", rev = "92279a746405949138616714918fc0f120171352" }
 juquad = { git = "https://github.com/jmmut/juquad.git", tag = "0.20.0" }
 #juquad = { path = "../juquad/" }
@@ -18,6 +18,8 @@ gamepads = { version = "=0.1.7", default-features = false }
 #macroquad-profiler = "=0.2.0"
 
 [patch.crates-io]
+#miniquad = "=0.4.11"
+macroquad = { git = "https://github.com/not-fl3/macroquad.git", rev = "92279a746405949138616714918fc0f120171352" }
 # for juquad to pick up my mq fork
 #macroquad = { git = "https://github.com/jmmut/macroquad.git", rev = "92279a746405949138616714918fc0f120171352" }
 #macroquad = { path = "../macroquad" }
